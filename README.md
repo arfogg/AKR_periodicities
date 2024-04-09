@@ -21,10 +21,15 @@ General
 - [ ] record required packages above
 
 Code
-- [ ] add in docstrings
-- [ ] get FFT to work on fake AKR intensity data
+- [x] add in docstrings
+
+Data preparation
 - [ ] deal with AKR data gaps / uneven temporal resolution
 
+FFT work
+- [x] get FFT to work on fake AKR intensity data
+- [ ] automatically limit x axis of FFT
+- [ ] deal with big peak at period=0
 
 ## Acknowledgements
 

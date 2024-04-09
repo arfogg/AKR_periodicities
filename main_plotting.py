@@ -77,29 +77,23 @@ def paper_plots():
     
     # ----- END -----
     
-def test_dataset():
-    
-    # create a noisy sinusoid
-    
-    n_points=1001
-    
-    
-    time=np.linspace(0,100,n_points)
-    intensity=np.sin(time)+np.random.normal(0,.1,n_points)
-    
-    fig,ax=plt.subplots()
-    ax.plot(time, intensity)
-    
-    
-    
-    
-    return pd.DataFrame({'datetime_ut':time, 'P_Wsr-1_100_650_kHz':intensity})
-
-
-
 
 def lomb_scargle(intensity_df):
+    """
+    TEST FUNCTION TO DO A LOMB SCARGLE
+    ON AKR PERIODICITIES - WORK
+    IN PROGRESS
 
+    Parameters
+    ----------
+    intensity_df : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     freqs_in_hrs=np.linspace(0,15,16)
     
     pgram=signal.lombscargle(intensity_df['datetime_ut'], intensity_df['P_Wsr-1_100_650_kHz'], freqs_in_hrs)
@@ -182,6 +176,15 @@ def test_goertzel():
     
     
 def testing_fft():
+    """
+    TEST FUNCTION TO TEST GENERIC FFT
+    CODE
+
+    Returns
+    -------
+    None.
+
+    """
     # https://pythonnumericalmethods.studentorg.berkeley.edu/notebooks/chapter24.04-FFT-in-Python.html
     # ----- SIGNAL -----
     # sampling rate - is this samples per second???
@@ -213,47 +216,33 @@ def testing_fft():
     
     
     # # ----- FFT IN NUMPY -----
-    
-    
-    
-    # from numpy.fft import fft, ifft
-    
-    
-    # X = fft(x)  # y axis for FFT plot
-    # N = len(X)  # number of FFT points
-    # n = np.arange(N)    # 0 - N array. integers
-    # T = N/sr    # number of FFT points / number of obs per sec
-    # freq = n/T  # freqs fft is evaluated at
-    
-    # #fig,ax=plt.subplots(ncols=2, figsize = (12, 6))
-
-    
-    # ax[1].stem(freq, np.abs(X), 'c', \
-    #           markerfmt=" ", basefmt="-c") 
-    # ax[1].set_xlabel('Freq (Hz)')
-    # ax[1].set_ylabel('FFT Amplitude |X(freq)|')
-    # ax[1].set_xlim(0, 10)
-    # ax[1].set_title('FFT of observations')
-    
-    # ax[2].plot(t, ifft(X), 'blueviolet')
-    # ax[2].set_xlabel('Time (s)')
-    # ax[2].set_ylabel('Amplitude')
-    # ax[2].set_title('Inverse FFT')
-    
-    # fig.tight_layout()
-
-    
+   
     generic_fft_function(t, x, sr)
 
-
-    # Make a nice fake oscillating AKR signal
-    top=1e7
-    mid=1e6
-    bot=1e5
     
     
 def oscillating_signal(osc_freq, plot=False):
-    
+    """
+    Function to create a timeseries of oscillating
+    signal using neurodsp package.
+
+    Parameters
+    ----------
+    osc_freq : float
+        Period of the desired oscillation in hours.
+    plot : bool, optional
+        If plot==True, a diagnostic plot of the 
+        generated signal is presented. The default 
+        is False.
+
+    Returns
+    -------
+    time : np.array
+        Time axis in seconds.
+    akr_osc : np.array
+        Signal.
+
+    """
     # Create fake time axis
     yr_secs = 365*24*60*60    # One year in seconds
     res_secs = 3*60   # Temporal resolution of 3 minutes
