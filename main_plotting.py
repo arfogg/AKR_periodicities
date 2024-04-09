@@ -61,14 +61,19 @@ def paper_plots():
     
 
     intensity_df['P_Wsr-1_100_650_kHz']=func(unix_time_axis) 
-    #return intensity_df
+    
 
     
     # ----- END -----
     
     # ----- FFT -----
-    
-    fast_fourier_transform(intensity_df)
+
+    #remove average background to get rid of peak at freq=0?
+    ave=np.nanmean(intensity_df['P_Wsr-1_100_650_kHz'])
+    intensity_df['background_subtracted_power']=intensity_df['P_Wsr-1_100_650_kHz']-ave
+    return intensity_df
+
+    freq, period, amp=generic_fft_function(intensity_df.unix, intensity_df['P_Wsr-1_100_650_kHz'], pd.Timedelta(minutes=3))
     
     # ----- END -----
     
@@ -247,25 +252,62 @@ def testing_fft():
     bot=1e5
     
     
+def oscillating_signal(osc_freq, plot=False):
     
     # Create fake time axis
     yr_secs = 365*24*60*60    # One year in seconds
     res_secs = 3*60   # Temporal resolution of 3 minutes
-    osc_freq = 12. # Oscillation frequency in hours
+    #osc_freq = 24. # Oscillation frequency in hours
     
     time=np.arange(0,yr_secs, res_secs)
 
     akr_osc=sim_oscillation(yr_secs,1/res_secs, 1/(osc_freq*60*60), cycle='sine')
     akr_osc=(akr_osc+2.0) * 1e6     # make positive and put to the order of AKR power
     
-    
-    fig,ax=plt.subplots()
-    ax.plot(time,akr_osc)
-    ax.set_xlim(0, 4*osc_freq*60*60)
+    if plot:
+        fig,ax=plt.subplots()
+        ax.plot(time,akr_osc)
+        ax.set_xlim(0, 4*osc_freq*60*60)
+
+    return time, akr_osc
 
 
-def generic_fft_function(time, y, sampling_rate, plot=True):
+def generic_fft_function(time, y, temporal_resolution, plot=True,
+                         xlims=[np.nan, np.nan]):
+    """
     
+
+    Parameters
+    ----------
+    time : np.array
+        Time axis for y in seconds.
+    y : np.array
+        Signal.
+    temporal_resolution : pd.Timedelta
+        Seperation of consecutive points in time.
+    plot : BOOL, optional
+        If plot==True, a diagnostic plot for the FFT is 
+        presented. The default is True.
+    xlims : list, optional
+        If provided, the xaxis of the signal and IFFT
+        plots are limits to these values. This can allow 
+        nicer plots of a few oscillations. The default
+        is [np.nan, np.nan].
+
+    Returns
+    -------
+    freq : np.array
+        Frequency of FFT calculation in Hz.
+    period : np.array
+        Period of FFT calculation in hours.
+    fft_amp : np.array
+        Amplitude of FFT calculation.  
+
+    """
+    # temporal_resolution is a pd.Timedelta
+    
+    # Calculate sampling rate in Hz
+    sampling_rate = 1 / (temporal_resolution.total_seconds())
     
     X = fft(y)  # y axis for FFT plot
     N = len(X)  # number of FFT points
@@ -273,31 +315,72 @@ def generic_fft_function(time, y, sampling_rate, plot=True):
     T = N/sampling_rate    # number of FFT points / number of obs per sec
     freq = n/T  # freqs fft is evaluated at
     
+    # Functions to convert between period in hours
+    #   and frequency in Hz
+    def period_to_freq(x):
+        ticks=[]
+        for tick in x:
+            if tick != 0:
+                ticks.append(1. / (tick * (60.*60.)))
+            else:
+                ticks.append(0)
+        #print('pf2', x, ticks)
+        return ticks
+    def freq_to_period(x):
+        ticks=[]
+        for tick in x:
+            if tick != 0:
+                ticks.append((1. / tick) / (60.*60.))
+            else:
+                ticks.append(0)
+        #print('f2p', x, ticks)
+        return ticks
+    
+    
+    
+    
+    # period = 1 / freq
+    # period = period / (60*60)   # period in hours
+    period = freq_to_period(freq)
     #fig,ax=plt.subplots(ncols=2, figsize = (12, 6))
+
+    fft_amp=np.abs(X)
 
     if plot :
         
         fig,ax=plt.subplots(ncols=3, figsize = (18, 6))
         
+        # Plot original signal
         ax[0].plot(time, y, 'orange')
         ax[0].set_ylabel('Amplitude')
-        ax[0].set_xlabel('time in UNITS?')
+        ax[0].set_xlabel('Time (s)')
         ax[0].set_title('Observations')
         
-        ax[1].stem(freq, np.abs(X), 'c', \
+        # Plot FFT periodogram
+        ax[1].stem(period, fft_amp, 'c', \
                   markerfmt=" ", basefmt="-c") 
-        ax[1].set_xlabel('Freq (Hz)')
+        ax[1].set_xlabel('Period (hours)')
         ax[1].set_ylabel('FFT Amplitude |X(freq)|')
-        ax[1].set_xlim(0, 10)
         ax[1].set_title('FFT of observations')
+        ax[1].set_xlim([-5,36])
+        # # Top axis with freq - doesn't work yet
+        # top_ax=ax[1].twiny()
+        # top_ax.set_xticks(period_to_freq(ax[1].get_xticks()))
         
+        
+        # Plot inverse FFT signal
         ax[2].plot(time, ifft(X), 'blueviolet')
         ax[2].set_xlabel('Time (s)')
         ax[2].set_ylabel('Amplitude')
         ax[2].set_title('Inverse FFT')
         
+        if (~np.isnan(xlims[0])) & (~np.isnan(xlims[1])):
+            ax[0].set_xlim(xlims)
+            ax[2].set_xlim(xlims)
+        
         fig.tight_layout()
-            
+    
+    return freq, period, fft_amp
     
     
     
