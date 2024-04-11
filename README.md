@@ -16,7 +16,7 @@ Developed using Python 3.8.8.
 
 General
 - [ ] check Caitriona acknowledgement statement
-- [ ] add in James acknowledgement statement
+- [ ] add in James / Simon acknowledgement statement
 - [ ] create requirements.txt
 - [ ] record required packages above
 
@@ -35,6 +35,8 @@ FFT work
     * [ ] Lamy 2010 and Waters 2021 / Cassini flyby interval
     * [ ] n random intervals of length = Cassini flyby interval or perhaps longer?
     * [ ] subsetting by spacecraft LT
+    * [ ] seasons - to investigate if ionospheric seasonality has an affect?
+    * [ ] on the far dusk interval we investigated before
 
 ## Acknowledgements
 
