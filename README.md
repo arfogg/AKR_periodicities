@@ -30,6 +30,11 @@ FFT work
 - [x] get FFT to work on fake AKR intensity data
 - [ ] automatically limit x axis of FFT
 - [ ] deal with big peak at period=0
+- [ ] repeat on the following subsets:
+    * [ ] years, to investigate solar cycle dependence
+    * [ ] Lamy 2010 and Waters 2021 / Cassini flyby interval
+    * [ ] n random intervals of length = Cassini flyby interval or perhaps longer?
+    * [ ] subsetting by spacecraft LT
 
 ## Acknowledgements
 
