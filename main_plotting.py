@@ -19,6 +19,8 @@ from neurodsp.sim import sim_oscillation
 
 import fastgoertzel as G
 
+import periodicity_functions
+
 sys.path.insert(1, r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 import read_integrated_power
 
@@ -27,43 +29,55 @@ import read_integrated_power
 # https://neurodsp-tools.github.io/neurodsp/auto_tutorials/sim/plot_SimulatePeriodic.html
 
 
+def test_with_oscillator():
+    # Testing everything on the nice, fake oscillating signal
+    time, akr_osc = oscillating_signal(24)
+
+    freq, period, fft_amp, fft_fig, fft_ax = periodicity_functions.\
+        generic_fft_function(time, akr_osc, pd.Timedelta(minutes=3),
+                             signal_xlims=[0, 72.*60.*60.],
+                             vertical_indicators=[12, 24])
+
+
+    return
+
+def select_akr_intervals():
+    # here we will load in a selected interval from a list of options
+    print('work in progress')
+
 
 def paper_plots():
-    
+
     print('hello')
-    
+
     # ----- Read in AKR intensity data -----
-    years=np.array([1995,1996,1997,1998,1999,2000,2001,2002,2003,2004])
-    input_df=read_integrated_power.concat_integrated_power_years(years, 'waters')
-    
-    
+    years = np.array([1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
+                      2003, 2004])
+    input_df = read_integrated_power.concat_integrated_power_years(years,
+                                                                   'waters')
     # ----- END -----
-    
-    
+
     # NEED TO RESAMPLE/INTERPOLATE TO MAKE THE DATA AN EVEN TEMPORAL RESOLUTION
     #   SO THE FFT WORKS NICELY
-    
+
     # ----- Resample temporally -----
     # Interpolate / resample the AKR intensity data so it's on an even
     #   temporal resolution of 3 minutes exactly.
-    
-    s_time=input_df.datetime_ut.iloc[0].ceil(freq='min')
-    e_time=input_df.datetime_ut.iloc[-1].floor(freq='min')
-    n_periods=np.floor((e_time-s_time)/pd.Timedelta(minutes=3))
 
-    new_time_axis=pd.date_range(s_time, periods=n_periods, freq='3T')
-    unix_time_axis=(new_time_axis - pd.Timestamp('1970-01-01')) / (pd.Timedelta(seconds=1))
-    intensity_df=pd.DataFrame({'datetime_ut':new_time_axis,
-                               'unix':unix_time_axis})
-    
-    func=interpolate.interp1d(input_df.unix,input_df['P_Wsr-1_100_650_kHz'])
-    
-    
+    s_time = input_df.datetime_ut.iloc[0].ceil(freq='min')
+    e_time = input_df.datetime_ut.iloc[-1].floor(freq='min')
+    n_periods = np.floor((e_time-s_time)/pd.Timedelta(minutes=3))
 
-    intensity_df['P_Wsr-1_100_650_kHz']=func(unix_time_axis) 
-    
+    new_time_axis = pd.date_range(s_time, periods=n_periods, freq='3T')
+    unix_time_axis = (new_time_axis - pd.Timestamp('1970-01-01')) / (
+        pd.Timedelta(seconds=1))
+    intensity_df = pd.DataFrame({'datetime_ut': new_time_axis,
+                                 'unix': unix_time_axis})
 
-    
+    func = interpolate.interp1d(input_df.unix, input_df['P_Wsr-1_100_650_kHz'])
+
+    intensity_df['P_Wsr-1_100_650_kHz'] = func(unix_time_axis)
+
     # ----- END -----
     
     # ----- FFT -----

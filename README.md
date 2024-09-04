@@ -1,6 +1,8 @@
 # AKR_periodicities
+# :satellite: :earth_africa: :radio: :rocket:
 
-This package is used to examine periodicities in Auroral Kilometric Radiation data.
+**Please note this is a work in progress as of Sept 2024**
+This package is used to examine periodicities in Auroral Kilometric Radiation data detected by NASA Wind/WAVES.
 
 **License:** CC0-1.0
 
@@ -15,8 +17,7 @@ Developed using Python 3.8.8.
 ## To Do:
 
 General
-- [ ] check Caitriona acknowledgement statement
-- [ ] add in James / Simon acknowledgement statement
+- [ ] add in James acknowledgement statement
 - [ ] create requirements.txt
 - [ ] record required packages above
 
@@ -26,19 +27,7 @@ Code
 Data preparation
 - [ ] deal with AKR data gaps / uneven temporal resolution
 
-FFT work
-- [x] get FFT to work on fake AKR intensity data
-- [ ] automatically limit x axis of FFT
-- [ ] deal with big peak at period=0
-- [ ] repeat on the following subsets:
-    * [ ] years, to investigate solar cycle dependence
-    * [ ] Lamy 2010 and Waters 2021 / Cassini flyby interval
-    * [ ] n random intervals of length = Cassini flyby interval or perhaps longer?
-    * [ ] subsetting by spacecraft LT
-    * [ ] seasons - to investigate if ionospheric seasonality has an affect?
-    * [ ] on the far dusk interval we investigated before
-
 ## Acknowledgements
 
-* ARF gratefully acknowledges the support of Irish Research Council Government of Ireland Postdoctoral Fellowship GOIPD/2022/782.
-* CMJ gratefully acknowledges the support of Science Foundation Ireland Grant 18/FRL/6199.
+* [ARF](https://github.com/arfogg) gratefully acknowledges the support of Irish Research Council Government of Ireland Postdoctoral Fellowship GOIPD/2022/782.
+* [CMJ](https://github.com/caitrionajackman) and [SJW](https://github.com/08walkersj) gratefully acknowledge the support of Science Foundation Ireland Grant 18/FRL/6199.
