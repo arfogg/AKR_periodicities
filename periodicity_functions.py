@@ -10,6 +10,7 @@ intensity timeseries.
 """
 
 import numpy as np
+import pandas as pd
 
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
@@ -21,13 +22,15 @@ def generic_fft_function(time, y, temporal_resolution,
                          fft_xlims=[0, 36],
                          signal_xlims=[np.nan, np.nan],
                          fontsize=15,
-                         vertical_indicators=[]):
+                         vertical_indicators=[],
+                         unix_to_dtime=False):
     """
 
     Parameters
     ----------
     time : np.array
-        Time axis for y in seconds.
+        Time axis for y in seconds. Unix time is
+        recommended for real data.
     y : np.array
         Signal.
     temporal_resolution : pd.Timedelta
@@ -51,6 +54,9 @@ def generic_fft_function(time, y, temporal_resolution,
     vertical_indicators : list, optional
         A list of positions to draw a vertical line on the
         centre FFT plot (in hours). The default is [].
+    unix_to_dtime : bool, optional
+        If True, the xaxis for signal axes will be displayed
+        in YYYY MM/DD HH:MM format. The default is False.
 
     Returns
     -------
@@ -128,7 +134,12 @@ def generic_fft_function(time, y, temporal_resolution,
         ax[1].set_ylabel('FFT Amplitude', fontsize=fontsize)
         ax[1].set_title('FFT of input', fontsize=fontsize)
         ax[1].tick_params(labelsize=fontsize)
-        ax[1].set_xlim([0, 36])
+        ax[1].set_xlim(fft_xlims)
+
+        # Calculate y lims
+        k, = np.where((period >= fft_xlims[0]) & (period <= fft_xlims[1]))
+        fft_ylims = [0.9*np.nanmin(fft_amp[k]), 1.1*np.nanmax(fft_amp[k])]
+        ax[1].set_ylim(fft_ylims)
 
         t = ax[1].text(0.05, 0.95, '(b)', transform=ax[1].transAxes,
                        fontsize=fontsize, va='top', ha='left')
@@ -160,6 +171,20 @@ def generic_fft_function(time, y, temporal_resolution,
         if (~np.isnan(signal_xlims[0])) & (~np.isnan(signal_xlims[1])):
             ax[0].set_xlim(signal_xlims)
             ax[2].set_xlim(signal_xlims)
+
+            # Calculate y lims
+            q, = np.where((time >= signal_xlims[0]) &
+                          (time <= signal_xlims[1]))
+            signal_ylims = [0.9*np.nanmin(y[q]), 1.1*np.nanmax(y[q])]
+            ax[0].set_ylim(signal_ylims)
+            ax[2].set_ylim(signal_ylims)
+
+        if unix_to_dtime:
+            tick_loc = ax[0].get_xticks()
+            tick_lab = pd.to_datetime(pd.Series(tick_loc),
+                                      unit='s').dt.strftime('%Y\n%m/%d\n%H:%M')
+            ax[0].set_xticks(tick_loc, tick_lab, fontsize=fontsize)
+            ax[2].set_xticks(tick_loc, tick_lab, fontsize=fontsize)
 
         fig.tight_layout()
 

@@ -6,6 +6,8 @@ Created on Thu Apr  4 15:15:12 2024
 """
 
 import sys
+import os
+import pathlib
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,6 +26,8 @@ import periodicity_functions
 sys.path.insert(1, r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 import read_integrated_power
 
+fig_dir = os.path.join("C:" + os.sep,
+                       r"Users\admin\Documents\figures\akr_periodicities")
 
 # interesting stuff here on simulating intermittent oscillations
 # https://neurodsp-tools.github.io/neurodsp/auto_tutorials/sim/plot_SimulatePeriodic.html
@@ -38,17 +42,97 @@ def test_with_oscillator():
                              signal_xlims=[0, 72.*60.*60.],
                              vertical_indicators=[12, 24])
 
-
     return
 
-def select_akr_intervals():
+
+def select_akr_intervals(interval):
     # here we will load in a selected interval from a list of options
-    print('work in progress')
+
+    interval_options = pd.DataFrame(
+        {'tag': ['full_archive',
+                 'cassini_flyby'],
+         'stime': [pd.Timestamp(1995, 1, 1, 0),
+                   pd.Timestamp(1999, 8, 15, 0)],
+         'etime': [pd.Timestamp(2004, 12, 31, 23, 59),
+                   pd.Timestamp(1999, 9, 14, 23, 59)]})
+
+    # Check parsed interval is correct
+    if interval not in np.array(interval_options.tag):
+        print('Parsed interval not a valid option.')
+        print('Exiting...')
+        return
+    else:
+        selected = interval_options.loc[interval_options.tag == interval,
+                                        :].reset_index()
+
+    # Which years are needed?
+    years = list(range(selected.stime[0].year, selected.etime[0].year+1, 1))
+
+    # Read in data
+    akr_df = read_integrated_power.concat_integrated_power_years(years,
+                                                                 'waters')
+
+    # Select only the interval requested
+    akr_df = akr_df.loc[(akr_df.datetime_ut >= selected.stime[0]) &
+                        (akr_df.datetime_ut <= selected.etime[0]),
+                        :].reset_index()
+
+    # Resample to a nice, clean, 3 minute resolution
+    # (this is important for FFTs etc)
+    print('Temporally resampling AKR onto an even resolution')
+    s_time = akr_df.datetime_ut.iloc[0].ceil(freq='min')
+    e_time = akr_df.datetime_ut.iloc[-1].floor(freq='min')
+    n_periods = np.floor((e_time-s_time)/pd.Timedelta(minutes=3))
+
+    new_time_axis = pd.date_range(s_time, periods=n_periods, freq='3T')
+    unix_time_axis = (new_time_axis - pd.Timestamp('1970-01-01')) / (
+        pd.Timedelta(seconds=1))
+    interpolated_akr_df = pd.DataFrame({'datetime_ut': new_time_axis,
+                                        'unix': unix_time_axis})
+
+    func = interpolate.interp1d(akr_df.unix, akr_df['P_Wsr-1_100_650_kHz'])
+    interpolated_akr_df['P_Wsr-1_100_650_kHz'] = func(unix_time_axis)
+
+    return akr_df, interpolated_akr_df
+
+
+def generate_plots():
+
+    intervals = np.array(['full_archive', 'cassini_flyby'])
+    # intervals = np.array(['cassini_flyby'])
+
+    for i in range(intervals.size):
+        print('Running analyses for ', intervals[i])
+
+        akr_df, interpolated_df = select_akr_intervals(intervals[i])
+
+        # -- FFT --
+        fft_png = os.path.join(fig_dir, intervals[i] + '_fft.png')
+        if (pathlib.Path(fft_png).is_file()) is False:
+            # First 3 days of data
+            signal_xlims = [interpolated_df.unix[0],
+                            interpolated_df.unix[0] + ((72. * 60. * 60.))]
+
+            freq, period, amp, fft_fig, fft_ax = periodicity_functions.\
+                generic_fft_function(interpolated_df.unix,
+                                     interpolated_df['P_Wsr-1_100_650_kHz'],
+                                     pd.Timedelta(minutes=3),
+                                     signal_xlims=signal_xlims,
+                                     vertical_indicators=[12, 24],
+                                     unix_to_dtime=True)
+            fft_fig.savefig(fft_png)
+
+        # -- END FFT --
+
+    return
 
 
 def paper_plots():
 
-    print('hello')
+    # ----- Define output files -----
+    fft_png = os.path.join(fig_dir, 'full_archive_fft.png')
+
+    # ----- END -----
 
     # ----- Read in AKR intensity data -----
     years = np.array([1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
@@ -57,13 +141,10 @@ def paper_plots():
                                                                    'waters')
     # ----- END -----
 
-    # NEED TO RESAMPLE/INTERPOLATE TO MAKE THE DATA AN EVEN TEMPORAL RESOLUTION
-    #   SO THE FFT WORKS NICELY
-
     # ----- Resample temporally -----
     # Interpolate / resample the AKR intensity data so it's on an even
     #   temporal resolution of 3 minutes exactly.
-
+    print('Temporally resampling AKR onto an even resolution')
     s_time = input_df.datetime_ut.iloc[0].ceil(freq='min')
     e_time = input_df.datetime_ut.iloc[-1].floor(freq='min')
     n_periods = np.floor((e_time-s_time)/pd.Timedelta(minutes=3))
@@ -79,18 +160,21 @@ def paper_plots():
     intensity_df['P_Wsr-1_100_650_kHz'] = func(unix_time_axis)
 
     # ----- END -----
-    
+
     # ----- FFT -----
-
-    #remove average background to get rid of peak at freq=0?
-    ave=np.nanmean(intensity_df['P_Wsr-1_100_650_kHz'])
-    intensity_df['background_subtracted_power']=intensity_df['P_Wsr-1_100_650_kHz']-ave
-    return intensity_df
-
-    freq, period, amp=generic_fft_function(intensity_df.unix, intensity_df['P_Wsr-1_100_650_kHz'], pd.Timedelta(minutes=3))
-    
+    print('Running FFT analysis on AKR data')
+    freq, period, amp, fft_fig, fft_ax = periodicity_functions.\
+        generic_fft_function(intensity_df.unix,
+                             intensity_df['P_Wsr-1_100_650_kHz'],
+                             pd.Timedelta(minutes=3),
+                             signal_xlims=[0, 72.*60.*60.],
+                             fft_ylims=[0, 1.5E12],
+                             vertical_indicators=[12, 24])
+    fft_fig.savefig(fft_png)
     # ----- END -----
-    
+
+    breakpoint()
+
 
 def lomb_scargle(intensity_df):
     """
