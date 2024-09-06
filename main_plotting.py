@@ -23,11 +23,16 @@ import fastgoertzel as G
 
 import periodicity_functions
 
-sys.path.insert(1, r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
+sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 import read_integrated_power
+
+sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\readers')
+import read_omni
+import read_supermag
 
 fig_dir = os.path.join("C:" + os.sep,
                        r"Users\admin\Documents\figures\akr_periodicities")
+data_dir = os.path.join(fig_dir, "data_quickloads")
 
 # interesting stuff here on simulating intermittent oscillations
 # https://neurodsp-tools.github.io/neurodsp/auto_tutorials/sim/plot_SimulatePeriodic.html
@@ -93,7 +98,98 @@ def select_akr_intervals(interval):
     func = interpolate.interp1d(akr_df.unix, akr_df['P_Wsr-1_100_650_kHz'])
     interpolated_akr_df['P_Wsr-1_100_650_kHz'] = func(unix_time_axis)
 
+    # Interpolating Wind location
+    tags = np.array(['x_gse', 'y_gse', 'z_gse', 'lat_gse', 'lon_gse',
+                     'x_gsm', 'y_gsm', 'z_gsm', 'lat_gsm', 'lon_gsm',
+                     'radius', 'decimal_gseLT'])
+    for t in tags:
+        print('Interpolating Wind position: ', t)
+
+        if t == 'decimal_gseLT':
+            print('Interpolating Local Time:')
+            print('Using special approach as LT is periodic')
+
+            # Unwrap LT over 24 period
+            # Note you will need numpy version 1.21.0 to do this
+            # pip install numpy --upgrade
+            unwrapped_lts = np.unwrap(akr_df[t], period=24)
+
+            # Interpolate
+            func = interpolate.interp1d(akr_df.unix, unwrapped_lts)
+            unwrapped_interp_lt = func(interpolated_akr_df.unix)
+
+            # Feed back into df, putting back into 24 period
+            interpolated_akr_df[t] = unwrapped_interp_lt % 24
+            interpolated_akr_df[t] = pd.to_numeric(interpolated_akr_df[t])
+
+        else:
+            # Create a function defining the interpolation between points
+            # in time defined by akr_df.unix, over the variable akr_df[t]
+            func = interpolate.interp1d(akr_df.unix, akr_df[t])
+            # Feed the function the time resolution of the akr data (defined by
+            # interpolated_akr_df.unix), and get the values of the current
+            # tag out, feed straight back into the akr dataframe
+            interpolated_akr_df[t] = func(interpolated_akr_df.unix)
+            interpolated_akr_df[t] = pd.to_numeric(interpolated_akr_df[t])
+
     return akr_df, interpolated_akr_df
+
+
+def combine_akr_omni(interval, omni_cols=['datetime', 'bx', 'bz_gse',
+                                          'by_gsm', 'bz_gsm', 'b_total',
+                                          'clock_angle',
+                                          'flow_speed', 'proton_density',
+                                          'flow_pressure',
+                                          'ae', 'al', 'au', 'symh', 'pc_n']):
+
+    akr_df, interpolated_akr_df = select_akr_intervals(interval)
+
+    output_csv = os.path.join(data_dir, "akr_omni_supermag_" + str(interval)
+                              + '.csv')
+
+    if pathlib.Path(output_csv).is_file():
+        output_df = pd.read_csv(output_csv, delimiter=',',
+                                float_precision='round_trip',
+                                parse_dates=['datetime'])
+    else:
+
+        # Create output_df
+        output_df = interpolated_akr_df.copy(deep=True)
+        output_df.rename(columns={"P_Wsr-1_100_650_kHz": "integrated_power",
+                                  "datetime_ut": "datetime"},
+                         inplace=True)
+
+        # Define the years to read in
+        syear = interpolated_akr_df.datetime_ut[0].year
+        eyear = interpolated_akr_df.datetime_ut[
+            len(interpolated_akr_df) - 1].year
+        years = np.linspace(syear, eyear, eyear-syear + 1).astype(int)
+
+        # Read in OMNI data
+        omni_df = read_omni.concat_local_years_low_memory(years)
+
+        # Add OMNI data to output_df
+        for c in omni_cols:
+            output_df[c] = omni_df.loc[
+                omni_df['datetime'].isin(output_df['datetime']),
+                c].values
+
+        # Read SuperMAG indices
+        supermag_df = read_supermag.concat_indices_years(years)
+        # Add SuperMAG data to output_df
+        output_df['sme'] = supermag_df.loc[
+            supermag_df['Date_UTC'].isin(output_df['datetime']), 'SME'].values
+        output_df['smu'] = supermag_df.loc[
+            supermag_df['Date_UTC'].isin(output_df['datetime']), 'SMU'].values
+        output_df['sml'] = supermag_df.loc[
+            supermag_df['Date_UTC'].isin(output_df['datetime']), 'SML'].values
+        output_df['smr'] = supermag_df.loc[
+            supermag_df['Date_UTC'].isin(output_df['datetime']), 'SMR'].values
+
+        # Write to a csv
+        output_df.to_csv(output_csv, index=False)
+
+    return output_df
 
 
 def generate_plots():
