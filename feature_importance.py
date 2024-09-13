@@ -5,7 +5,10 @@ Created on Fri Sep  6 14:43:20 2024
 @author: A R Fogg
 """
 
+import string
+
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from sklearn.ensemble import RandomForestRegressor
@@ -44,24 +47,33 @@ def example():
     # round to nearest 3 min
 
 
-def plot_feature_importance(baseline, features, feature_names=None, seed=1993,
-                       fontsize=20, record_number=True):
+def plot_feature_importance(baseline, features,
+                            importance=None,
+                            feature_names=None, seed=1993,
+                            fontsize=20, record_number=True):
 
     # features has shape len(baseline) x number of features
 
     # Give indexes if features are unnamed
     if feature_names is None:
         feature_names = np.array(range(features.shape[1])).astype('str')
+    else:
+        feature_names = np.array(feature_names)
 
-    # Initialise model
-    model = RandomForestRegressor(random_state=seed)
-    # Fitting
-    model.fit(features, baseline)
-    # Extract the feature importance
-    importance = model.feature_importances_
+    if importance is None:
+        # Initialise model
+        model = RandomForestRegressor(random_state=seed)
+        # Fitting
+        t1 = pd.Timestamp.now()
+        print('Starting model fitting for '+str(len(feature_names))
+              + ' features at time ', t1)
+        model.fit(features, baseline)
+        print('Model fit complete, time taken: ', pd.Timestamp.now()-t1)
+        # Extract the feature importance
+        importance = model.feature_importances_
 
     # Plot results
-    fig, ax = plt.subplots(figsize=((2 + (feature_names.size * 1.5)), 10))
+    fig, ax = plt.subplots(figsize=((2 + (len(feature_names) * 1.5)), 10))
 
     # Rank the features by importance
     sort_i = np.argsort(importance)
@@ -85,3 +97,52 @@ def plot_feature_importance(baseline, features, feature_names=None, seed=1993,
     ax.tick_params(labelsize=fontsize)
 
     return fig, ax, importance
+
+
+def feature_importance_3panel(fin1, fin2, fin3,
+                              im1, im2, im3,
+                              record_number=True,
+                              fontsize=15):
+
+    
+    # fi1 np.array n_features x 1. one column = feature name
+    # im1 is np.array of feature importances
+    
+    
+    titles = ['(a) Visibility',
+              '(b) Geophysical',
+              '(c) Visibility and Geophysical']
+    fill_colors = ['orange', 'paleturquoise', 'palevioletred']
+    edge_colors = ['darkgoldenrod', 'darkcyan', 'crimson']
+
+    fig = plt.figure(figsize=(20, 10))
+
+    ax1 = plt.subplot2grid((2, 4), (0, 0), colspan=1)
+    ax2 = plt.subplot2grid((2, 4), (0, 1), colspan=3)
+    ax3 = plt.subplot(2, 1, 2)
+
+    for i, (fin, im, ax) in enumerate(zip([fin1, fin2, fin3],
+                                          [im1, im2, im3], [ax1, ax2, ax3])):
+        #print(i, fi, ax)
+
+        sort_i = np.argsort(im)
+        sorted_feature_names = fin[sort_i][::-1]
+        sorted_importance = im[sort_i][::-1]
+
+        ax.bar(sorted_feature_names, sorted_importance,
+                   color=fill_colors[i], edgecolor=edge_colors[i], linewidth=2.0,
+                   alpha=0.3)
+
+        if record_number is True:
+            for j in range(sorted_importance.size):
+                ax.text(sorted_feature_names[j], sorted_importance[j],
+                        str("%.3f" % sorted_importance[j]),
+                        fontsize=fontsize, ha='center', va='bottom')
+                
+        # Formatting
+        ax.set_xlabel('Features (in order of importance)', fontsize=fontsize)
+        ax.set_ylabel('Feature Importance', fontsize=fontsize)
+        ax.tick_params(labelsize=fontsize)
+        ax.set_title(titles[i], fontsize=1.25*fontsize)
+        
+    fig.tight_layout()

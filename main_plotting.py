@@ -55,24 +55,26 @@ def test_with_oscillator():
 
 def generate_plots():
 
-    intervals = np.array(['full_archive', 'cassini_flyby'])
-    # intervals = np.array(['cassini_flyby'])
+    #intervals = np.array(['full_archive', 'cassini_flyby'])
+    intervals = np.array(['full_archive'])
 
     for i in range(intervals.size):
         print('Running analyses for ', intervals[i])
-
-        akr_df, interpolated_df = read_and_tidy_data.select_akr_intervals(intervals[i])
+        combined_rounded_df = read_and_tidy_data.\
+                combine_rounded_akr_omni(intervals[i])
+        # akr_df, interpolated_akr_df, rounded_akr_df = read_and_tidy_data.\
+        #     select_akr_intervals(intervals[i], interpolated=True, rounded=True)
 
         # -- FFT --
         fft_png = os.path.join(fig_dir, intervals[i] + '_fft.png')
         if (pathlib.Path(fft_png).is_file()) is False:
             # First 3 days of data
-            signal_xlims = [interpolated_df.unix[0],
-                            interpolated_df.unix[0] + ((72. * 60. * 60.))]
+            signal_xlims = [combined_rounded_df.unix[0],
+                            combined_rounded_df.unix[0] + ((72. * 60. * 60.))]
 
             freq, period, amp, fft_fig, fft_ax = periodicity_functions.\
-                generic_fft_function(interpolated_df.unix,
-                                     interpolated_df['P_Wsr-1_100_650_kHz'],
+                generic_fft_function(combined_rounded_df.unix,
+                                     combined_rounded_df['integrated_power'],
                                      pd.Timedelta(minutes=3),
                                      signal_xlims=signal_xlims,
                                      vertical_indicators=[12, 24],
@@ -81,6 +83,39 @@ def generate_plots():
 
         # -- END FFT --
 
+        # -- FEATURE IMPORTANCE --
+        fi_png = os.path.join(fig_dir, intervals[i] + '_fi.png')
+        location_fi_csv = os.path.join(data_dir, intervals[i] + 'location_only_fidata.csv')
+        if (pathlib.Path(fi_png).is_file()) is False:
+
+            
+            
+            # Location Feature Importance
+            loc_feature_name = ['LT', 'Latitude', 'Radial Distance']
+            
+            
+            if pathlib.Path(location_fi_csv).is_file() is False:
+                fig, ax, importance = feature_importance.\
+                    plot_feature_importance(np.array(combined_rounded_df.integrated_power),
+                                            np.array(combined_rounded_df[['decimal_gseLT', 'lat_gse', 'lon_gse']]),
+                                            feature_names=loc_feature_name,
+                                            seed=1993, fontsize=20,
+                                            record_number=True)
+                location_fi_df = pd.Timestamp({'feature_name': loc_feature_name,
+                                               'importance': importance})
+                location_fi_df.to_csv(location_fi_csv, index=False)
+            else:
+                location_fi_df = pd.read_csv(location_fi_csv, delimiter=',',
+                                        float_precision='round_trip')
+                fig, ax, importance = feature_importance.\
+                    plot_feature_importance(np.array(combined_rounded_df.integrated_power),
+                                            np.array(combined_rounded_df[['decimal_gseLT', 'lat_gse', 'lon_gse']]),
+                                            importance=np.array(location_fi_df.importance),
+                                            feature_names=loc_feature_name,
+                                            seed=1993, fontsize=20,
+                                            record_number=True)
+            
+        # -- END FEATURE IMPORTANCE --
     return
 
 

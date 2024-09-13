@@ -110,11 +110,12 @@ def select_akr_intervals(interval, interpolated=False, rounded=False):
     if rounded is True:
         # Round to a nice, clean, 3 minute resolution
         # (this is important for FFTs etc)
-        print('Temporally resampling AKR onto an even resolution')
+        print('Temporally rounding AKR onto an even resolution')
         s_time = akr_df.datetime_ut.iloc[0].ceil(freq='min')
         e_time = akr_df.datetime_ut.iloc[-1].floor(freq='min')
 
         new_time_axis = akr_df.datetime_ut.dt.round(freq='min')
+        new_time_axis = new_time_axis[:-1]
         unix_time_axis = [t.timestamp() for t in new_time_axis]
         rounded_akr_df = pd.DataFrame({'datetime_ut': new_time_axis,
                                        'unix': unix_time_axis})
@@ -148,6 +149,13 @@ def select_akr_intervals(interval, interpolated=False, rounded=False):
                 rounded_akr_df[t] = func(rounded_akr_df.unix)
                 rounded_akr_df[t] = pd.to_numeric(rounded_akr_df[t])
 
+        # Append a random, uniform variable to the dataframe
+        rounded_akr_df['random_uniform'] = np.random.uniform(
+            0., 1., len(rounded_akr_df))
+        # Append a random, gaussian variable to the dataframe
+        rounded_akr_df['random_gaussian'] = np.random.normal(
+            100., 25., len(rounded_akr_df))
+
     if (interpolated is False) and (rounded is False):
         return akr_df
     elif (interpolated is True) and (rounded is False):
@@ -158,15 +166,14 @@ def select_akr_intervals(interval, interpolated=False, rounded=False):
         return akr_df, interpolated_akr_df, rounded_akr_df
 
 
-def combine_rounded_akr_omni(interval, omni_cols=['bx', 'bz_gse',
+def combine_rounded_akr_omni(interval, omni_cols=['bx',
                                                   'by_gsm', 'bz_gsm',
                                                   'b_total', 'clock_angle',
                                                   'flow_speed',
                                                   'proton_density',
                                                   'flow_pressure', 'ae', 'al',
-                                                  'au', 'symh', 'pc_n']):
-
-    akr_df, rounded_akr_df = select_akr_intervals(interval, rounded=True)
+                                                  'au', 'symh', 'pc_n'],
+                             supermag_cols=['SME', 'SMU', 'SML', 'SMR']):
 
     output_csv = os.path.join(data_dir, "rounded_akr_omni_supermag_" +
                               str(interval) + '.csv')
@@ -176,12 +183,18 @@ def combine_rounded_akr_omni(interval, omni_cols=['bx', 'bz_gse',
                                 float_precision='round_trip',
                                 parse_dates=['datetime'])
     else:
+        # Read in data
+        akr_df, rounded_akr_df = select_akr_intervals(interval, rounded=True)
 
         # Create output_df
         output_df = rounded_akr_df.copy(deep=True)
         output_df.rename(columns={"P_Wsr-1_100_650_kHz": "integrated_power",
                                   "datetime_ut": "datetime"},
                          inplace=True)
+
+        # There are some duplicate rows in here
+        output_df.drop_duplicates(inplace=True, ignore_index=True,
+                                  subset=['datetime'])
 
         # Define the years to read in
         syear = rounded_akr_df.datetime_ut[0].year
@@ -194,7 +207,6 @@ def combine_rounded_akr_omni(interval, omni_cols=['bx', 'bz_gse',
 
         # Add OMNI data to output_df
         for c in omni_cols:
-            print(c)
             output_df[c] = omni_df.loc[
                 omni_df['datetime'].isin(output_df['datetime']),
                 c].values
@@ -202,14 +214,10 @@ def combine_rounded_akr_omni(interval, omni_cols=['bx', 'bz_gse',
         # Read SuperMAG indices
         supermag_df = read_supermag.concat_indices_years(years)
         # Add SuperMAG data to output_df
-        output_df['sme'] = supermag_df.loc[
-            supermag_df['Date_UTC'].isin(output_df['datetime']), 'SME'].values
-        output_df['smu'] = supermag_df.loc[
-            supermag_df['Date_UTC'].isin(output_df['datetime']), 'SMU'].values
-        output_df['sml'] = supermag_df.loc[
-            supermag_df['Date_UTC'].isin(output_df['datetime']), 'SML'].values
-        output_df['smr'] = supermag_df.loc[
-            supermag_df['Date_UTC'].isin(output_df['datetime']), 'SMR'].values
+        for c in supermag_cols:
+            output_df[c] = supermag_df.loc[
+                supermag_df['Date_UTC'].isin(output_df['datetime']),
+                c].values
 
         # Write to a csv
         output_df.to_csv(output_csv, index=False)
