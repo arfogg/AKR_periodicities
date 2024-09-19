@@ -29,7 +29,27 @@ data_dir = os.path.join(fig_dir, "data_quickloads")
 
 
 def select_akr_intervals(interval, interpolated=False, rounded=False):
-    # here we will load in a selected interval from a list of options
+    """
+    Load in AKR intensity over a defined interval.
+
+    Parameters
+    ----------
+    interval : string
+        Name of defined interval. Options are defined in
+        interval_options below.
+    interpolated : Bool, optional
+        If True, interpolated AKR intensity is returned. The
+        default is False.
+    rounded : Bool, optional
+        If True, AKR on rounded Timestamps is returned. The
+        default is False.
+
+    Returns
+    -------
+    output_df : pd.DataFrame
+        DataFrame containing requested AKR data.
+
+    """
 
     interval_options = pd.DataFrame(
         {'tag': ['full_archive',
@@ -174,6 +194,28 @@ def combine_rounded_akr_omni(interval, omni_cols=['bx',
                                                   'flow_pressure', 'ae', 'al',
                                                   'au', 'symh', 'pc_n'],
                              supermag_cols=['SME', 'SMU', 'SML', 'SMR']):
+    """
+    Function that reads combines AKR on rounded Timestamps
+    with SuperMAG and OMNI data.
+
+    Parameters
+    ----------
+    interval : string
+        Name for the desired interval.
+    omni_cols : list, optional
+        Columns to extract from OMNI. The default is ['bx','by_gsm', 'bz_gsm',
+        'b_total', 'clock_angle', 'flow_speed', 'proton_density',
+        'flow_pressure', 'ae', 'al', 'au', 'symh', 'pc_n']
+    supermag_cols : list, optional
+        Columns to extract from SuperMAG indices data. The default is
+        ['SME', 'SMU', 'SML', 'SMR'].
+
+    Returns
+    -------
+    output_df : pd.DataFrame
+        DataFrame containing the requested AKR data.
+
+    """
 
     output_csv = os.path.join(data_dir, "rounded_akr_omni_supermag_" +
                               str(interval) + '.csv')
