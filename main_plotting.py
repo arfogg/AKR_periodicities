@@ -87,7 +87,8 @@ def generate_plots():
         loc_fi_png = os.path.join(fig_dir, intervals[i] + '_loc_fi.png')
         geo_fi_png = os.path.join(fig_dir, intervals[i] + '_geo_fi.png')
         all_fi_png = os.path.join(fig_dir, intervals[i] + '_all_fi.png')
-        combined_fi_png = os.path.join(fig_dir, intervals[i] + '_combined_fi.png')
+        combined_fi_png = os.path.join(fig_dir, intervals[i] +
+                                       '_combined_fi.png')
 
         location_fi_csv = os.path.join(data_dir, intervals[i] +
                                        '_location_only_fidata.csv')
@@ -96,41 +97,46 @@ def generate_plots():
         all_fi_csv = os.path.join(data_dir, intervals[i] +
                                   '_loc_geophysical_fidata.csv')
 
-        if (pathlib.Path(loc_fi_png).is_file()) | (pathlib.Path(geo_fi_png).is_file()) | (pathlib.Path(all_fi_png).is_file()) | (pathlib.Path(combined_fi_png).is_file()) is False:
+        if (pathlib.Path(loc_fi_png).is_file() is False) | (pathlib.Path(geo_fi_png).is_file() is False) | (pathlib.Path(all_fi_png).is_file() is False) | (pathlib.Path(combined_fi_png).is_file() is False):
 
             # Location Feature Importance
-            loc_feature_name = ['LT', 'Latitude', 'Radial Distance']
+            loc_feature_name = np.array(['LT', 'Latitude', 'Radial Distance'])
             if pathlib.Path(location_fi_csv).is_file() is False:
                 loc_fig, loc_ax, loc_importance = feature_importance.\
-                    plot_feature_importance(np.array(combined_rounded_df.integrated_power),
-                                            np.array(combined_rounded_df[['decimal_gseLT', 'lat_gse', 'lon_gse']]),
-                                            feature_names=loc_feature_name,
-                                            seed=1993, fontsize=20,
-                                            record_number=True)
-                location_fi_df = pd.DataFrame({'feature_name': loc_feature_name,
-                                               'importance': loc_importance})
+                    plot_feature_importance(
+                        np.array(combined_rounded_df.integrated_power),
+                        np.array(combined_rounded_df[['decimal_gseLT',
+                                                      'lat_gse', 'lon_gse']]),
+                        feature_names=loc_feature_name,
+                        seed=1993, fontsize=20, record_number=True)
+                location_fi_df = pd.DataFrame({
+                    'feature_name': loc_feature_name,
+                    'importance': loc_importance})
                 location_fi_df.to_csv(location_fi_csv, index=False)
+
             else:
                 location_fi_df = pd.read_csv(location_fi_csv, delimiter=',',
-                                        float_precision='round_trip')
+                                             float_precision='round_trip')
                 loc_fig, loc_ax, importance = feature_importance.\
-                    plot_feature_importance(np.array(combined_rounded_df.integrated_power),
-                                            np.array(combined_rounded_df[['decimal_gseLT', 'lat_gse', 'lon_gse']]),
-                                            importance=np.array(location_fi_df.importance),
-                                            feature_names=loc_feature_name,
-                                            seed=1993, fontsize=20,
-                                            record_number=True)
+                    plot_feature_importance(
+                        np.array(combined_rounded_df.integrated_power),
+                        np.array(combined_rounded_df[['decimal_gseLT',
+                                                      'lat_gse', 'lon_gse']]),
+                        importance=np.array(location_fi_df.importance),
+                        feature_names=loc_feature_name,
+                        seed=1993, fontsize=20, record_number=True)
             loc_fig.savefig(loc_fi_png, bbox_inches='tight')
 
             # Geophysical Feature Importance
-            geo_feature_name = ['Bx', 'By', 'Bz', 'Bt',
-                                'ClockAngle', 'Vsw', 'Nsw',
-                                'Psw', 'AE', 'AL', 'AU', 'SYM-H',
-                                'SME', 'SMU', 'SML', 'SMR']
-            geo_feature_tag = ['bx', 'by_gsm', 'bz_gsm', 'b_total',
-                               'clock_angle', 'flow_speed', 'proton_density',
-                               'flow_pressure', 'ae', 'al', 'au', 'symh',
-                               'SME', 'SMU', 'SML', 'SMR']
+            geo_feature_name = np.array(['Bx', 'By', 'Bz', 'Bt',
+                                         'ClockAngle', 'Vsw', 'Nsw',
+                                         'Psw', 'AE', 'AL', 'AU', 'SYM-H',
+                                         'SME', 'SMU', 'SML', 'SMR'])
+            geo_feature_tag = np.array(['bx', 'by_gsm', 'bz_gsm', 'b_total',
+                                        'clock_angle', 'flow_speed',
+                                        'proton_density', 'flow_pressure',
+                                        'ae', 'al', 'au', 'symh',
+                                        'SME', 'SMU', 'SML', 'SMR'])
             geo_df = combined_rounded_df.dropna(subset=geo_feature_tag
                                                 ).reset_index(drop=True)
             if pathlib.Path(geophysical_fi_csv).is_file() is False:
@@ -149,25 +155,26 @@ def generate_plots():
                                                 delimiter=',',
                                                 float_precision='round_trip')
                 geo_fig, geo_ax, geo_importance = feature_importance.\
-                    plot_feature_importance(np.array(geo_df.integrated_power),
-                                            np.array(geo_df[geo_feature_tag]),
-                                            importance=np.array(geophysical_fi_df.importance),
-                                            feature_names=geo_feature_name,
-                                            seed=1993, fontsize=20,
-                                            record_number=True)
+                    plot_feature_importance(
+                        np.array(geo_df.integrated_power),
+                        np.array(geo_df[geo_feature_tag]),
+                        importance=np.array(geophysical_fi_df.importance),
+                        feature_names=geo_feature_name,
+                        seed=1993, fontsize=20, record_number=True)
             geo_fig.savefig(geo_fi_png, bbox_inches='tight')
 
             # All Features
-            all_feature_name = ['LT', 'Latitude', 'Radial Distance',
-                                'Bx', 'By', 'Bz', 'Bt',
-                                'ClockAngle', 'Vsw', 'Nsw',
-                                'Psw', 'AE', 'AL', 'AU', 'SYM-H',
-                                'SME', 'SMU', 'SML', 'SMR']
-            all_feature_tag = ['decimal_gseLT', 'lat_gse', 'lon_gse',
-                               'bx', 'by_gsm', 'bz_gsm', 'b_total',
-                               'clock_angle', 'flow_speed', 'proton_density',
-                               'flow_pressure', 'ae', 'al', 'au', 'symh',
-                               'SME', 'SMU', 'SML', 'SMR']
+            all_feature_name = np.array(['LT', 'Latitude', 'Radial Distance',
+                                         'Bx', 'By', 'Bz', 'Bt',
+                                         'ClockAngle', 'Vsw', 'Nsw',
+                                         'Psw', 'AE', 'AL', 'AU', 'SYM-H',
+                                         'SME', 'SMU', 'SML', 'SMR'])
+            all_feature_tag = np.array(['decimal_gseLT', 'lat_gse', 'lon_gse',
+                                        'bx', 'by_gsm', 'bz_gsm', 'b_total',
+                                        'clock_angle', 'flow_speed',
+                                        'proton_density', 'flow_pressure',
+                                        'ae', 'al', 'au', 'symh',
+                                        'SME', 'SMU', 'SML', 'SMR'])
             all_df = combined_rounded_df.dropna(subset=all_feature_tag
                                                 ).reset_index(drop=True)
             if pathlib.Path(all_fi_csv).is_file() is False:
@@ -186,12 +193,12 @@ def generate_plots():
                                         delimiter=',',
                                         float_precision='round_trip')
                 all_fig, all_ax, geo_importance = feature_importance.\
-                    plot_feature_importance(np.array(all_df.integrated_power),
-                                            np.array(all_df[all_feature_tag]),
-                                            importance=np.array(all_fi_df.importance),
-                                            feature_names=all_feature_name,
-                                            seed=1993, fontsize=20,
-                                            record_number=True)
+                    plot_feature_importance(
+                        np.array(all_df.integrated_power),
+                        np.array(all_df[all_feature_tag]),
+                        importance=np.array(all_fi_df.importance),
+                        feature_names=all_feature_name,
+                        seed=1993, fontsize=20, record_number=True)
             all_fig.savefig(all_fi_png, bbox_inches='tight')
 
             # Combined features panel
