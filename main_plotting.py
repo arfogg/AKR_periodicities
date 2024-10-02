@@ -52,7 +52,6 @@ def test_with_oscillator():
     return
 
 
-
 def generate_plots():
 
     # intervals = np.array(['full_archive', 'cassini_flyby'])
@@ -61,7 +60,7 @@ def generate_plots():
     for i in range(intervals.size):
         print('Running analyses for ', intervals[i])
         combined_rounded_df = read_and_tidy_data.\
-                combine_rounded_akr_omni(intervals[i])
+            combine_rounded_akr_omni(intervals[i])
         # akr_df, interpolated_akr_df, rounded_akr_df = read_and_tidy_data.\
         #     select_akr_intervals(intervals[i], interpolated=True, rounded=True)
 
