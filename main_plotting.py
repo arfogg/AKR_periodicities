@@ -24,6 +24,7 @@ import fastgoertzel as G
 import periodicity_functions
 import feature_importance
 import read_and_tidy_data
+import binning_averaging
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 import read_integrated_power
@@ -211,6 +212,17 @@ def generate_plots():
                         '(c) Visibility and Geophysical'])
             combined_fig.savefig(combined_fi_png, bbox_inches='tight')
         # -- END FEATURE IMPORTANCE --
+        
+        # -- BINNING / AVERAGING --
+        binned_median_png = os.path.join(fig_dir, intervals[i] + '_MLT_UT_binning_median.png')
+        binned_boxplot_png = os.path.join(fig_dir, intervals[i] + '_MLT_UT_binning_boxplot.png')
+
+        if (pathlib.Path(binned_median_png).is_file() is False) | (pathlib.Path(binned_boxplot_png).is_file() is False):
+            fig_m, fig_b = binning_averaging.plot_UT_trend(combined_rounded_df)
+        
+            fig_m.savefig(binned_median_png, bbox_inches='tight')
+            fig_b.savefig(binned_boxplot_png, bbox_inches='tight')
+        
     return
 
 
