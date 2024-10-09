@@ -58,29 +58,39 @@ def generate_plots():
     # intervals = np.array(['full_archive', 'cassini_flyby'])
     intervals = np.array(['full_archive'])
 
+    fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 15, 0).timestamp()])
+    fft_signal_x_width = np.array([72. * 60. * 60.])
+
     for i in range(intervals.size):
         print('Running analyses for ', intervals[i])
         combined_rounded_df = read_and_tidy_data.\
             combine_rounded_akr_omni(intervals[i])
-        # akr_df, interpolated_akr_df, rounded_akr_df = read_and_tidy_data.\
-        #     select_akr_intervals(intervals[i], interpolated=True, rounded=True)
 
         # -- FFT --
         fft_png = os.path.join(fig_dir, intervals[i] + '_fft.png')
         if (pathlib.Path(fft_png).is_file()) is False:
             # First 3 days of data
-            signal_xlims = [combined_rounded_df.unix[0],
-                            combined_rounded_df.unix[0] + ((72. * 60. * 60.))]
+            # signal_xlims = [combined_rounded_df.unix[0],
+            #                 combined_rounded_df.unix[0] + ((72. * 60. * 60.))]
+            signal_xlims = [fft_signal_x_start[i],
+                            fft_signal_x_start[i] + fft_signal_x_width[i]]
 
-            freq, period, amp, fft_fig, fft_ax = periodicity_functions.\
+            freq, period, fft_amp, inverse_signal = periodicity_functions.\
                 generic_fft_function(combined_rounded_df.unix,
                                      combined_rounded_df['integrated_power'],
-                                     pd.Timedelta(minutes=3),
-                                     signal_xlims=signal_xlims,
-                                     vertical_indicators=[12, 24],
-                                     unix_to_dtime=True)
-            fft_fig.savefig(fft_png)
-
+                                     pd.Timedelta(minutes=3))
+            fig, ax = periodicity_functions.plot_fft_summary(combined_rounded_df.unix,
+                                 combined_rounded_df['integrated_power'],
+                                 pd.Timedelta(minutes=3),
+                                 freq, period, fft_amp, inverse_signal,
+                                 fontsize=15,
+                                 fft_xlims=[0, 36],
+                                 signal_xlims=signal_xlims,
+                                 vertical_indicators=[12, 24],
+                                 unix_to_dtime=True,
+                                 resolution_lim=True)
+            #fft_fig.savefig(fft_png)
+            breakpoint()
         # -- END FFT --
 
         # -- FEATURE IMPORTANCE --
