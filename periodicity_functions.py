@@ -79,21 +79,22 @@ def generic_fft_function(time, y, temporal_resolution):
     fft_amp = np.abs(X)
 
     inverse_signal = ifft(X)
-
+    
     return freq, period, fft_amp, inverse_signal
 
 
 def plot_fft_summary(time, y, temporal_resolution,
                      freq, period, fft_amp, inverse_signal,
+                     surrogate_period=None, surrogate_fft_amp=None,
                      fontsize=15,
                      fft_xlims=[0, 36],
                      signal_xlims=[np.nan, np.nan],
                      vertical_indicators=[],
                      unix_to_dtime=False,
                      resolution_lim=True,
-                     input_fmt={'color': 'slateblue'},
-                     fft_fmt={'color': 'seagreen'},
-                     ifft_fmt={'color': 'darkgoldenrod'}):
+                     signal_y_log=False,
+                     input_fmt={'color': 'royalblue', 'linewidth': 1.},
+                     ifft_fmt={'color': 'royalblue', 'linewidth': 1.}):
     """
 
     Parameters
@@ -164,8 +165,10 @@ def plot_fft_summary(time, y, temporal_resolution,
     t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
     # Plot FFT periodogram
-    ax[1].stem(period, fft_amp, 'c',
-               markerfmt=" ", basefmt="-c")
+    ax[1].stem(period, fft_amp, 'C7', markerfmt=" ", basefmt="-C7")
+    if surrogate_fft_amp is not None:
+        ax[1].stem(surrogate_period, surrogate_fft_amp, 'C6', markerfmt=" ",
+                   basefmt="-C6")
 
     ax[1].set_xlabel('Period (hours)', fontsize=fontsize)
     ax[1].set_ylabel('FFT Amplitude', fontsize=fontsize)
@@ -184,13 +187,13 @@ def plot_fft_summary(time, y, temporal_resolution,
 
     if vertical_indicators != []:
         for h in vertical_indicators:
-            ax[1].axvline(h, color='grey', linestyle='dashed',
+            ax[1].axvline(h, color='navy', linestyle='dashed',
                           linewidth=1.5)
             trans = transforms.blended_transform_factory(ax[1].transData,
                                                          ax[1].transAxes)
             ax[1].text(h, 1.05, str(h), transform=trans,
                        fontsize=fontsize, va='top', ha='center',
-                       color='grey')
+                       color='navy')
 
     # Plot inverse FFT signal
     ax[2].plot(time, inverse_signal, **ifft_fmt)
@@ -222,6 +225,10 @@ def plot_fft_summary(time, y, temporal_resolution,
                                   unit='s').dt.strftime('%Y\n%m/%d\n%H:%M')
         ax[0].set_xticks(tick_loc, tick_lab, fontsize=fontsize)
         ax[2].set_xticks(tick_loc, tick_lab, fontsize=fontsize)
+
+    if signal_y_log:
+        ax[0].set_yscale('log')
+        ax[2].set_yscale('log')
 
     fig.tight_layout()
 

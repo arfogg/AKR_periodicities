@@ -7,8 +7,11 @@ Created on Thu Sep 12 17:18:04 2024
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from scipy import interpolate
+
+import aaft
 
 
 def interpolate_mlt(desired_timestamps, data_df, mlt_flag='decimal_gseLT'):
@@ -49,3 +52,38 @@ def interpolate_mlt(desired_timestamps, data_df, mlt_flag='decimal_gseLT'):
         out_mlt[i] = unwrapped_interp_mlt % 24
 
     return out_mlt
+
+
+def generate_random_phase_surrogate(data, plot=False):
+
+    print('Generating Random Phase Surrogate')
+    surrogate = aaft.AAFTsur(data)
+
+    if plot:
+        fig, ax = plt.subplots(ncols=2, nrows=1, figsize=(10, 5))
+
+        # Histogram
+        bins = np.linspace(np.nanmin(data), np.nanmax(data), 51)
+        ax[0].hist(data, bins=bins, label='Data', color='lightgrey')
+        ax[0].hist(surrogate, bins=bins, label='Surrogate',
+                   histtype='step', color='palevioletred')
+
+        ax[0].set_xlabel('Data units')
+        ax[0].set_ylabel('Occurrence')
+        ax[0].set_title('Distribution')
+        ax[0].legend()
+
+        # Timeseries
+        i_lims = [0, 100]
+        ax[1].plot(data[i_lims[0]:i_lims[1]], color='grey', label='Data')
+        ax[1].plot(surrogate[i_lims[0]:i_lims[1]], color='palevioletred',
+                   label='Surrogate')
+
+        ax[1].set_xlabel('Time')
+        ax[1].set_ylabel('Magnitude')
+        ax[1].set_title('Timeseries')
+        ax[1].legend()
+
+        fig.tight_layout()
+
+    return surrogate

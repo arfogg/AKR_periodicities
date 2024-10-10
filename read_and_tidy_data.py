@@ -238,6 +238,11 @@ def combine_rounded_akr_omni(interval, omni_cols=['bx',
         output_df.drop_duplicates(inplace=True, ignore_index=True,
                                   subset=['datetime'])
 
+        # Generate and store Random Phase Surrogate
+        surrogate_intensity = utility.\
+            generate_random_phase_surrogate(output_df.integrated_power)
+        output_df['surrogate_integrated_power'] = surrogate_intensity
+
         # Define the years to read in
         syear = rounded_akr_df.datetime_ut[0].year
         eyear = rounded_akr_df.datetime_ut[

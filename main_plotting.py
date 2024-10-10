@@ -58,8 +58,8 @@ def generate_plots():
     # intervals = np.array(['full_archive', 'cassini_flyby'])
     intervals = np.array(['full_archive'])
 
-    fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 15, 0).timestamp()])
-    fft_signal_x_width = np.array([72. * 60. * 60.])
+    fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 18, 0).timestamp()])
+    fft_signal_x_width = np.array([5. * 24. * 60. * 60.])
 
     for i in range(intervals.size):
         print('Running analyses for ', intervals[i])
@@ -79,17 +79,30 @@ def generate_plots():
                 generic_fft_function(combined_rounded_df.unix,
                                      combined_rounded_df['integrated_power'],
                                      pd.Timedelta(minutes=3))
-            fig, ax = periodicity_functions.plot_fft_summary(combined_rounded_df.unix,
-                                 combined_rounded_df['integrated_power'],
-                                 pd.Timedelta(minutes=3),
-                                 freq, period, fft_amp, inverse_signal,
-                                 fontsize=15,
-                                 fft_xlims=[0, 36],
-                                 signal_xlims=signal_xlims,
-                                 vertical_indicators=[12, 24],
-                                 unix_to_dtime=True,
-                                 resolution_lim=True)
-            #fft_fig.savefig(fft_png)
+            freq_sur, period_sur, fft_amp_sur, inverse_signal_sur = \
+                periodicity_functions.\
+                generic_fft_function(
+                    combined_rounded_df.unix,
+                    combined_rounded_df['surrogate_integrated_power'],
+                    pd.Timedelta(minutes=3))
+            # Change zeros to nans for plotting intensity
+            r_ind = combined_rounded_df.loc[combined_rounded_df.integrated_power == 0].index
+            pwr = np.array(combined_rounded_df.integrated_power.copy(deep=True))
+            pwr[r_ind] = np.nan
+            
+            fig, ax = periodicity_functions.plot_fft_summary(
+                combined_rounded_df.unix, pwr, pd.Timedelta(minutes=3),
+                freq, period, fft_amp, inverse_signal,
+                surrogate_period=period_sur,
+                surrogate_fft_amp=fft_amp_sur,
+                fontsize=15,
+                fft_xlims=[0, 36],
+                signal_xlims=signal_xlims,
+                signal_y_log=True,
+                vertical_indicators=[12, 24],
+                unix_to_dtime=True,
+                resolution_lim=True)
+            # fft_fig.savefig(fft_png)
             breakpoint()
         # -- END FFT --
 
