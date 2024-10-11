@@ -12,7 +12,6 @@ import pathlib
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import scipy.interpolate as interpolate
 import scipy.signal as signal
 
 from numpy.fft import fft, ifft
@@ -70,8 +69,6 @@ def generate_plots():
         fft_png = os.path.join(fig_dir, intervals[i] + '_fft.png')
         if (pathlib.Path(fft_png).is_file()) is False:
             # First 3 days of data
-            # signal_xlims = [combined_rounded_df.unix[0],
-            #                 combined_rounded_df.unix[0] + ((72. * 60. * 60.))]
             signal_xlims = [fft_signal_x_start[i],
                             fft_signal_x_start[i] + fft_signal_x_width[i]]
 
@@ -86,11 +83,13 @@ def generate_plots():
                     combined_rounded_df['surrogate_integrated_power'],
                     pd.Timedelta(minutes=3))
             # Change zeros to nans for plotting intensity
-            r_ind = combined_rounded_df.loc[combined_rounded_df.integrated_power == 0].index
-            pwr = np.array(combined_rounded_df.integrated_power.copy(deep=True))
+            r_ind = combined_rounded_df.loc[
+                combined_rounded_df.integrated_power == 0].index
+            pwr = np.array(combined_rounded_df.
+                           integrated_power.copy(deep=True))
             pwr[r_ind] = np.nan
-            
-            fig, ax = periodicity_functions.plot_fft_summary(
+
+            fft_fig, fft_ax = periodicity_functions.plot_fft_summary(
                 combined_rounded_df.unix, pwr, pd.Timedelta(minutes=3),
                 freq, period, fft_amp, inverse_signal,
                 surrogate_period=period_sur,
@@ -102,9 +101,23 @@ def generate_plots():
                 vertical_indicators=[12, 24],
                 unix_to_dtime=True,
                 resolution_lim=True)
-            # fft_fig.savefig(fft_png)
-            breakpoint()
+            fft_fig.savefig(fft_png)
         # -- END FFT --
+
+        # -- ACF --
+        acf_png = os.path.join(fig_dir, intervals[i] + '_acf.png')
+        if (pathlib.Path(acf_png).is_file()) is False:
+            temporal_resolution = 3. * 60.  # in seconds
+            n_shifts = 800#2880
+            #lags = np.array(range(n_shifts)) * temporal_resolution
+            shifted_intensity, acf, lags = periodicity_functions.autocorrelation(
+                combined_rounded_df['integrated_power'], n_shifts,
+                temporal_resolution=temporal_resolution, starting_lag=7200)
+            acf_fig, acf_ax = periodicity_functions.plot_autocorrelogram(lags, acf)
+            
+            acf_fig.savefig(acf_png)
+        breakpoint()
+        # -- END ACF --
 
         # -- FEATURE IMPORTANCE --
         loc_fi_png = os.path.join(fig_dir, intervals[i] + '_loc_fi.png')
@@ -249,53 +262,7 @@ def generate_plots():
     return
 
 
-def paper_plots():
 
-    # ----- Define output files -----
-    fft_png = os.path.join(fig_dir, 'full_archive_fft.png')
-
-    # ----- END -----
-
-    # ----- Read in AKR intensity data -----
-    years = np.array([1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-                      2003, 2004])
-    input_df = read_integrated_power.concat_integrated_power_years(years,
-                                                                   'waters')
-    # ----- END -----
-
-    # ----- Resample temporally -----
-    # Interpolate / resample the AKR intensity data so it's on an even
-    #   temporal resolution of 3 minutes exactly.
-    print('Temporally resampling AKR onto an even resolution')
-    s_time = input_df.datetime_ut.iloc[0].ceil(freq='min')
-    e_time = input_df.datetime_ut.iloc[-1].floor(freq='min')
-    n_periods = np.floor((e_time-s_time)/pd.Timedelta(minutes=3))
-
-    new_time_axis = pd.date_range(s_time, periods=n_periods, freq='3T')
-    unix_time_axis = (new_time_axis - pd.Timestamp('1970-01-01')) / (
-        pd.Timedelta(seconds=1))
-    intensity_df = pd.DataFrame({'datetime_ut': new_time_axis,
-                                 'unix': unix_time_axis})
-
-    func = interpolate.interp1d(input_df.unix, input_df['P_Wsr-1_100_650_kHz'])
-
-    intensity_df['P_Wsr-1_100_650_kHz'] = func(unix_time_axis)
-
-    # ----- END -----
-
-    # ----- FFT -----
-    print('Running FFT analysis on AKR data')
-    freq, period, amp, fft_fig, fft_ax = periodicity_functions.\
-        generic_fft_function(intensity_df.unix,
-                             intensity_df['P_Wsr-1_100_650_kHz'],
-                             pd.Timedelta(minutes=3),
-                             signal_xlims=[0, 72.*60.*60.],
-                             fft_ylims=[0, 1.5E12],
-                             vertical_indicators=[12, 24])
-    fft_fig.savefig(fft_png)
-    # ----- END -----
-
-    breakpoint()
 
 
 def lomb_scargle(intensity_df):
@@ -321,30 +288,6 @@ def lomb_scargle(intensity_df):
     fig,ax=plt.subplots()
     ax.plot(freqs_in_hrs, pgram)
 
-def fast_fourier_transform(intensity_df):
-    
-    sp=np.fft.fft(intensity_df['P_Wsr-1_100_650_kHz'])
-    #freq=np.fft.fftfreq(np.array(intensity_df['P_Wsr-1_100_650_kHz']).shape[-1], d=(3.*60.))
-    
-    #   how do we calc samples per second if 3 min res?
-    sr = 1./(3.*60.) 
-    N = len(sp)  # number of FFT points
-    n = np.arange(N)    # 0 - N array. integers
-    T = N/sr    # number of FFT points / number of obs per sec
-    freq = n/T  # freqs fft is evaluated at
-    print('apple', len(intensity_df))
-    print('banana',N)
-    print('max freq evaluated in Hz', np.max(freq))
-    fig,ax=plt.subplots()
-    ax.plot(freq, sp.real, label='real', color='darkorchid')
-    ax.plot(freq, sp.imag, label='imag', color='gold')
-    
-    ax.set_title('FFT of 10 years AKR')
-    ax.set_xlabel('freq in Hz i think')
-    ax.set_ylabel('amplitude of some sort')
-    
-    ax.legend()
-    
     
 def test_goertzel():
     
@@ -391,56 +334,7 @@ def test_goertzel():
     
     
     # WITH DATA
-    
-    
-    
-    
-def testing_fft():
-    """
-    TEST FUNCTION TO TEST GENERIC FFT
-    CODE
 
-    Returns
-    -------
-    None.
-
-    """
-    # https://pythonnumericalmethods.studentorg.berkeley.edu/notebooks/chapter24.04-FFT-in-Python.html
-    # ----- SIGNAL -----
-    # sampling rate - is this samples per second???
-    #   how do we calc samples per second if 3 min res?
-    sr = 2000
-    # sampling interval
-    ts = 1.0/sr
-    
-    # Constructing their fake x axis.
-    #    so this is 2000 samples in 1 second
-    t = np.arange(0,1,ts)
-    
-    # Constructing their face y axis
-    freq = 1.
-    x = 3*np.sin(2*np.pi*freq*t)
-    
-    freq = 4
-    x += np.sin(2*np.pi*freq*t)
-    
-    freq = 7   
-    x += 0.5* np.sin(2*np.pi*freq*t)
-    
-    
-    fig,ax=plt.subplots(ncols=3, figsize = (18, 6))
-    ax[0].plot(t, x, 'orange')
-    ax[0].set_ylabel('Amplitude')
-    ax[0].set_xlabel('time in seconds *i think*')
-    ax[0].set_title('Observations')
-    
-    
-    # # ----- FFT IN NUMPY -----
-   
-    generic_fft_function(t, x, sr)
-
-    
-    
 def oscillating_signal(osc_freq, plot=False):
     """
     Function to create a timeseries of oscillating
@@ -451,8 +345,8 @@ def oscillating_signal(osc_freq, plot=False):
     osc_freq : float
         Period of the desired oscillation in hours.
     plot : bool, optional
-        If plot==True, a diagnostic plot of the 
-        generated signal is presented. The default 
+        If plot == True, a diagnostic plot of the
+        generated signal is presented. The default
         is False.
 
     Returns
@@ -466,16 +360,17 @@ def oscillating_signal(osc_freq, plot=False):
     # Create fake time axis
     yr_secs = 365*24*60*60    # One year in seconds
     res_secs = 3*60   # Temporal resolution of 3 minutes
-    #osc_freq = 24. # Oscillation frequency in hours
-    
-    time=np.arange(0,yr_secs, res_secs)
 
-    akr_osc=sim_oscillation(yr_secs,1/res_secs, 1/(osc_freq*60*60), cycle='sine')
-    akr_osc=(akr_osc+2.0) * 1e6     # make positive and put to the order of AKR power
-    
+    time = np.arange(0, yr_secs, res_secs)
+
+    akr_osc = sim_oscillation(yr_secs, 1/res_secs, 1/(osc_freq*60*60),
+                              cycle='sine')
+    akr_osc = (akr_osc+2.0) * 1e6
+    # ^ make positive and put to the order of AKR power
+
     if plot:
-        fig,ax=plt.subplots()
-        ax.plot(time,akr_osc)
+        fig, ax = plt.subplots()
+        ax.plot(time, akr_osc)
         ax.set_xlim(0, 4*osc_freq*60*60)
 
     return time, akr_osc
