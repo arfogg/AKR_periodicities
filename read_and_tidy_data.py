@@ -216,7 +216,7 @@ def combine_rounded_akr_omni(interval, omni_cols=['bx',
         DataFrame containing the requested AKR data.
 
     """
-
+    print('Combining AKR intensity, SuperMAG, and OMNI into one DataFrame')
     output_csv = os.path.join(data_dir, "rounded_akr_omni_supermag_" +
                               str(interval) + '.csv')
 

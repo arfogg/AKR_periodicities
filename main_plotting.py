@@ -105,15 +105,30 @@ def generate_plots():
         # -- END FFT --
 
         # -- ACF --
-        acf_png = os.path.join(fig_dir, intervals[i] + '_acf.png')
+        temporal_resolution = 3. * 60.  # in seconds
+        n_shifts = 5000
+        acf_png = os.path.join(fig_dir, intervals[i] + '_' + str(n_shifts)
+                               + '_acf.png')
+        acf_csv = os.path.join(data_dir, intervals[i] + '_' + str(n_shifts)
+                               + '_acf.csv')
+
         if (pathlib.Path(acf_png).is_file()) is False:
-            temporal_resolution = 3. * 60.  # in seconds
-            n_shifts = 800#2880
             #lags = np.array(range(n_shifts)) * temporal_resolution
-            shifted_intensity, acf, lags = periodicity_functions.autocorrelation(
-                combined_rounded_df['integrated_power'], n_shifts,
-                temporal_resolution=temporal_resolution, starting_lag=7200)
-            acf_fig, acf_ax = periodicity_functions.plot_autocorrelogram(lags, acf)
+            if (pathlib.Path(acf_csv).is_file()) is False:
+                acf, lags = periodicity_functions.autocorrelation(
+                    combined_rounded_df['integrated_power'], n_shifts,
+                    temporal_resolution=temporal_resolution, starting_lag=7200)
+                acf_df = pd.DataFrame({'acf': acf,
+                            'lags': lags})
+                acf_df.to_csv(index=False)
+            else:
+                acf_df = pd.read_csv(acf_csv, float_precision='round trip')
+                acf = acf_df['acf']
+                lags = acf_df['lags']
+
+            acf_fig, acf_ax = periodicity_functions.\
+                plot_autocorrelogram(lags, acf, tick_sep_hrs=36.,
+                                         highlight_period=24.,)
             
             acf_fig.savefig(acf_png)
         breakpoint()
