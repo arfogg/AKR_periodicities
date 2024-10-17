@@ -87,14 +87,15 @@ def plot_fft_summary(time, y, temporal_resolution,
                      freq, period, fft_amp, inverse_signal,
                      surrogate_period=None, surrogate_fft_amp=None,
                      fft_xlims=[0, 36],
-                     signal_xlims=[np.nan, np.nan],
+                     signal_xlims=[np.nan, np.nan], signal_ymin=1.,
                      fontsize=15,
                      vertical_indicators=[],
                      unix_to_dtime=False,
                      resolution_lim=True,
                      signal_y_log=False,
                      input_fmt={'color': 'royalblue', 'linewidth': 1.},
-                     ifft_fmt={'color': 'royalblue', 'linewidth': 1.}):
+                     ifft_fmt={'color': 'royalblue', 'linewidth': 1.},
+                     input_ax=None):
     """
 
     Parameters
@@ -126,6 +127,7 @@ def plot_fft_summary(time, y, temporal_resolution,
         plots are limits to these values. This can allow
         nicer plots of a few oscillations. The default
         is [np.nan, np.nan].
+    SIGNAL_YMIN
     fontsize : int, optional
         Fontsize for plotting. The default is 15.
     vertical_indicators : list, optional
@@ -148,6 +150,8 @@ def plot_fft_summary(time, y, temporal_resolution,
         Dictionary containing formatting options for IFFT
         signal plot. The default is {'color': 'royalblue',
                                      'linewidth': 1.}.
+    input_ax : np.array of three matplotlib axes
+        Axes to do plotting on. The default is None.
 
     Returns
     -------
@@ -164,13 +168,29 @@ def plot_fft_summary(time, y, temporal_resolution,
         period = period[j]
         fft_amp = fft_amp[j]
 
-    fig, ax = plt.subplots(ncols=3, figsize=(18, 6))
+    if input_ax is None:
+        fig, ax = plt.subplots(ncols=3, figsize=(18, 6))
+    else:
+        ax = input_ax
+
+    # Remove data below signal_ymin
+    i_ind, = np.where(y <= signal_ymin)
+    y[i_ind] = np.nan
+    # combined_rounded_df.loc[
+    #             combined_rounded_df.integrated_power == 0].index
+        # pwr = np.array(combined_rounded_df.
+        #                integrated_power.copy(deep=True))
+        # pwr[r_ind] = np.nan
+    o_ind, = np.where(inverse_signal <= signal_ymin)
+    inverse_signal[o_ind] = np.nan
+
+
 
     # Plot original signal
     ax[0].plot(time, y, **input_fmt)
 
     ax[0].set_ylabel('Amplitude', fontsize=fontsize)
-    ax[0].set_xlabel('Time (s)', fontsize=fontsize)
+    ax[0].set_xlabel('Time (UT)', fontsize=fontsize)
     ax[0].set_title('Input', fontsize=fontsize)
     ax[0].tick_params(labelsize=fontsize)
 
@@ -216,7 +236,7 @@ def plot_fft_summary(time, y, temporal_resolution,
     # Plot inverse FFT signal
     ax[2].plot(time, inverse_signal, **ifft_fmt)
 
-    ax[2].set_xlabel('Time (s)', fontsize=fontsize)
+    ax[2].set_xlabel('Time (UT)', fontsize=fontsize)
     ax[2].set_ylabel('Amplitude', fontsize=fontsize)
     ax[2].set_title('Inverse FFT', fontsize=fontsize)
     ax[2].tick_params(labelsize=fontsize)
@@ -248,9 +268,11 @@ def plot_fft_summary(time, y, temporal_resolution,
         ax[0].set_yscale('log')
         ax[2].set_yscale('log')
 
-    fig.tight_layout()
-
-    return fig, ax
+    if input_ax is None:
+        fig.tight_layout()
+        return fig, ax
+    else:
+        return ax
 
 
 def autocorrelation(y, n_shifts, temporal_resolution=180, starting_lag=7200):

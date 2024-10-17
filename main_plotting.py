@@ -8,6 +8,7 @@ Created on Thu Apr  4 15:15:12 2024
 import sys
 import os
 import pathlib
+import string
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,6 +25,7 @@ import periodicity_functions
 import feature_importance
 import read_and_tidy_data
 import binning_averaging
+import wind_location
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 import read_integrated_power
@@ -31,6 +33,13 @@ import read_integrated_power
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\readers')
 import read_omni
 import read_supermag
+import read_wind_position
+
+fontsize = 15
+alphabet = list(string.ascii_lowercase)
+axes_labels = []
+for a in alphabet:
+    axes_labels.append('(' + a + ')')
 
 fig_dir = os.path.join("C:" + os.sep,
                        r"Users\admin\Documents\figures\akr_periodicities")
@@ -52,13 +61,126 @@ def test_with_oscillator():
     return
 
 
-def generate_plots():
+def trajectory_plots():
+    """
+    Create and save trajectory plots for the three
+    Wind intervals.
 
+    Returns
+    -------
+    None.
+
+    """
+
+    interval_options = read_and_tidy_data.return_test_intervals()
+
+    years = np.arange(1995, 2004 + 1)
+    # Read Wind position data
+    wind_position_df = read_wind_position.concat_data_years(years)
+
+    fig = plt.figure(figsize=(15, 15))
+    axes = np.array([fig.add_subplot(2, 2, 1), fig.add_subplot(2, 2, 2),
+                     fig.add_subplot(2, 2, 3),
+                     fig.add_subplot(2, 2, 4, projection='polar')])
+
+    for i, ax in enumerate(axes.reshape(-1)[:-1]):
+        ax = wind_location.plot_trajectory(interval_options.stime.iloc[i],
+                                           interval_options.etime.iloc[i],
+                                           wind_position_df, ax,
+                                           fontsize=fontsize)
+
+        # Formatting
+        ax.set_title(interval_options.title.iloc[i], fontsize=fontsize)
+        t = ax.text(0.05, 0.95, axes_labels[i], transform=ax.transAxes,
+                    fontsize=fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+        # LT histogram
+        draw_ticks = True if i == 2 else False
+        axes.reshape(-1)[-1] = wind_location.lt_hist(
+            interval_options.stime.iloc[i], interval_options.etime.iloc[i],
+            wind_position_df, axes.reshape(-1)[-1],
+            bar_fmt={'color': interval_options.color.iloc[i],
+                     'edgecolor': 'black', 'alpha': 0.4,
+                     'label': interval_options.label.iloc[i]},
+            draw_ticks=draw_ticks)
+
+    t = axes.reshape(-1)[-1].text(0.05, 0.95, axes_labels[3],
+                                  transform=axes.reshape(-1)[-1].transAxes,
+                                  fontsize=fontsize, va='top', ha='left')
+    t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+    fig.tight_layout()
+
+    traj_fig = os.path.join(fig_dir, "three_interval_traj.png")
+    fig.savefig(traj_fig)
+
+def generate_fft_plot():
+
+    png_name = os.path.join(fig_dir, "three_interval_fft.png")
+    
+    interval_options = read_and_tidy_data.return_test_intervals()
+    intervals = np.array(interval_options.tag)
+
+    fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 15, 0).timestamp(),
+              pd.Timestamp(1999, 8, 15, 0).timestamp(),
+              pd.Timestamp(2003, 10, 11, 22, 36).timestamp()])
+    fft_signal_x_width = np.repeat([5. * 24. * 60. * 60.], len(intervals))
+
+    fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(18, 18))
+
+    for i in range(intervals.size):
+        print('Running analyses for ', intervals[i])
+        combined_rounded_df = read_and_tidy_data.\
+            combine_rounded_akr_omni(intervals[i])
+
+        # First 3 days of data
+        signal_xlims = [fft_signal_x_start[i],
+                        fft_signal_x_start[i] +
+                        fft_signal_x_width[i]]
+
+        freq, period, fft_amp, inverse_signal = periodicity_functions.\
+            generic_fft_function(combined_rounded_df.unix,
+                                 combined_rounded_df['integrated_power'],
+                                 pd.Timedelta(minutes=3))
+        freq_sur, period_sur, fft_amp_sur, inverse_signal_sur = \
+            periodicity_functions.\
+            generic_fft_function(
+                combined_rounded_df.unix,
+                combined_rounded_df['surrogate_integrated_power'],
+                pd.Timedelta(minutes=3))
+
+        ax[i, :] = periodicity_functions.plot_fft_summary(
+                combined_rounded_df.unix,
+                np.array(combined_rounded_df.integrated_power),
+                pd.Timedelta(minutes=3),
+                freq, period, fft_amp, inverse_signal,
+                surrogate_period=period_sur,
+                surrogate_fft_amp=fft_amp_sur,
+                fontsize=15,
+                fft_xlims=[0, 36],
+                signal_xlims=signal_xlims,
+                signal_y_log=True,
+                vertical_indicators=[12, 24],
+                unix_to_dtime=True,
+                resolution_lim=True,
+                input_ax=ax[i, :])
+
+    fig.tight_layout()
+
+    fig.savefig(png_name)
+    return
+
+
+def generate_individual_plots():
+
+    interval_options = read_and_tidy_data.return_test_intervals()
     # intervals = np.array(['full_archive', 'cassini_flyby'])
-    intervals = np.array(['full_archive'])
+    intervals = np.array(interval_options.tag)
 
-    fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 18, 0).timestamp()])
-    fft_signal_x_width = np.array([5. * 24. * 60. * 60.])
+    fft_signal_x_start = np.array(interval_options.stime)
+    #fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 18, 0).timestamp()])
+    fft_signal_x_width = np.repeat([5. * 24. * 60. * 60.], len(intervals))
 
     for i in range(intervals.size):
         print('Running analyses for ', intervals[i])
@@ -69,8 +191,8 @@ def generate_plots():
         fft_png = os.path.join(fig_dir, intervals[i] + '_fft.png')
         if (pathlib.Path(fft_png).is_file()) is False:
             # First 3 days of data
-            signal_xlims = [fft_signal_x_start[i],
-                            fft_signal_x_start[i] + fft_signal_x_width[i]]
+            signal_xlims = [pd.Timestamp(fft_signal_x_start[i]).timestamp(),
+                            pd.Timestamp(fft_signal_x_start[i]).timestamp() + fft_signal_x_width[i]]
 
             freq, period, fft_amp, inverse_signal = periodicity_functions.\
                 generic_fft_function(combined_rounded_df.unix,
@@ -131,8 +253,23 @@ def generate_plots():
                                          highlight_period=24.,)
             
             acf_fig.savefig(acf_png)
-        breakpoint()
+
         # -- END ACF --
+    return
+
+def DEPRECATED_run_feature_importance():
+
+    interval_options = read_and_tidy_data.return_test_intervals()
+    # intervals = np.array(['full_archive', 'cassini_flyby'])
+    intervals = np.array(interval_options.tag)
+
+    fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 18, 0).timestamp()])
+    fft_signal_x_width = np.array([5. * 24. * 60. * 60.])
+
+    for i in range(intervals.size):
+        print('Running analyses for ', intervals[i])
+        combined_rounded_df = read_and_tidy_data.\
+            combine_rounded_akr_omni(intervals[i])
 
         # -- FEATURE IMPORTANCE --
         loc_fi_png = os.path.join(fig_dir, intervals[i] + '_loc_fi.png')
