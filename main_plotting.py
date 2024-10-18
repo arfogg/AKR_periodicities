@@ -29,11 +29,12 @@ import wind_location
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 import read_integrated_power
+import read_wind_position
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\readers')
 import read_omni
 import read_supermag
-import read_wind_position
+
 
 fontsize = 15
 alphabet = list(string.ascii_lowercase)

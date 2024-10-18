@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\readers')
+sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 import read_wind_position
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\misc_utility')

@@ -28,6 +28,37 @@ fig_dir = os.path.join("C:" + os.sep,
 data_dir = os.path.join(fig_dir, "data_quickloads")
 
 
+def define_freq_bands():
+    """
+    Return frequency bands to integrate power over.
+
+    Returns
+    -------
+    freq_bands : np.array
+        Upper and lower frequencies for several bands. Of
+        shape number of bands x 2.
+
+    """
+    freq_bands = np.array([[20, 40],
+                           [40, 50],
+                           [50, 100],
+                           [100, 200],
+                           [200, 300],
+                           [300, 400],
+                           [400, 500],
+                           [500, 600],
+                           [600, 700],
+                           [700, 800],
+                           [20, 50],
+                           [20, 100],
+                           [100, 400],
+                           [100, 650],
+                           [650, 800]
+                           ])
+
+    return freq_bands
+
+
 def return_test_intervals():
     """
     Function where test intervals are defined.
