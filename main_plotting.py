@@ -54,12 +54,10 @@ def test_with_oscillator():
     # Testing everything on the nice, fake oscillating signal
     time, akr_osc = oscillating_signal(24)
 
-    freq, period, fft_amp, fft_fig, fft_ax = periodicity_functions.\
-        generic_fft_function(time, akr_osc, pd.Timedelta(minutes=3),
-                             signal_xlims=[0, 72.*60.*60.],
-                             vertical_indicators=[12, 24])
+    freq, period, fft_amp, inverse_signal = periodicity_functions.\
+        generic_fft_function(time, akr_osc, pd.Timedelta(minutes=3))
 
-    return
+    return freq, period, fft_amp
 
 
 def trajectory_plots():
@@ -116,16 +114,18 @@ def trajectory_plots():
     traj_fig = os.path.join(fig_dir, "three_interval_traj.png")
     fig.savefig(traj_fig)
 
+
 def generate_fft_plot():
 
     png_name = os.path.join(fig_dir, "three_interval_fft.png")
-    
+
     interval_options = read_and_tidy_data.return_test_intervals()
     intervals = np.array(interval_options.tag)
 
     fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 15, 0).timestamp(),
-              pd.Timestamp(1999, 8, 15, 0).timestamp(),
-              pd.Timestamp(2003, 10, 11, 22, 36).timestamp()])
+                                   pd.Timestamp(1999, 8, 15, 0).timestamp(),
+                                   pd.Timestamp(2003, 10, 11,
+                                                22, 36).timestamp()])
     fft_signal_x_width = np.repeat([5. * 24. * 60. * 60.], len(intervals))
 
     fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(18, 18))
@@ -158,14 +158,25 @@ def generate_fft_plot():
                 freq, period, fft_amp, inverse_signal,
                 surrogate_period=period_sur,
                 surrogate_fft_amp=fft_amp_sur,
-                fontsize=15,
+                fontsize=fontsize,
                 fft_xlims=[0, 36],
                 signal_xlims=signal_xlims,
                 signal_y_log=True,
                 vertical_indicators=[12, 24],
                 unix_to_dtime=True,
                 resolution_lim=True,
-                input_ax=ax[i, :])
+                input_ax=ax[i, :], panel_label=False)
+
+        y_l_ax = ax[i, 2].twinx()
+        y_l_ax.set_yticks([])
+        y_l_ax.set_ylabel(interval_options.title.iloc[i], fontsize=fontsize,
+                          weight='heavy', rotation=-90, labelpad=35)
+
+    # Panel labels
+    for i, (lab, a) in enumerate(zip(axes_labels, ax.reshape(-1)[:-1])):
+        t = a.text(0.05, 0.95, lab, transform=a.transAxes,
+                   fontsize=fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
     fig.tight_layout()
 
@@ -180,7 +191,7 @@ def generate_individual_plots():
     intervals = np.array(interval_options.tag)
 
     fft_signal_x_start = np.array(interval_options.stime)
-    #fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 18, 0).timestamp()])
+    # fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 18, 0).timestamp()])
     fft_signal_x_width = np.repeat([5. * 24. * 60. * 60.], len(intervals))
 
     for i in range(intervals.size):

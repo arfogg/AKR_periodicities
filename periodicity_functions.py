@@ -95,7 +95,7 @@ def plot_fft_summary(time, y, temporal_resolution,
                      signal_y_log=False,
                      input_fmt={'color': 'royalblue', 'linewidth': 1.},
                      ifft_fmt={'color': 'royalblue', 'linewidth': 1.},
-                     input_ax=None):
+                     input_ax=None, panel_label=True):
     """
 
     Parameters
@@ -184,8 +184,6 @@ def plot_fft_summary(time, y, temporal_resolution,
     o_ind, = np.where(inverse_signal <= signal_ymin)
     inverse_signal[o_ind] = np.nan
 
-
-
     # Plot original signal
     ax[0].plot(time, y, **input_fmt)
 
@@ -193,10 +191,6 @@ def plot_fft_summary(time, y, temporal_resolution,
     ax[0].set_xlabel('Time (UT)', fontsize=fontsize)
     ax[0].set_title('Input', fontsize=fontsize)
     ax[0].tick_params(labelsize=fontsize)
-
-    t = ax[0].text(0.05, 0.95, '(a)', transform=ax[0].transAxes,
-                   fontsize=fontsize, va='top', ha='left')
-    t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
     # Plot FFT periodogram
     ax[1].plot(period, fft_amp, color='grey', label='Input')
@@ -219,10 +213,6 @@ def plot_fft_summary(time, y, temporal_resolution,
     fft_ylims = [0.9*np.nanmin(fft_amp[k]), 1.1*np.nanmax(fft_amp[k])]
     ax[1].set_ylim(fft_ylims)
 
-    t = ax[1].text(0.05, 0.95, '(b)', transform=ax[1].transAxes,
-                   fontsize=fontsize, va='top', ha='left')
-    t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-
     if vertical_indicators != []:
         for h in vertical_indicators:
             ax[1].axvline(h, color='navy', linestyle='dashed',
@@ -241,9 +231,17 @@ def plot_fft_summary(time, y, temporal_resolution,
     ax[2].set_title('Inverse FFT', fontsize=fontsize)
     ax[2].tick_params(labelsize=fontsize)
 
-    t = ax[2].text(0.05, 0.95, '(c)', transform=ax[2].transAxes,
-                   fontsize=fontsize, va='top', ha='left')
-    t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+    # Label panels if requested
+    if panel_label:
+        t = ax[0].text(0.05, 0.95, '(a)', transform=ax[0].transAxes,
+                       fontsize=fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+        t = ax[1].text(0.05, 0.95, '(b)', transform=ax[1].transAxes,
+                       fontsize=fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+        t = ax[2].text(0.05, 0.95, '(c)', transform=ax[2].transAxes,
+                       fontsize=fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
     # Adjust x axes limits if required
     if (~np.isnan(signal_xlims[0])) & (~np.isnan(signal_xlims[1])):
