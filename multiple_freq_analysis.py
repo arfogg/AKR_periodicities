@@ -5,26 +5,26 @@ Created on Mon Oct 21 11:47:27 2024
 @author: A R Fogg
 """
 
-import read_supermag
-import read_omni
-import read_wind_position
-import read_integrated_power
+#import read_supermag
+#import read_omni
+#import read_wind_position
+#import read_integrated_power
 import sys
 import os
-import pathlib
+#import pathlib
 import string
 
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import scipy.signal as signal
+#import scipy.signal as signal
 import matplotlib.transforms as transforms
 import matplotlib as mpl
-from numpy.fft import fft, ifft
+#from numpy.fft import fft, ifft
 
-from neurodsp.sim import sim_oscillation
+#from neurodsp.sim import sim_oscillation
 
-import fastgoertzel as G
+#import fastgoertzel as G
 
 import periodicity_functions
 import feature_importance

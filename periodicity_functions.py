@@ -220,8 +220,8 @@ def plot_fft_summary(time, y, temporal_resolution,
             trans = transforms.blended_transform_factory(ax[1].transData,
                                                          ax[1].transAxes)
             ax[1].text(h, 1.05, str(h), transform=trans,
-                       fontsize=fontsize, va='top', ha='center',
-                       color='navy')
+                        fontsize=fontsize, va='top', ha='center',
+                        color='navy')
 
     # Plot inverse FFT signal
     ax[2].plot(time, inverse_signal, **ifft_fmt)

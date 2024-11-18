@@ -50,6 +50,76 @@ data_dir = os.path.join(fig_dir, "data_quickloads")
 # https://neurodsp-tools.github.io/neurodsp/auto_tutorials/sim/plot_SimulatePeriodic.html
 
 
+def TEMP_neat_fft_plot():
+    png_name = os.path.join(fig_dir, "neat_single_10_year_fft.png")
+
+    interval_options = read_and_tidy_data.return_test_intervals()
+    intervals = np.array(interval_options.tag)
+
+    fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 15, 0).timestamp(),
+                                   pd.Timestamp(1999, 8, 15, 0).timestamp(),
+                                   pd.Timestamp(2003, 10, 11,
+                                                22, 36).timestamp()])
+    fft_signal_x_width = np.repeat([5. * 24. * 60. * 60.], len(intervals))
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
+
+    print('Running analyses for ', intervals[0])
+    combined_rounded_df = read_and_tidy_data.\
+        combine_rounded_akr_omni(intervals[0])
+
+    # First 3 days of data
+    signal_xlims = [fft_signal_x_start[0],
+                    fft_signal_x_start[0] +
+                    fft_signal_x_width[0]]
+
+    freq, period, fft_amp, inverse_signal = periodicity_functions.\
+        generic_fft_function(combined_rounded_df.unix,
+                             combined_rounded_df['integrated_power'],
+                             pd.Timedelta(minutes=3))
+    # freq_sur, period_sur, fft_amp_sur, inverse_signal_sur = \
+    #         periodicity_functions.\
+    #         generic_fft_function(
+    #             combined_rounded_df.unix,
+    #             combined_rounded_df['surrogate_integrated_power'],
+    #             pd.Timedelta(minutes=3))
+
+    axes = periodicity_functions.plot_fft_summary(
+                combined_rounded_df.unix,
+                np.array(combined_rounded_df.integrated_power),
+                pd.Timedelta(minutes=3),
+                freq, period, fft_amp, inverse_signal,
+                # surrogate_period=period_sur,
+                # surrogate_fft_amp=fft_amp_sur,
+                fontsize=fontsize,
+                fft_xlims=[0, 36],
+                signal_xlims=signal_xlims,
+                signal_y_log=True,
+                vertical_indicators=[12, 24],
+                unix_to_dtime=True,
+                resolution_lim=True,
+                # input_ax=ax[i, :],
+                panel_label=False)
+    ax = axes[1]
+
+        # y_l_ax = ax[i, 2].twinx()
+        # y_l_ax.set_yticks([])
+        # y_l_ax.set_ylabel(interval_options.title.iloc[i], fontsize=fontsize,
+        #                   weight='heavy', rotation=-90, labelpad=35)
+
+    # # Panel labels
+    # for i, (lab, a) in enumerate(zip(axes_labels, ax.reshape(-1)[:-1])):
+    #     t = a.text(0.05, 0.95, lab, transform=a.transAxes,
+    #                fontsize=fontsize, va='top', ha='left')
+    #     t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+    fig.tight_layout()
+
+    # fig.savefig(png_name)
+    return
+
+
+
 def test_with_oscillator():
     # Testing everything on the nice, fake oscillating signal
     time, akr_osc = oscillating_signal(24)
