@@ -14,7 +14,9 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
+
 from numpy.fft import fft, ifft
+import scipy.signal as signal
 
 
 def generic_fft_function(time, y, temporal_resolution):
@@ -52,27 +54,7 @@ def generic_fft_function(time, y, temporal_resolution):
     T = N/sampling_rate    # number of FFT points / number of obs per sec
     freq = n/T  # freqs fft is evaluated at
 
-    # Functions to convert between period in hours
-    #   and frequency in Hz
-    # period = 1 / freq
-    # period = period / (60*60)   # period in hours
-    def period_to_freq(x):
-        ticks = []
-        for tick in x:
-            if tick != 0:
-                ticks.append(1. / (tick * (60.*60.)))
-            else:
-                ticks.append(0)
-        return np.array(ticks)
 
-    def freq_to_period(x):
-        ticks = []
-        for tick in x:
-            if tick != 0:
-                ticks.append((1. / tick) / (60.*60.))
-            else:
-                ticks.append(0)
-        return np.array(ticks)
 
     period = freq_to_period(freq)
 
@@ -220,8 +202,8 @@ def plot_fft_summary(time, y, temporal_resolution,
             trans = transforms.blended_transform_factory(ax[1].transData,
                                                          ax[1].transAxes)
             ax[1].text(h, 1.05, str(h), transform=trans,
-                        fontsize=fontsize, va='top', ha='center',
-                        color='navy')
+                       fontsize=fontsize, va='top', ha='center',
+                       color='navy')
 
     # Plot inverse FFT signal
     ax[2].plot(time, inverse_signal, **ifft_fmt)
@@ -388,8 +370,104 @@ def plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
 
     return fig, ax
 
+def test_LS():
+        
+    rng = np.random.default_rng()
 
-def test_acf():
+    A = 2.
+    w0 = 1.  # rad/sec
+    nin = 150
+    nout = 100000
+
+    time = rng.uniform(0, 10*np.pi, nin)
+
+    y = A * np.cos(w0*time)
+
+    freqs = np.linspace(0.01, 10, nout)
+    periods = freq_to_period(freqs)
+    
+    ls_pgram = generic_lomb_scargle(time, y, freqs)
+    
+    plot_LS_summary(time, y, freqs, periods, ls_pgram,
+                    vertical_indicators=[])
+
+def generic_lomb_scargle(time, y, freqs):
+    
+    # time in seconds
+    # NaN rows removed
+    
+
+
+    ls_pgram = signal.lombscargle(time, y, freqs, normalize=True)
+
+    return ls_pgram
+
+def plot_LS_summary(time, y, freqs, periods, ls_pgram,
+                    fontsize=15,
+                    vertical_indicators=[]):
+                     # surrogate_period=None, surrogate_fft_amp=None,
+                     # fft_xlims=[0, 36],
+                     # signal_xlims=[np.nan, np.nan], signal_ymin=1.,
+                     # fontsize=15,
+                     # vertical_indicators=[],
+                     # unix_to_dtime=False,
+                     # resolution_lim=True,
+                     # signal_y_log=False,
+                     # input_fmt={'color': 'royalblue', 'linewidth': 1.},
+                     # ifft_fmt={'color': 'royalblue', 'linewidth': 1.},
+                     # input_ax=None, panel_label=True
+    
+    # fig, (ax_t, ax_w) = plt.subplots(2, 1, constrained_layout=True)
+    # ax_t.plot(time, y, 'b+')
+    # ax_t.set_xlabel('Time [s]')
+
+    # ax_w.plot(freqs, ls_pgram)
+    # ax_w.set_xlabel('Angular frequency [rad/s]')
+    # ax_w.set_ylabel('Normalized amplitude')
+    # plt.show()
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.plot(time, y, 'b+')
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    ax.plot(freqs, ls_pgram)
+    ax.set_xscale('log')
+    
+    if vertical_indicators != []:
+        for h in vertical_indicators:
+            ax.axvline(h, color='navy', linestyle='dashed',
+                          linewidth=1.5)
+            trans = transforms.blended_transform_factory(ax.transData,
+                                                         ax.transAxes)
+            ax.text(h, 1.05, str(h), transform=trans,
+                       fontsize=fontsize, va='top', ha='center',
+                       color='navy')
+            
+
+# Functions to convert between period in hours
+#   and frequency in Hz
+# period = 1 / freq
+# period = period / (60*60)   # period in hours
+def period_to_freq(x):
+    ticks = []
+    for tick in x:
+        if tick != 0:
+            ticks.append(1. / (tick * (60.*60.)))
+        else:
+            ticks.append(0)
+    return np.array(ticks)
+
+def freq_to_period(x):
+    ticks = []
+    for tick in x:
+        if tick != 0:
+            ticks.append((1. / tick) / (60.*60.))
+        else:
+            ticks.append(0)
+    return np.array(ticks)    
+
+def DEPRECATED_test_acf():
     y = np.sin(np.linspace(0, 11, 51))
     temporal_resolution = pd.Timedelta(minutes=3)
     n_shifts = 5
