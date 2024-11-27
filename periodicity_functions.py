@@ -388,8 +388,10 @@ def test_LS():
     
     ls_pgram = generic_lomb_scargle(time, y, freqs)
     
+    
     plot_LS_summary(time, y, freqs, periods, ls_pgram,
                     vertical_indicators=[])
+
 
 def generic_lomb_scargle(time, y, freqs):
     
@@ -404,7 +406,9 @@ def generic_lomb_scargle(time, y, freqs):
 
 def plot_LS_summary(time, y, freqs, periods, ls_pgram,
                     fontsize=15,
-                    vertical_indicators=[]):
+                    vertical_indicators=[],
+                    pgram_fmt={'color': 'dimgrey', 'linewidth': 1.5},
+                    vertical_ind_col='royalblue'):
                      # surrogate_period=None, surrogate_fft_amp=None,
                      # fft_xlims=[0, 36],
                      # signal_xlims=[np.nan, np.nan], signal_ymin=1.,
@@ -426,46 +430,64 @@ def plot_LS_summary(time, y, freqs, periods, ls_pgram,
     # ax_w.set_ylabel('Normalized amplitude')
     # plt.show()
     
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(time, y, 'b+')
+
     
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    ax.plot(freqs, ls_pgram)
+    ax.plot(freqs, ls_pgram, **pgram_fmt)
     ax.set_xscale('log')
+    
+    # Formatting
+    ax.set_ylabel('Lomb-Scargle Normalised Amplitude', fontsize=fontsize)
+    ax.set_xlabel('Period (hours)', fontsize=fontsize)
+    ax.tick_params(labelsize=fontsize)
+    
     
     if vertical_indicators != []:
         for h in vertical_indicators:
-            ax.axvline(h, color='navy', linestyle='dashed',
+            ax.axvline(h, color=vertical_ind_col, linestyle='dashed',
                           linewidth=1.5)
             trans = transforms.blended_transform_factory(ax.transData,
                                                          ax.transAxes)
             ax.text(h, 1.05, str(h), transform=trans,
                        fontsize=fontsize, va='top', ha='center',
-                       color='navy')
+                       color=vertical_ind_col)
             
 
 # Functions to convert between period in hours
 #   and frequency in Hz
 # period = 1 / freq
 # period = period / (60*60)   # period in hours
-def period_to_freq(x):
-    ticks = []
-    for tick in x:
-        if tick != 0:
-            ticks.append(1. / (tick * (60.*60.)))
-        else:
-            ticks.append(0)
-    return np.array(ticks)
+def period_to_freq(period):
+    
+    if len(period[period == 0]) > 0:
+        print('ERROR periodicity_functions.period_to_freq')
+        print('Input periods contains period == 0')
+        print('Please rerun without entry where period == 0')
+        raise ValueError('Input data contains 0(s)')
 
-def freq_to_period(x):
-    ticks = []
-    for tick in x:
-        if tick != 0:
-            ticks.append((1. / tick) / (60.*60.))
-        else:
-            ticks.append(0)
-    return np.array(ticks)    
+    freq = [1 / (p * 60. * 60.) for p in period]
+    # freq = []
+    # for p in period:
+    #     freq.append(1. / (p * (60.*60.)))
+    return np.array(freq)
+
+def freq_to_period(freq):
+    
+    if len(freq[freq == 0]) > 0:
+        print('ERROR periodicity_functions.freq_to_period')
+        print('Input periods contains freq == 0')
+        print('Please rerun without entry where freq == 0')
+        raise ValueError('Input data contains 0(s)')
+
+    period = [(1/f) / (60. * 60.) for f in freq]
+
+    # period = []
+    # for f in freq:
+    #     period.append((1. / f) / (60.*60.))
+
+    return np.array(period)    
+
 
 def DEPRECATED_test_acf():
     y = np.sin(np.linspace(0, 11, 51))
