@@ -7,12 +7,7 @@ Created on Wed Nov 27 15:15:47 2024
 Functions to generate bootstrap samples.
 """
 
-
-
 import numpy as np
-import pandas as pd
-
-from . import transform_uniform_margins
 
 
 def produce_single_bootstrap_sample(data, extract_length):
