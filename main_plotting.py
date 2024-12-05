@@ -50,6 +50,82 @@ data_dir = os.path.join(fig_dir, "data_quickloads")
 # https://neurodsp-tools.github.io/neurodsp/auto_tutorials/sim/plot_SimulatePeriodic.html
 
 
+def trajectory_plots():
+    """
+    Create and save trajectory plots for the three
+    Wind intervals.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    interval_options = read_and_tidy_data.return_test_intervals()
+
+    years = np.arange(1995, 2004 + 1)
+    # Read Wind position data
+    wind_position_df = read_wind_position.concat_data_years(years)
+
+    fig = plt.figure(figsize=(15, 15))
+    axes = np.array([fig.add_subplot(2, 2, 1), fig.add_subplot(2, 2, 2),
+                     fig.add_subplot(2, 2, 3),
+                     fig.add_subplot(2, 2, 4, projection='polar')])
+
+    for i, ax in enumerate(axes.reshape(-1)[:-1]):
+        ax = wind_location.plot_trajectory(interval_options.stime.iloc[i],
+                                           interval_options.etime.iloc[i],
+                                           wind_position_df, ax,
+                                           fontsize=fontsize)
+
+        # Formatting
+        ax.set_title(interval_options.title.iloc[i], fontsize=fontsize)
+        t = ax.text(0.05, 0.95, axes_labels[i], transform=ax.transAxes,
+                    fontsize=fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+        # LT histogram
+        draw_ticks = True if i == 2 else False
+        axes.reshape(-1)[-1] = wind_location.lt_hist(
+            interval_options.stime.iloc[i], interval_options.etime.iloc[i],
+            wind_position_df, axes.reshape(-1)[-1],
+            bar_fmt={'color': interval_options.color.iloc[i],
+                     'edgecolor': 'black', 'alpha': 0.4,
+                     'label': interval_options.label.iloc[i]},
+            draw_ticks=draw_ticks)
+
+    t = axes.reshape(-1)[-1].text(0.05, 0.95, axes_labels[3],
+                                  transform=axes.reshape(-1)[-1].transAxes,
+                                  fontsize=fontsize, va='top', ha='left')
+    t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+    fig.tight_layout()
+
+    traj_fig = os.path.join(fig_dir, "three_interval_traj.png")
+    fig.savefig(traj_fig)
+
+
+def run_lomb_scargle():
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def TEMP_neat_fft_plot():
     png_name = os.path.join(fig_dir, "neat_single_10_year_fft.png")
 
@@ -130,59 +206,7 @@ def test_with_oscillator():
     return freq, period, fft_amp
 
 
-def trajectory_plots():
-    """
-    Create and save trajectory plots for the three
-    Wind intervals.
 
-    Returns
-    -------
-    None.
-
-    """
-
-    interval_options = read_and_tidy_data.return_test_intervals()
-
-    years = np.arange(1995, 2004 + 1)
-    # Read Wind position data
-    wind_position_df = read_wind_position.concat_data_years(years)
-
-    fig = plt.figure(figsize=(15, 15))
-    axes = np.array([fig.add_subplot(2, 2, 1), fig.add_subplot(2, 2, 2),
-                     fig.add_subplot(2, 2, 3),
-                     fig.add_subplot(2, 2, 4, projection='polar')])
-
-    for i, ax in enumerate(axes.reshape(-1)[:-1]):
-        ax = wind_location.plot_trajectory(interval_options.stime.iloc[i],
-                                           interval_options.etime.iloc[i],
-                                           wind_position_df, ax,
-                                           fontsize=fontsize)
-
-        # Formatting
-        ax.set_title(interval_options.title.iloc[i], fontsize=fontsize)
-        t = ax.text(0.05, 0.95, axes_labels[i], transform=ax.transAxes,
-                    fontsize=fontsize, va='top', ha='left')
-        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-
-        # LT histogram
-        draw_ticks = True if i == 2 else False
-        axes.reshape(-1)[-1] = wind_location.lt_hist(
-            interval_options.stime.iloc[i], interval_options.etime.iloc[i],
-            wind_position_df, axes.reshape(-1)[-1],
-            bar_fmt={'color': interval_options.color.iloc[i],
-                     'edgecolor': 'black', 'alpha': 0.4,
-                     'label': interval_options.label.iloc[i]},
-            draw_ticks=draw_ticks)
-
-    t = axes.reshape(-1)[-1].text(0.05, 0.95, axes_labels[3],
-                                  transform=axes.reshape(-1)[-1].transAxes,
-                                  fontsize=fontsize, va='top', ha='left')
-    t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-
-    fig.tight_layout()
-
-    traj_fig = os.path.join(fig_dir, "three_interval_traj.png")
-    fig.savefig(traj_fig)
 
 
 def generate_fft_plot():
