@@ -14,18 +14,6 @@ TBC
 
 Developed using Python 3.8.8. 
 
-## To Do:
-
-General
-- [ ] add in James acknowledgement statement
-- [ ] create requirements.txt
-- [ ] record required packages above
-
-Code
-- [x] add in docstrings
-
-Data preparation
-- [ ] deal with AKR data gaps / uneven temporal resolution
 
 ## Acknowledgements
 
