@@ -37,6 +37,7 @@ def define_freq_bands():
     freq_bands : np.array
         Upper and lower frequencies for several bands. Of
         shape number of bands x 2.
+    NEEDS UPDATING!
 
     """
     freq_bands = np.array([[20, 40],
