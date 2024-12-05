@@ -25,4 +25,4 @@ Developed using Python 3.8.8.
 ## Acknowledgements
 
 * [ARF](https://github.com/arfogg) gratefully acknowledges the support of [Irish Research Council](https://research.ie/) Government of Ireland Postdoctoral Fellowship GOIPD/2022/782.
-* [CMJ](https://github.com/caitrionajackman) and [SJW](https://github.com/08walkersj) gratefully acknowledge the support of [Science Foundation Ireland](https://www.sfi.ie/) Grant 18/FRL/6199.
+* [ARF](https://github.com/arfogg), [CMJ](https://github.com/caitrionajackman) and [SJW](https://github.com/08walkersj)'s work at DIAS was supported by [Taighde Éireann - Research Ireland](https://www.researchireland.ie/) award 18/FRL/6199.
