@@ -17,7 +17,7 @@ from scipy import interpolate
 import utility
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
-import read_integrated_power
+#import read_integrated_power
 import calc_integrated_power
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\readers')

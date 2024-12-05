@@ -26,9 +26,11 @@ import feature_importance
 import read_and_tidy_data
 import binning_averaging
 import wind_location
+import diurnal_oscillator
+import lomb_scargle
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
-import read_integrated_power
+#import read_integrated_power
 import read_wind_position
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\readers')
@@ -108,12 +110,39 @@ def trajectory_plots():
 def run_lomb_scargle():
 
 
+    print('Running Lomb-Scargle analysis')
 
 
 
+#     rng = np.random.default_rng()
 
+#     A = 2.
+#     w0 = 1.  # rad/sec
+#     nin = 150
+#     nout = 100000
 
+#     time = rng.uniform(0, 10*np.pi, nin)
 
+#     y = A * np.cos(w0*time)
+
+#     freqs = np.linspace(0.01, 10, nout)
+#     periods = freq_to_period(freqs)
+    
+#     ls_pgram = generic_lomb_scargle(time, y, freqs)
+    
+    
+#     plot_LS_summary(time, y, freqs, periods, ls_pgram,
+#                     vertical_indicators=[])
+
+    periods = np.linspace(1, 48, 490) # in hours
+    freqs = periodicity_functions.period_to_freq(periods)
+
+    ftime, fsignal = diurnal_oscillator.oscillating_signal(24., plot=True, add_noise=False)
+
+    ls_pgram = lomb_scargle.generic_lomb_scargle(ftime, fsignal, freqs)
+
+    lomb_scargle.plot_LS_summary(ftime, fsignal, freqs, periods, ls_pgram,
+                                 vertical_indicators=[12., 24.])
 
 
 
@@ -523,28 +552,28 @@ def DEPRECATED_run_feature_importance():
 
 
 
-def lomb_scargle(intensity_df):
-    """
-    TEST FUNCTION TO DO A LOMB SCARGLE
-    ON AKR PERIODICITIES - WORK
-    IN PROGRESS
+# def lomb_scargle(intensity_df):
+#     """
+#     TEST FUNCTION TO DO A LOMB SCARGLE
+#     ON AKR PERIODICITIES - WORK
+#     IN PROGRESS
 
-    Parameters
-    ----------
-    intensity_df : TYPE
-        DESCRIPTION.
+#     Parameters
+#     ----------
+#     intensity_df : TYPE
+#         DESCRIPTION.
 
-    Returns
-    -------
-    None.
+#     Returns
+#     -------
+#     None.
 
-    """
-    freqs_in_hrs=np.linspace(0,15,16)
+#     """
+#     freqs_in_hrs=np.linspace(0,15,16)
     
-    pgram=signal.lombscargle(intensity_df['datetime_ut'], intensity_df['P_Wsr-1_100_650_kHz'], freqs_in_hrs)
+#     pgram=signal.lombscargle(intensity_df['datetime_ut'], intensity_df['P_Wsr-1_100_650_kHz'], freqs_in_hrs)
     
-    fig,ax=plt.subplots()
-    ax.plot(freqs_in_hrs, pgram)
+#     fig,ax=plt.subplots()
+#     ax.plot(freqs_in_hrs, pgram)
 
     
 def test_goertzel():
