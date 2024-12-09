@@ -50,8 +50,11 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
 
     time = np.arange(0, yr_secs, res_secs)
 
-    akr_osc = sim_oscillation(yr_secs, 1/res_secs, 1/(osc_freq * 60 * 60),
-                              cycle='sine')
+    akr_osc = sim_oscillation(n_seconds=yr_secs,
+                              fs=1/res_secs,
+                              freq=1/(osc_freq * 60 * 60),
+                              cycle='gaussian',
+                              std=osc_freq * 6 * 60)
     akr_osc = (akr_osc + 2.0) * 1e6
     # ^ make positive and put to the order of AKR power
 
@@ -66,12 +69,17 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.plot(time, akr_osc, linewidth=1.0, color='black')
         ax.set_xlim(0, n_plot_osc*osc_freq*60*60)
-        ax.set_xlabel('Time', fontsize=fontsize)
+        ax.set_xlabel('Time (hrs)', fontsize=fontsize)
         ax.set_ylabel('Amplitude', fontsize=fontsize)
         ax.tick_params(labelsize=fontsize)
 
+        ticks_in_secs = []
+        ticks_in_hrs = []
         for i in range(n_plot_osc):
             ax.axvline(float(i)*osc_freq*60*60, linestyle='dashed',
                        color='grey', linewidth=1.)
+            ticks_in_secs.append(float(i)*osc_freq*60*60)
+            ticks_in_hrs.append(str(i * osc_freq))
+        ax.set_xticks(ticks_in_secs, ticks_in_hrs)
 
     return time, akr_osc

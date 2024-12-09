@@ -51,52 +51,36 @@ def generic_lomb_scargle(time, y, freqs):
 
     return ls_pgram
 
-def plot_LS_summary(time, y, freqs, periods, ls_pgram,
+def plot_LS_summary(time, y, periods, ls_pgram,
                     fontsize=15,
                     vertical_indicators=[],
                     pgram_fmt={'color': 'dimgrey', 'linewidth': 1.5},
-                    vertical_ind_col='royalblue'):
-                     # surrogate_period=None, surrogate_fft_amp=None,
-                     # fft_xlims=[0, 36],
-                     # signal_xlims=[np.nan, np.nan], signal_ymin=1.,
-                     # fontsize=15,
-                     # vertical_indicators=[],
-                     # unix_to_dtime=False,
-                     # resolution_lim=True,
-                     # signal_y_log=False,
-                     # input_fmt={'color': 'royalblue', 'linewidth': 1.},
-                     # ifft_fmt={'color': 'royalblue', 'linewidth': 1.},
-                     # input_ax=None, panel_label=True
-    
-    # fig, (ax_t, ax_w) = plt.subplots(2, 1, constrained_layout=True)
-    # ax_t.plot(time, y, 'b+')
-    # ax_t.set_xlabel('Time [s]')
+                    vertical_ind_col='royalblue',
+                    ax=None):
 
-    # ax_w.plot(freqs, ls_pgram)
-    # ax_w.set_xlabel('Angular frequency [rad/s]')
-    # ax_w.set_ylabel('Normalized amplitude')
-    # plt.show()
-    
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(12, 6))
 
-    
-    fig, ax = plt.subplots(figsize=(12, 6))
-    
     ax.plot(periods, ls_pgram, **pgram_fmt)
+    # lims=ax.get_ylim()
+    # ax.plot(periods, np.repeat((lims[1]-lims[0])/2, periods.size),
+    #         linewidth=0., marker='^', alpha=0.5, color='red',
+    #         fillstyle='none')
     ax.set_xscale('log')
-    
+
     # Formatting
     ax.set_ylabel('Lomb-Scargle Normalised Amplitude', fontsize=fontsize)
     ax.set_xlabel('Period (hours)', fontsize=fontsize)
     ax.tick_params(labelsize=fontsize)
-    
-    
+
     if vertical_indicators != []:
         for h in vertical_indicators:
             ax.axvline(h, color=vertical_ind_col, linestyle='dashed',
-                          linewidth=1.5)
+                       linewidth=1.5)
             trans = transforms.blended_transform_factory(ax.transData,
                                                          ax.transAxes)
             ax.text(h, 1.05, str(h), transform=trans,
-                       fontsize=fontsize, va='top', ha='center',
-                       color=vertical_ind_col)
- 
+                    fontsize=fontsize, va='top', ha='center',
+                    color=vertical_ind_col)
+
+    return ax
