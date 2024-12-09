@@ -113,6 +113,9 @@ def run_lomb_scargle():
     periods = np.logspace(np.log10(1), np.log10(48), 500)  # in hours
     freqs = periodicity_functions.period_to_freq(periods)
     angular_freqs = 2 * np.pi * freqs
+    freq_tags = np.array(['ipwr_50_100kHz', 'ipwr_100_400kHz',
+                          'ipwr_100_650kHz', 'ipwr_150_400kHz'])
+    LS_fig = os.path.join(fig_dir, "three_interval_lomb_scargle.png")
 
     # Read in interval data
     interval_options = read_and_tidy_data.return_test_intervals()
@@ -131,35 +134,31 @@ def run_lomb_scargle():
                                                            add_noise=True)
 
     ls_pgram = lomb_scargle.generic_lomb_scargle(ftime, fsignal, angular_freqs)
-    ax[0] = lomb_scargle.plot_LS_summary(ftime, fsignal, periods, ls_pgram,
+    ax[0] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
                                  vertical_indicators=[12., 24.], ax=ax[0])
 
 
 
 
 
-    # interval_options = read_and_tidy_data.return_test_intervals()
-    # intervals = np.array(interval_options.tag)
 
-    # fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 15, 0).timestamp(),
-    #                                pd.Timestamp(1999, 8, 15, 0).timestamp(),
-    #                                pd.Timestamp(2003, 10, 11,
-    #                                             22, 36).timestamp()])
-    # fft_signal_x_width = np.repeat([5. * 24. * 60. * 60.], len(intervals))
+    for (i, interval_tag) in enumerate(interval_options['tag']):
+        print('Running Lomb-Scargle for ', interval_tag)
+        akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
 
-    # fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(18, 18))
+        # Remove any rows where intensity == np.nan
+        for (j, freq_col) in enumerate(freq_tags):
+            print('Frequency band: ', freq_col)
 
-    for i in range(len(interval_options)):
-        print('Running analyses for ', interval_options.tag.iloc[i])
-        combined_rounded_df = read_and_tidy_data.\
-            combine_rounded_akr_omni(interval_options.tag.iloc[i])
+            freq_df = akr_df.dropna(subset=[freq_col])
 
-        # freq, period, fft_amp, inverse_signal = periodicity_functions.\
-        #     generic_fft_function(combined_rounded_df.unix,
-        #                          combined_rounded_df['integrated_power'],
-        #                          pd.Timedelta(minutes=3))
-
-        # ls_pgram = lomb_scargle.generic_lomb_scargle()
+            ls_pgram = lomb_scargle.generic_lomb_scargle(freq_df.unix,
+                                                         freq_df[freq_col],
+                                                         angular_freqs)
+            ax[i + 1] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
+                                                     vertical_indicators=[12.,
+                                                                          24.],
+                                                     ax=ax[i+1])
 
 
     # Label panels
@@ -171,13 +170,8 @@ def run_lomb_scargle():
     # Adjust margins etc
     fig.tight_layout()
 
-
-
-
-
-
-
-
+    # Save to file
+    fig.savefig(LS_fig)
 
 
 

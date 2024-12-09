@@ -96,7 +96,7 @@ def define_freq_bands():
 #     return appended_df
 
 
-def select_akr_intervals(interval, rounded=False):
+def select_akr_intervals(interval):
     """
     Load in AKR intensity over a defined interval, over multiple
     frequency bands.
@@ -106,9 +106,6 @@ def select_akr_intervals(interval, rounded=False):
     interval : string
         Name of defined interval. Options are defined in
         interval_options from return_test_intervals.
-    rounded : Bool, optional
-        If True, AKR on rounded Timestamps is returned. The
-        default is False.
 
     Returns
     -------
@@ -141,9 +138,11 @@ def select_akr_intervals(interval, rounded=False):
                                                         freq_bands=freq_bands)
 
     # Select only the interval requested
-    akr_df = akr_df.loc[(akr_df.datetime_ut >= selected.stime[0]) &
-                        (akr_df.datetime_ut <= selected.etime[0]),
+    akr_df = akr_df.loc[(akr_df.datetime >= selected.stime[0]) &
+                        (akr_df.datetime <= selected.etime[0]),
                         :].reset_index()
+    akr_df['unix'] = [t.timestamp() for t in akr_df.datetime]
+
 
     # # ----- ROUNDED VERSION -----
     # # Round to a nice, clean, 3 minute resolution
@@ -195,6 +194,7 @@ def select_akr_intervals(interval, rounded=False):
     #     100., 25., len(rounded_akr_df))
 
     # return akr_df, rounded_akr_df
+    return akr_df
 
 
 def return_test_intervals():

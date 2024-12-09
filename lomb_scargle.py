@@ -51,7 +51,7 @@ def generic_lomb_scargle(time, y, freqs):
 
     return ls_pgram
 
-def plot_LS_summary(time, y, periods, ls_pgram,
+def plot_LS_summary(periods, ls_pgram,
                     fontsize=15,
                     vertical_indicators=[],
                     pgram_fmt={'color': 'dimgrey', 'linewidth': 1.5},
@@ -69,7 +69,7 @@ def plot_LS_summary(time, y, periods, ls_pgram,
     ax.set_xscale('log')
 
     # Formatting
-    ax.set_ylabel('Lomb-Scargle Normalised Amplitude', fontsize=fontsize)
+    ax.set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
     ax.set_xlabel('Period (hours)', fontsize=fontsize)
     ax.tick_params(labelsize=fontsize)
 
@@ -79,7 +79,7 @@ def plot_LS_summary(time, y, periods, ls_pgram,
                        linewidth=1.5)
             trans = transforms.blended_transform_factory(ax.transData,
                                                          ax.transAxes)
-            ax.text(h, 1.05, str(h), transform=trans,
+            ax.text(h, 1.075, str(h), transform=trans,
                     fontsize=fontsize, va='top', ha='center',
                     color=vertical_ind_col)
 
