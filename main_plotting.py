@@ -160,6 +160,9 @@ def run_lomb_scargle():
                                                                           24.],
                                                      ax=ax[i+1])
 
+        # need to save the LS for each freq band
+        # diff colours for different freq bands
+        
 
     # Label panels
     for (i, a) in enumerate(ax):
