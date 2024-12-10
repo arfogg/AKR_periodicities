@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy.signal as signal
+import matplotlib.transforms as transforms
 
 from numpy.fft import fft, ifft
 
@@ -113,8 +114,14 @@ def run_lomb_scargle():
     periods = np.logspace(np.log10(1), np.log10(48), 500)  # in hours
     freqs = periodicity_functions.period_to_freq(periods)
     angular_freqs = 2 * np.pi * freqs
-    freq_tags = np.array(['ipwr_50_100kHz', 'ipwr_100_400kHz',
-                          'ipwr_100_650kHz', 'ipwr_150_400kHz'])
+    vertical_indicators = [12, 24]
+    vertical_ind_col = 'black'
+
+    # Different frequency channels
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz',
+                          'ipwr_100_650kHz'])
+    freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
+
     LS_fig = os.path.join(fig_dir, "three_interval_lomb_scargle.png")
 
     # Read in interval data
@@ -135,7 +142,8 @@ def run_lomb_scargle():
 
     ls_pgram = lomb_scargle.generic_lomb_scargle(ftime, fsignal, angular_freqs)
     ax[0] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
-                                 vertical_indicators=[12., 24.], ax=ax[0])
+                                 vertical_indicators=vertical_indicators,
+                                 ax=ax[0], vertical_ind_col=vertical_ind_col)
 
 
 
@@ -144,25 +152,66 @@ def run_lomb_scargle():
 
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running Lomb-Scargle for ', interval_tag)
-        akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+        
+        base_dir = pathlib.Path(data_dir) / 'lomb_scargle'
+        file_paths = [base_dir / f"LS_{interval_tag}_{f}.csv" for f in freq_tags]
+        file_checks = [file_path.is_file() for file_path in file_paths]
+
+
+        if all(file_checks) is False:
+            
+            akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
 
         # Remove any rows where intensity == np.nan
-        for (j, freq_col) in enumerate(freq_tags):
-            print('Frequency band: ', freq_col)
+        for (j, (freq_column, c)) in enumerate(zip(freq_tags, freq_colors)):
+            print('Frequency band: ', freq_column)
+            ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_' +
+                                  interval_tag + '_' + freq_column + '.csv')
 
-            freq_df = akr_df.dropna(subset=[freq_col])
 
-            ls_pgram = lomb_scargle.generic_lomb_scargle(freq_df.unix,
-                                                         freq_df[freq_col],
-                                                         angular_freqs)
-            ax[i + 1] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
-                                                     vertical_indicators=[12.,
-                                                                          24.],
-                                                     ax=ax[i+1])
+            if pathlib.Path(ls_csv).is_file() is False:
 
-        # need to save the LS for each freq band
-        # diff colours for different freq bands
-        
+                freq_df = akr_df.dropna(subset=[freq_column])
+    
+                ls_pgram = lomb_scargle.generic_lomb_scargle(freq_df.unix,
+                                                             freq_df[freq_column],
+                                                             angular_freqs)
+                
+                ls_df = pd.DataFrame({'period_hr': periods,
+                                      'freq_Hz': freqs,
+                                      'angular_freq': angular_freqs,
+                                      'ls_pgram': ls_pgram})
+                ls_df.to_csv(ls_csv, index=False)
+                
+            else:
+                ls_df = pd.read_csv(ls_csv, delimiter=',',
+                                    float_precision='round_trip')
+
+                ls_pgram = np.array(ls_df.ls_pgram)
+
+            # ax[i + 1] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
+            #                                          vertical_indicators=[12.,
+            #                                                               24.],
+            #                                          ax=ax[i+1])
+            ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=freq_column)
+
+        ax[i + 1].set_xscale('log')
+
+        # Formatting
+        ax[i + 1].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
+        ax[i + 1].set_xlabel('Period (hours)', fontsize=fontsize)
+        ax[i + 1].tick_params(labelsize=fontsize)
+        ax[i + 1].legend(fontsize=fontsize, loc='center left')
+
+        if vertical_indicators != []:
+            for h in vertical_indicators:
+                ax[i + 1].axvline(h, color=vertical_ind_col, linestyle='dashed',
+                           linewidth=1.5)
+                trans = transforms.blended_transform_factory(ax[i + 1].transData,
+                                                             ax[i + 1].transAxes)
+                ax[i + 1].text(h, 1.075, str(h), transform=trans,
+                        fontsize=fontsize, va='top', ha='center',
+                        color=vertical_ind_col)
 
     # Label panels
     for (i, a) in enumerate(ax):
@@ -175,6 +224,17 @@ def run_lomb_scargle():
 
     # Save to file
     fig.savefig(LS_fig)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
