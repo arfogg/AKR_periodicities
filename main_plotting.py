@@ -111,9 +111,13 @@ def trajectory_plots():
 def run_lomb_scargle():
 
     # Initialising variables
-    periods = np.logspace(np.log10(1), np.log10(48), 500)  # in hours
-    freqs = periodicity_functions.period_to_freq(periods)
+    # periods = np.logspace(np.log10(1), np.log10(48), 500)  # in hours
+    # freqs = periodicity_functions.period_to_freq(periods)
+    f_max = 1 / (48. * 60. * 60.)
+    T = (pd.Timestamp(2005, 1, 1, 0) - pd.Timestamp(1995, 1, 1, 0)).total_seconds()
+    f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_max, n0=5)
     angular_freqs = 2 * np.pi * freqs
+    periods = periodicity_functions.freq_to_period(freqs)
     vertical_indicators = [12, 24]
     vertical_ind_col = 'black'
 

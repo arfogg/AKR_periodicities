@@ -39,6 +39,25 @@ import scipy.signal as signal
 #     plot_LS_summary(time, y, freqs, periods, ls_pgram,
 #                     vertical_indicators=[])
 
+def define_frequency_bins(T, f_max, n0=5):
+    
+    # T = length of entire dataset in seconds. i.e. the lowest
+    #   possible freq is 1/total amount of time observed
+    # f_max = desired maximum frequency, decided based on prior science
+    #   knowledge of the system
+    # n0 = number of samples needed to define a peak in a periodogram
+    #
+    # Vanderplas 2018 https://doi.org/10.3847/1538-4365/aab766
+
+    f_min = 1 / T
+    
+    # Number of frequencies to be sampled
+    N_f = int(n0 * T * f_max)
+    
+    # Distribute frequencies logarithmically
+    sample_f = np.logspace(np.log(f_min), np.log(f_max), N_f)
+    
+    return f_min, f_max, N_f, sample_f
 
 def generic_lomb_scargle(time, y, freqs):
     
