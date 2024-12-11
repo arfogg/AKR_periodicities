@@ -113,17 +113,21 @@ def run_lomb_scargle():
     # Initialising variables
     # periods = np.logspace(np.log10(1), np.log10(48), 500)  # in hours
     # freqs = periodicity_functions.period_to_freq(periods)
-    f_max = 1 / (48. * 60. * 60.)
+    f_min = 1 / (48. * 60. * 60.)
+    f_max = 1 / (1. * 60. * 60.)
     T = (pd.Timestamp(2005, 1, 1, 0) - pd.Timestamp(1995, 1, 1, 0)).total_seconds()
-    f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_max, n0=5)
+    f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min, f_max, n0=5)
     angular_freqs = 2 * np.pi * freqs
     periods = periodicity_functions.freq_to_period(freqs)
     vertical_indicators = [12, 24]
     vertical_ind_col = 'black'
 
+
+
     # Different frequency channels
-    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz',
-                          'ipwr_100_650kHz'])
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'#,
+                          #'ipwr_100_650kHz'
+                          ])
     freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
 
     LS_fig = os.path.join(fig_dir, "three_interval_lomb_scargle.png")
@@ -139,15 +143,15 @@ def run_lomb_scargle():
 
 
 
-    # Run Lomb-Scargle over the fake oscillator
-    print('Running Lomb-Scargle analysis on fake oscillating signal')
-    ftime, fsignal = diurnal_oscillator.oscillating_signal(24., plot=False,
-                                                           add_noise=True)
+    # # Run Lomb-Scargle over the fake oscillator
+    # print('Running Lomb-Scargle analysis on fake oscillating signal')
+    # ftime, fsignal = diurnal_oscillator.oscillating_signal(24., plot=False,
+    #                                                        add_noise=True)
 
-    ls_pgram = lomb_scargle.generic_lomb_scargle(ftime, fsignal, angular_freqs)
-    ax[0] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
-                                 vertical_indicators=vertical_indicators,
-                                 ax=ax[0], vertical_ind_col=vertical_ind_col)
+    # ls_pgram = lomb_scargle.generic_lomb_scargle(ftime, fsignal, angular_freqs)
+    # ax[0] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
+    #                              vertical_indicators=vertical_indicators,
+    #                              ax=ax[0], vertical_ind_col=vertical_ind_col)
 
 
 
