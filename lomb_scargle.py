@@ -70,6 +70,26 @@ def generic_lomb_scargle(time, y, freqs):
 
     return ls_pgram
 
+def detect_peak(ls_pgram, periods, freqs):
+    
+    
+    
+    
+    i = np.argmax(ls_pgram)
+    
+    peak_height = ls_pgram[i]
+    peak_freq = freqs[i]
+    peak_period = periods[i]
+    
+    
+    
+    # calc FAP here????
+    # not sure this is the best wway to calc the peak!
+    
+    
+    
+    return peak_height, peak_freq, peak_period
+
 def plot_LS_summary(periods, ls_pgram,
                     fontsize=15,
                     vertical_indicators=[],
