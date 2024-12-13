@@ -114,7 +114,7 @@ def run_lomb_scargle():
     # periods = np.logspace(np.log10(1), np.log10(48), 500)  # in hours
     # freqs = periodicity_functions.period_to_freq(periods)
     f_min = 1 / (48. * 60. * 60.)
-    f_max = 1 / (1. * 60. * 60.)
+    f_max = 1 / (8. * 60. * 60.)
     T = (pd.Timestamp(2005, 1, 1, 0) - pd.Timestamp(1995, 1, 1, 0)).total_seconds()
     f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min, f_max, n0=5)
     freqs = freqs[::-1]
@@ -123,9 +123,8 @@ def run_lomb_scargle():
     vertical_indicators = [12, 24]
     vertical_ind_col = 'black'
 
-
     # Different frequency channels
-    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'#,
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'  # ,
                           #'ipwr_100_650kHz'
                           ])
     freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
@@ -180,11 +179,13 @@ def run_lomb_scargle():
             if pathlib.Path(ls_csv).is_file() is False:
 
                 freq_df = akr_df.dropna(subset=[freq_column])
-    
+                t1 = pd.Timestamp.now()
+                print('starting LS at ', t1)
                 ls_pgram = lomb_scargle.generic_lomb_scargle(freq_df.unix,
                                                              freq_df[freq_column],
                                                              angular_freqs)
-                
+                t2 = pd.Timestamp.now()
+                print('LS finished, time elapsed: ', t2-t1)
                 ls_df = pd.DataFrame({'period_hr': periods,
                                       'freq_Hz': freqs,
                                       'angular_freq': angular_freqs,

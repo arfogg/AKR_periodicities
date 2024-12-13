@@ -7,15 +7,28 @@ Created on Thu Dec  5 14:43:04 2024
 Definitions of data with a 24 hour periodicity.
 """
 
+import string
+
 import numpy as np
 
 import matplotlib.pyplot as plt
 
-from neurodsp.sim import sim_oscillation
+from neurodsp.sim import sim_oscillation, sim_powerlaw
+from neurodsp.sim.utils import modulate_signal
+
+
+alphabet = list(string.ascii_lowercase)
+axes_labels = []
+for a in alphabet:
+    axes_labels.append('(' + a + ')')
+
 
 
 def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
-                       plot=False, fontsize=15):
+                       add_amplitude_modulation=True,
+                       plot=False, n_plot_osc=4, fontsize=15,
+                       noise_color='slateblue', mod_color='yellowgreen',
+                       modf_color='deeppink'):
     """
     Function to create a timeseries of oscillating
     signal using neurodsp package.
@@ -30,9 +43,10 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
         Fraction of the intensity mean that the normal distribution scale
         is defined as. The default is 0.1.
     plot : bool, optional
-        If plot == True, a diagnostic plot of the
-        generated signal is presented. The default
-        is False.
+        If plot == True, a diagnostic plot of the generated signal is
+        presented. The default is False.
+    n_plot_osc : int, optional
+        Number of oscillations to show on the plot. The default is 4.
     fontsize: int, optional
         Defines fontsize on plot. The default is 15.
 
@@ -57,29 +71,143 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
                               std=osc_freq * 6 * 60)
     akr_osc = (akr_osc + 2.0) * 1e6
     # ^ make positive and put to the order of AKR power
+    clean = akr_osc
 
     if add_noise:
-        akr_osc = akr_osc + np.random.normal(loc=np.mean(akr_osc),
+        noisy = akr_osc + np.random.normal(loc=np.mean(akr_osc),
                                              scale=noise_level *
                                              np.mean(akr_osc),
                                              size=akr_osc.size)
+        akr_osc = noisy
+        
+    if add_amplitude_modulation:
+        # Simulate a different modulating signal, this time
+        modulation = np.abs(sim_powerlaw(n_seconds=yr_secs,
+                           fs=1/res_secs, exponent=-2))
+
+        # Apply the amplitude modulation to the signal
+        amplitude_modulated = modulate_signal(akr_osc, modulation)
+        
+        akr_osc = amplitude_modulated
+
+
+
+
+
 
     if plot:
-        n_plot_osc = 4
-        fig, ax = plt.subplots(figsize=(8, 5))
-        ax.plot(time, akr_osc, linewidth=1.0, color='black')
-        ax.set_xlim(0, n_plot_osc*osc_freq*60*60)
-        ax.set_xlabel('Time (hrs)', fontsize=fontsize)
-        ax.set_ylabel('Amplitude', fontsize=fontsize)
-        ax.tick_params(labelsize=fontsize)
+        fig, ax = plt.subplots(1, 2,
+                               gridspec_kw={'width_ratios': [2, 1]},
+                               figsize = (12, 5))
+        # fig, ax = plt.subplots(figsize=(8, 5))
+        
+        # Time series
+        ax[0].plot(time, clean, linewidth=1.0, color='black',
+                label='Pure oscillator')
+
+        xmax = n_plot_osc*osc_freq*60*60
+        yi, = np.where(time <= xmax)
+        yval = clean[yi]
+
+        if add_noise:
+            ax[0].plot(time, noisy, linewidth=1.0, label='Random Gaussian Noise',
+                    color=noise_color)
+            yval = np.append(yval, noisy[yi])
+    
+        if add_amplitude_modulation:
+            # Plot modulated signal
+            ax[0].plot(time, amplitude_modulated, linewidth=1.0,
+                    label='Amplitude Modulated', color=mod_color)
+            yval = np.append(yval, amplitude_modulated[yi])
+
+            # Plot modulation
+            mod_ax = ax[0].twinx()
+            mod_leg = mod_ax.plot(time, modulation, linewidth=1.0,
+                        label='Modulation factor', color=modf_color,
+                        linestyle='dashed')
+            mod_ax.set_ylabel('Modulation factor', color=modf_color,
+                              fontsize=fontsize)
+            mod_ax.tick_params(axis='y', labelcolor=(modf_color),
+                               labelsize=fontsize)
+            mod_ax.spines['right'].set_color(modf_color)
+
+        #ax[0].legend(fontsize=0.75*fontsize)
+        
+        # Set limits
+        ax[0].set_xlim(0, xmax)
+        ax[0].set_ylim(top=1.1*np.nanmax(yval))
+
+        
+        ax[0].set_xlabel('Time (hrs)', fontsize=fontsize)
+        ax[0].set_ylabel('Signal Amplitude', fontsize=fontsize)
+        #ax[0].tick_params(labelsize=fontsize)
 
         ticks_in_secs = []
         ticks_in_hrs = []
         for i in range(n_plot_osc):
-            ax.axvline(float(i)*osc_freq*60*60, linestyle='dashed',
+            ax[0].axvline(float(i)*osc_freq*60*60, linestyle='dashed',
                        color='grey', linewidth=1.)
             ticks_in_secs.append(float(i)*osc_freq*60*60)
             ticks_in_hrs.append(str(i * osc_freq))
-        ax.set_xticks(ticks_in_secs, ticks_in_hrs)
+        ax[0].set_xticks(ticks_in_secs, ticks_in_hrs)
+        
+        
+        leg_ln = [*ax[0].get_legend_handles_labels()[0], mod_leg[0]]
+        leg_lab = [*ax[0].get_legend_handles_labels()[1], mod_leg[0].get_label()]
+        ax[0].legend(leg_ln, leg_lab, fontsize=0.65*fontsize, loc='upper right')
+        
+        
+        
+        
+        # Histogram
+        hist_max = np.nanmax([np.nanmax(clean), np.nanmax(noisy),
+                              np.nanmax(amplitude_modulated)])
+        bins = np.linspace(0, hist_max, 25)
+        ax[1].hist(clean, color='black', alpha=0.5, bins=bins,
+                   rwidth=0.8, edgecolor='black', label='Pure oscillator')
+        ax[1].hist(noisy, color=noise_color, alpha=0.5, bins=bins,
+                   rwidth=0.8, edgecolor=noise_color,
+                   label='Random\nGaussian\nNoise')
+        ax[1].hist(amplitude_modulated, color=mod_color, alpha=0.5, bins=bins,
+                   rwidth=0.8, edgecolor=mod_color, label='Amplitude\nModulated')
+
+        
+        ax[1].set_xlabel('Signal Amplitude', fontsize=fontsize)
+        ax[1].set_ylabel('Occurrence', fontsize=fontsize)
+        #ax[1].tick_params(labelsize=fontsize)       
+        
+        #
+        
+        mod_hax = ax[1].twiny()
+        mod_bins = np.linspace(0, np.nanmax(modulation), 25)
+
+        mod_hax.hist(modulation, color=modf_color, alpha=0.5, bins=mod_bins,
+                    histtype='step', linewidth=2., label='Modulation\nfactor')
+        ax[1].hist([], color=modf_color, alpha=0.5, bins=mod_bins,
+                    histtype='step', linewidth=2., label='Modulation\nfactor')        
+        mod_hax.set_xlabel('Modulation factor', color=modf_color,
+                              fontsize=fontsize)
+        mod_hax.tick_params(axis='x', labelcolor=(modf_color),
+                               labelsize=fontsize)
+        mod_hax.spines['top'].set_color(modf_color)
+        
+        # leg_ln = [*ax[1].get_legend_handles_labels()[0], mod_hleg[0]]
+        # leg_lab = [*ax[1].get_legend_handles_labels()[1], mod_hleg[0].get_label()]
+        # ax[1].legend(leg_ln, leg_lab, fontsize=0.75*fontsize, loc='upper right')
+        ax[1].legend(fontsize=0.65*fontsize)        
+        # add pink to legend
+        # a, b labels
+
+        for i, a in enumerate(ax):
+            a.tick_params(labelsize=fontsize)       
+
+            # a.legend(fontsize=0.75*fontsize, loc='upper right')
+            
+            t = a.text(0.05, 0.95, axes_labels[i], transform=a.transAxes,
+                           fontsize=fontsize, va='top', ha='left')
+            t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+
+        fig.tight_layout()        
 
     return time, akr_osc
