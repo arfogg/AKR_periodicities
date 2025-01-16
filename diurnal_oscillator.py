@@ -211,3 +211,12 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
         fig.tight_layout()        
 
     return time, akr_osc
+
+
+def add_temporal_error(time, akr_osc):
+    
+    fig, ax = plt.subplots(1, 2,
+                           gridspec_kw={'width_ratios': [2, 1]},
+                           figsize = (12, 5))
+    
+    
