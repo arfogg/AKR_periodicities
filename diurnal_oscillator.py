@@ -26,12 +26,14 @@ for a in alphabet:
 
 def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
                        add_amplitude_modulation=True,
+                       create_data_gaps=True,
                        plot=False, n_plot_osc=4, fontsize=15,
                        noise_color='slateblue', mod_color='yellowgreen',
-                       modf_color='deeppink'):
+                       modf_color='deeppink', gaps_color='darkgrey'):
     """
     Function to create a timeseries of oscillating
     signal using neurodsp package.
+    NEEDS UPDATING
 
     Parameters
     ----------
@@ -83,17 +85,31 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
     if add_amplitude_modulation:
         # Simulate a different modulating signal, this time
         modulation = np.abs(sim_powerlaw(n_seconds=yr_secs,
-                           fs=1/res_secs, exponent=-2))
+                                         fs=1/res_secs, exponent=-2))
 
         # Apply the amplitude modulation to the signal
         amplitude_modulated = modulate_signal(akr_osc, modulation)
-        
         akr_osc = amplitude_modulated
 
+    if create_data_gaps:
+        # The average length of the data gaps
+        #   (in terms of number of data points)
+        extract_length = 20  # 20 data points -> 60 minutes
+        # Number of synthetic data gaps
+        #   (approx 2 per day)
+        n_gaps = int((yr_secs/(24*60*60))*2)
+        start_point = np.random.choice(akr_osc.size, size=n_gaps)
+        end_point = start_point + np.random.geometric(1.0 / extract_length, size=n_gaps)
+        
+        synthetic_gaps = akr_osc.copy()
+        for i in range(n_gaps):
+            if end_point[i] < len(akr_osc):
+                synthetic_gaps[start_point[i]:end_point[i]] = np.nan
+            else:
+                synthetic_gaps[start_point[i]:] = np.nan
+        akr_osc = synthetic_gaps.copy()
 
-
-
-
+        
 
     if plot:
         fig, ax = plt.subplots(1, 2,
@@ -131,6 +147,17 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
                                labelsize=fontsize)
             mod_ax.spines['right'].set_color(modf_color)
 
+        if create_data_gaps:
+            ax[0].plot(time, synthetic_gaps + 1E6, linewidth=1.0,
+                       label='Synthetic Gaps\n(amplitude + 1E6)', color=gaps_color)
+            yval = np.append(yval, synthetic_gaps[yi] + 1E6)
+            horiz_gaps = np.where(np.isnan(akr_osc),
+                                  np.nan, 1.05*np.nanmax(yval))
+            ax[0].plot(time, horiz_gaps, marker='.', linewidth=0.,
+                       markersize=0.1*fontsize, alpha=0.75, color=gaps_color,
+                       label='Data Availability')
+            yval = np.append(yval, horiz_gaps[yi])
+            
         #ax[0].legend(fontsize=0.75*fontsize)
         
         # Set limits
@@ -164,19 +191,18 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
                               np.nanmax(amplitude_modulated)])
         bins = np.linspace(0, hist_max, 25)
         ax[1].hist(clean, color='black', alpha=0.5, bins=bins,
-                   rwidth=0.8, edgecolor='black', label='Pure oscillator')
+                   edgecolor='black', label='Pure oscillator')
         ax[1].hist(noisy, color=noise_color, alpha=0.5, bins=bins,
-                   rwidth=0.8, edgecolor=noise_color,
+                   edgecolor=noise_color,
                    label='Random\nGaussian\nNoise')
         ax[1].hist(amplitude_modulated, color=mod_color, alpha=0.5, bins=bins,
-                   rwidth=0.8, edgecolor=mod_color, label='Amplitude\nModulated')
-
+                   edgecolor=mod_color, label='Amplitude\nModulated')
+        ax[1].hist(synthetic_gaps, facecolor='none', bins=bins, edgecolor='black',
+                   hatch='x', label='Synthetic\nGaps')
         
         ax[1].set_xlabel('Signal Amplitude', fontsize=fontsize)
         ax[1].set_ylabel('Occurrence', fontsize=fontsize)
-        #ax[1].tick_params(labelsize=fontsize)       
-        
-        #
+
         
         mod_hax = ax[1].twiny()
         mod_bins = np.linspace(0, np.nanmax(modulation), 25)
@@ -211,12 +237,3 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
         fig.tight_layout()        
 
     return time, akr_osc
-
-
-def add_temporal_error(time, akr_osc):
-    
-    fig, ax = plt.subplots(1, 2,
-                           gridspec_kw={'width_ratios': [2, 1]},
-                           figsize = (12, 5))
-    
-    
