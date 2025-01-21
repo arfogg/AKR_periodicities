@@ -53,6 +53,44 @@ data_dir = os.path.join(fig_dir, "data_quickloads")
 # https://neurodsp-tools.github.io/neurodsp/auto_tutorials/sim/plot_SimulatePeriodic.html
 
 
+
+def read_synthetic_oscillator():
+    """
+    Run and/or read in the synthetic AKR periodic signal.
+
+    Returns
+    -------
+    time : np.array
+        Time axis in seconds.
+    akr_osc : np.array
+        Simulated AKR intensity, arbitrary units.
+
+    """
+    synthetic_signal_csv = os.path.join(data_dir,
+                                        "synthetic_oscillatory_signal.csv")
+    synthetic_signal_fig = os.path.join(fig_dir,
+                                        "synthetic_oscillatory_signal.png")
+    
+
+    if (pathlib.Path(synthetic_signal_csv).is_file()) & \
+        (pathlib.Path(synthetic_signal_fig).is_file()):
+        signal_df = pd.read_csv(synthetic_signal_csv, delimiter=',',
+                                float_precision='round_trip')
+        time = np.array(signal_df.time)
+        akr_osc = np.array(signal_df.akr_osc)
+    else:
+        time, akr_osc, fig, ax = diurnal_oscillator.oscillating_signal(24, plot=True)
+
+        # Write to file
+        signal_df = pd.DataFrame({'time': time, 'akr_osc': akr_osc})
+        signal_df.to_csv(synthetic_signal_csv, index=False)
+        
+        fig.savefig(synthetic_signal_fig)
+        
+        
+    return time, akr_osc
+        
+
 def trajectory_plots():
     """
     Create and save trajectory plots for the three
@@ -132,29 +170,39 @@ def run_lomb_scargle():
     LS_fig = os.path.join(fig_dir, "three_interval_lomb_scargle.png")
 
     # Read in interval data
+    print('Reading AKR data over requested intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
-
-
 
     # Initialise plotting window
     fig, ax = plt.subplots(nrows=4, figsize=(10, 17))
 
+    # Run Lomb-Scargle over the fake oscillator
+    ftime, fsignal = read_synthetic_oscillator()
 
+    ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_synthetic.csv')
+    if pathlib.Path(ls_csv).is_file():
+        ls_df = pd.read_csv(ls_csv, delimiter=',',
+                            float_precision='round_trip')
 
+        ls_pgram = np.array(ls_df.ls_pgram)
+    else:   
+        print('Running LS analysis on synthetic oscillator')
+        t1 = pd.Timestamp.now()
+        print('starting LS at ', t1)
+        ls_pgram = lomb_scargle.generic_lomb_scargle(ftime, fsignal, angular_freqs)
+        t2 = pd.Timestamp.now()
+        print('LS finished, time elapsed: ', t2-t1)
+        # Write to file
+        ls_df = pd.DataFrame({'period_hr': periods,
+                              'freq_Hz': freqs,
+                              'angular_freq': angular_freqs,
+                              'ls_pgram': ls_pgram})
+        ls_df.to_csv(ls_csv, index=False)
 
-    # # Run Lomb-Scargle over the fake oscillator
-    # print('Running Lomb-Scargle analysis on fake oscillating signal')
-    # ftime, fsignal = diurnal_oscillator.oscillating_signal(24., plot=False,
-    #                                                        add_noise=True)
-
-    # ls_pgram = lomb_scargle.generic_lomb_scargle(ftime, fsignal, angular_freqs)
-    # ax[0] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
-    #                              vertical_indicators=vertical_indicators,
-    #                              ax=ax[0], vertical_ind_col=vertical_ind_col)
-
-
-
-
+    ax[0] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
+                                         vertical_indicators=vertical_indicators,
+                                         ax=ax[0],
+                                         vertical_ind_col=vertical_ind_col)
 
 
     for (i, interval_tag) in enumerate(interval_options['tag']):
