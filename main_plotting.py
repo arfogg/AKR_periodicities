@@ -37,6 +37,7 @@ import read_wind_position
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\readers')
 import read_omni
 import read_supermag
+import read_sunspot_n
 
 
 fontsize = 15
@@ -203,8 +204,8 @@ def run_lomb_scargle():
                                          vertical_indicators=vertical_indicators,
                                          ax=ax[0],
                                          vertical_ind_col=vertical_ind_col)
-    breakpoint()
 
+    breakpoint()
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running Lomb-Scargle for ', interval_tag)
         
@@ -283,16 +284,106 @@ def run_lomb_scargle():
     fig.savefig(LS_fig)
 
 
+def LS_solar_cyc(sunspot_n_fdict={'color': 'lightgrey',
+                                  'label': 'Mean',
+                                  'linewidth': 1.},
+                 smoothsn_fdict={'color': 'black',
+                                 'label': '13-month Smoothed'}):
+    
+    # Run the Lomb-scargle analysis over each year of AKR intensity
+    # with sunspot number as another panel
+    
+    # Define time periods
+    years = np.arange(1995, 2004 + 1)
+    # stime = pd.Timestamp(years[0], 1, 1, 0, 0, 0)
+    # etime = pd.Timestamp(years[-1]+1, 1, 1, 0, 0, 0)
+    stime = 1994.5
+    etime = 2004.5
+    
+    # Define Lomb-Scargle freqs etc
+    f_min = 1 / (48. * 60. * 60.)
+    f_max = 1 / (8. * 60. * 60.)
+    T = (pd.Timestamp(2005, 1, 1, 0) - pd.Timestamp(1995, 1, 1, 0)).total_seconds()
+    f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min, f_max, n0=5)
+    freqs = freqs[::-1]
+    angular_freqs = 2 * np.pi * freqs
+    periods = periodicity_functions.freq_to_period(freqs)    
+    
+    # Read in Sunspot Number
+    sunspot_df = read_sunspot_n.read_monthly_sunspot()
+    smoothed_sunspot_df = read_sunspot_n.read_monthly_smoothed_sunspot()
+    
+    # Read in AKR integrated power
+        
+    # LS analysis here
+    ls_pgram = np.full((periods.size, years.size), np.nan)
+    for i, yr in enumerate(years):
+        print('Running Lomb-Scargle analysis for ', yr)
+        
+        # Subselect AKR df
+    
+        # Run Lomb-Scargle
+        
+        # Current placeholder data
+        ls_pgram[:, i] = np.repeat(i, periods.size)
+    
+    # Find edges of pixels on period axis
+    period_edges = np.full(periods.size + 1, np.nan)
+    for k in range(period_edges.size):
+        if k == period_edges.size-2:
+            period_edges[k] = periods[k-1] + ((periods[k]-periods[k-1])/2)
+        elif k == period_edges.size-1:
+            period_edges[k] = periods[k-1] + ((periods[k-1]-periods[k-2])/2)
+        else:
+            period_edges[k] = periods[k] - ((periods[k+1]-periods[k])/2)
+    
+    # Perhaps a panel with discreet years and another with some smoothing?
+    # IF TIME
+    
+   # breakpoint()
+    
+    
+    # Initialise plotting
+    fig, ax = plt.subplots(nrows=2, figsize=(16,8))
+   
+    # Plot Lomb-Scargles
+    X, Y = np.meshgrid(np.append(years-0.5, years[-1]+0.5), period_edges)
+    pcm = ax[0].pcolormesh(X, Y, ls_pgram, cmap='plasma')
+    cbar = plt.colorbar(pcm, ax=ax[0], label="Lomb-Scargle\nNormalised Amplitude")
+    cbar.ax.tick_params(labelsize=fontsize)
+   
+    ax[0].set_ylabel('Period (hours)', fontsize=fontsize)
 
+    ax_pos = ax[0].get_position().bounds
 
+    # Plot Sunspot Number
+    ax[1].plot(sunspot_df.year_frac, sunspot_df.mean_s_n, **sunspot_n_fdict)
+    ax[1].plot(smoothed_sunspot_df.year_frac, smoothed_sunspot_df.smooth_s_n, **smoothsn_fdict)
 
+    # Set limits
+    sunspot_ymax = np.max(
+        [sunspot_df.loc[(sunspot_df.year_frac >= stime) & (sunspot_df.year_frac <= etime), 'mean_s_n'].max(),
+        smoothed_sunspot_df.loc[(smoothed_sunspot_df.year_frac >= stime) & (smoothed_sunspot_df.year_frac <= etime), 'smooth_s_n'].max()])
+    ax[1].set_ylim(0, 1.1 * sunspot_ymax)
+    ax[1].set_xlim(stime, etime)
+    
+    ax[1].set_ylabel('Sunspot Number', fontsize=fontsize)
+    ax[1].set_xlabel('Year', fontsize=fontsize)
+    ax[1].legend(fontsize=fontsize, loc='upper right')
+    # Make width same as (a)
+    pos=ax[1].get_position().bounds
+    ax[1].set_position([ax_pos[0], pos[1], ax_pos[2], pos[3]])
+    
+    
+    # Formatting
+    for j, a in enumerate(ax):
+        a.set_xlim(stime, etime)
+        a.tick_params(labelsize=fontsize)
 
-
-
-
-
-
-
+        t = a.text(0.02, 0.92, axes_labels[j], transform=a.transAxes,
+                   fontsize=fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+                
 
 
 
