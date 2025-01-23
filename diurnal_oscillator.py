@@ -87,12 +87,12 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
                               freq=1/(osc_freq * 60 * 60),
                               cycle='gaussian',
                               std=osc_freq * 6 * 60)
-    akr_osc = (akr_osc + 2.0) * 1e6
+    akr_osc = (akr_osc + 5.0) * 1e6
     # ^ make positive and put to the order of AKR power
     clean = akr_osc
 
     if add_noise:
-        noisy = akr_osc + np.random.normal(loc=np.mean(akr_osc),
+        noisy = akr_osc + np.random.normal(loc=noise_level*np.mean(akr_osc),
                                            scale=noise_level *
                                            np.mean(akr_osc),
                                            size=akr_osc.size)
@@ -132,8 +132,8 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
                                figsize=(12, 5))
 
         # Time series
-        ax[0].plot(time, clean, linewidth=1.0, color='black',
-                   label='Pure oscillator')
+        ax[0].plot(time, clean, linewidth=2.0, color='black',
+                   label='Pure oscillator', zorder=2)
 
         xmax = n_plot_osc*osc_freq*60*60
         yi, = np.where(time <= xmax)
@@ -142,18 +142,19 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
         if add_noise:
             ax[0].plot(time, noisy, linewidth=1.0,
                        label='Random Gaussian Noise',
-                       color=noise_color)
+                       color=noise_color, zorder=1.5)
             yval = np.append(yval, noisy[yi])
 
         if add_amplitude_modulation:
             # Plot modulated signal
             ax[0].plot(time, amplitude_modulated, linewidth=1.0,
-                       label='Amplitude Modulated', color=mod_color)
+                       label='Amplitude Modulated', color=mod_color,
+                       zorder=1.6)
             yval = np.append(yval, amplitude_modulated[yi])
 
             # Plot modulation
             mod_ax = ax[0].twinx()
-            mod_leg = mod_ax.plot(time, modulation, linewidth=1.0,
+            mod_leg = mod_ax.plot(time, modulation, linewidth=2.,
                                   label='Modulation factor', color=modf_color,
                                   linestyle='dashed')
             mod_ax.set_ylabel('Modulation factor', color=modf_color,
@@ -165,7 +166,7 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
         if create_data_gaps:
             ax[0].plot(time, synthetic_gaps + 1E6, linewidth=1.0,
                        label='Synthetic Gaps\n(amplitude + 1E6)',
-                       color=gaps_color)
+                       color=gaps_color, zorder=1.75)
             yval = np.append(yval, synthetic_gaps[yi] + 1E6)
             horiz_gaps = np.where(np.isnan(akr_osc),
                                   np.nan, 1.05*np.nanmax(yval))
@@ -194,7 +195,7 @@ def oscillating_signal(osc_freq, add_noise=True, noise_level=0.1,
         leg_lab = [*ax[0].get_legend_handles_labels()[1],
                    mod_leg[0].get_label()]
         ax[0].legend(leg_ln, leg_lab, fontsize=0.65*fontsize,
-                     loc='upper right')
+                     loc='lower center', ncol=3)
 
         # Histogram
         hist_max = np.nanmax([np.nanmax(clean), np.nanmax(noisy),

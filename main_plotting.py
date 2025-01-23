@@ -203,7 +203,7 @@ def run_lomb_scargle():
                                          vertical_indicators=vertical_indicators,
                                          ax=ax[0],
                                          vertical_ind_col=vertical_ind_col)
-
+    breakpoint()
 
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running Lomb-Scargle for ', interval_tag)

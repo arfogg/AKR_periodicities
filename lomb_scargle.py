@@ -90,6 +90,7 @@ def detect_peak(ls_pgram, periods, freqs):
     
     return peak_height, peak_freq, peak_period
 
+
 def plot_LS_summary(periods, ls_pgram,
                     fontsize=15,
                     vertical_indicators=[],
@@ -114,12 +115,17 @@ def plot_LS_summary(periods, ls_pgram,
 
     if vertical_indicators != []:
         for h in vertical_indicators:
-            ax.axvline(h, color=vertical_ind_col, linestyle='dashed',
-                       linewidth=1.5)
+            # ax.axvline(h, color=vertical_ind_col, linestyle='dashed',
+            #            linewidth=1.5)
             trans = transforms.blended_transform_factory(ax.transData,
                                                          ax.transAxes)
-            ax.text(h, 1.075, str(h), transform=trans,
-                    fontsize=fontsize, va='top', ha='center',
-                    color=vertical_ind_col)
+            # ax.text(h, 1.075, str(h), transform=trans,
+            #         fontsize=fontsize, va='top', ha='center',
+            #         color=vertical_ind_col)
+            print(h)
+            ax.annotate(str(h), xy=(h, 1.0), xytext=(h, 1.1),
+                        xycoords=trans, arrowprops={'facecolor': 'black'},
+                        fontsize=fontsize, va='top', ha='center',
+                        color=vertical_ind_col)
 
     return ax
