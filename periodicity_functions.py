@@ -255,7 +255,7 @@ def plot_fft_summary(time, y, temporal_resolution,
         return ax
 
 
-def autocorrelation(y, n_shifts, temporal_resolution=180, starting_lag=7200):
+def DEP_autocorrelation(y, n_shifts, temporal_resolution=180, starting_lag=7200):
     """
     Calculate the autocorrelation (ACF) for a signal y
     across various lags.
@@ -305,7 +305,7 @@ def autocorrelation(y, n_shifts, temporal_resolution=180, starting_lag=7200):
     return acf, lags
 
 
-def plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
+def DEP_plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
                          highlight_period=24.,
                          highlight_fmt={'color': 'grey',
                                         'linestyle': 'dashed',

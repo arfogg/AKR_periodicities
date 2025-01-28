@@ -29,6 +29,7 @@ import binning_averaging
 import wind_location
 import diurnal_oscillator
 import lomb_scargle
+import autocorrelation
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 #import read_integrated_power
@@ -315,6 +316,193 @@ def run_lomb_scargle():
 
     # Save to file
     fig.savefig(LS_fig)
+
+def run_ACF():
+    print('edit me')
+
+    # Initialise variables
+    temporal_resolution = 3. * 60.  # in seconds
+    n_shifts = 5000
+    tick_sep_hrs=12.
+    highlight_period=24.
+    highlight_fmt={'color': 'grey',
+                   'linestyle': 'dashed',
+                   'linewidth': 1.}
+
+    # Different frequency channels
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'  # ,
+                          #'ipwr_100_650kHz'
+                          ])
+    freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
+    freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
+
+    LS_fig = os.path.join(fig_dir, "three_interval_ACF.png")
+
+    # Read in interval data
+    print('Reading AKR data over requested intervals')
+    interval_options = read_and_tidy_data.return_test_intervals()
+
+    # Initialise plotting window
+    fig, ax = plt.subplots(nrows=4, figsize=(10, 17))
+
+    # Run ACF over the fake oscillator
+    ftime, fsignal = read_synthetic_oscillator()
+
+    acf_csv = os.path.join(data_dir, 'acf', 'ACF_synthetic.csv')
+
+    if (pathlib.Path(acf_csv).is_file()) is False:
+        acf, lags = autocorrelation.autocorrelation(
+            fsignal, n_shifts, temporal_resolution=temporal_resolution,
+            starting_lag=7200)
+        acf_df = pd.DataFrame({'acf': acf, 'lags': lags})
+        acf_df.to_csv(index=False)
+    else:
+        acf_df = pd.read_csv(acf_csv, float_precision='round trip')
+        acf = acf_df['acf']
+        lags = acf_df['lags']
+
+    ax[0].plot(lags, acf, color=freq_colors[0], linewidth=1.)
+
+    # DO I NEED TO DROP NANS???
+
+
+    for (i, interval_tag) in enumerate(interval_options['tag']):
+        print('Running Lomb-Scargle for ', interval_tag)
+        
+        base_dir = pathlib.Path(data_dir) / 'acf'
+        file_paths = [base_dir / f"ACF_{interval_tag}_{f}.csv" for f in freq_tags]
+        file_checks = [file_path.is_file() for file_path in file_paths]
+
+
+        if all(file_checks) is False:
+            
+            akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+
+        # Remove any rows where intensity == np.nan
+        for (j, (freq_column, c, n)) in enumerate(zip(freq_tags, freq_colors, freq_labels)):
+            print('Frequency band: ', freq_column)
+            acf_csv = os.path.join(data_dir, 'acf', 'ACF_' +
+                                  interval_tag + '_' + freq_column + '.csv')
+
+            if pathlib.Path(acf_csv).is_file() is False:
+
+                freq_df = akr_df.dropna(subset=[freq_column])
+                t1 = pd.Timestamp.now()
+                print('starting ACF at ', t1)
+                acf, lags = autocorrelation.autocorrelation(
+                    freq_df[freq_column], n_shifts, temporal_resolution=temporal_resolution,
+                    starting_lag=7200)
+                t2 = pd.Timestamp.now()
+                print('ACF finished, time elapsed: ', t2-t1)
+                acf_df = pd.DataFrame({'acf': acf, 'lags': lags})
+                acf_df.to_csv(acf_csv, index=False)
+
+
+                
+            else:
+
+                acf_df = pd.read_csv(acf_csv, delimiter=',',
+                                     float_precision='round_trip')
+                acf = acf_df['acf']
+                lags = acf_df['lags']
+
+            ax[i + 1].plot(lags, acf, color=c, linewidth=1.)
+
+
+
+    # !!! need to twinx for the orange line
+    # also deal with the weirdness in the cassini panel
+    # remove nan rows from the synthetic data??
+
+
+    # Format all axes
+    titles = np.append('Synthetic', interval_options.label)
+    for (j, a) in enumerate(ax):
+        # Convert x ticks from seconds to readable format
+        n_ticks = int(np.floor(np.max(a.get_xticks()) /
+                               (tick_sep_hrs * 60. * 60.)))
+        tick_pos = []
+        tick_str = []
+        for i in range(n_ticks):
+            tick_pos.append(i * (tick_sep_hrs * 60. * 60.))
+            tick_str.append(str(int(tick_sep_hrs * i)))
+        a.set_xticks(tick_pos, tick_str)
+    
+        a.set_ylabel('ACF', fontsize=fontsize)
+        a.set_xlabel('Lag (hours)', fontsize=fontsize)
+    
+        # Draw vertical lines each highlight period
+        n_vert = int(np.floor((a.get_xlim()[1]) / (highlight_period * 60. * 60.)))
+        for i in range(n_vert):
+            a.axvline(((i + 1) * highlight_period)*(60. * 60.), **highlight_fmt)
+    
+        # Formatting
+        a.tick_params(labelsize=fontsize)
+           
+        t = a.text(0.01, 0.95, axes_labels[j], transform=a.transAxes,
+                   fontsize=fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+           
+        tit = a.text(1.05, 0.5, titles[j], transform=a.transAxes,
+                     fontsize=1.25 * fontsize, va='center', ha='center',
+                     rotation=-90.)     
+
+
+
+    #         # ax[i + 1] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
+    #         #                                          vertical_indicators=[12.,
+    #         #                                                               24.],
+    #         #                                          ax=ax[i+1])
+    #         ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+
+    #     ax[i + 1].set_xscale('log')
+
+    #     # Formatting
+    #     ax[i + 1].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
+    #     ax[i + 1].set_xlabel('Period (hours)', fontsize=fontsize)
+    #     ax[i + 1].tick_params(labelsize=fontsize)
+    #     ax[i + 1].legend(fontsize=fontsize, loc='upper left')
+
+    #     if vertical_indicators != []:
+    #         for h in vertical_indicators:
+    #             # ax[i + 1].axvline(h, color=vertical_ind_col, linestyle='dashed',
+    #             #            linewidth=1.5)
+    #             trans = transforms.blended_transform_factory(ax[i + 1].transData,
+    #                                                          ax[i + 1].transAxes)
+    #             # ax[i + 1].text(h, 1.075, str(h), transform=trans,
+    #             #         fontsize=fontsize, va='top', ha='center',
+    #             #         color=vertical_ind_col)
+    #             ax[i + 1].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
+    #                         xycoords=trans, arrowprops={'facecolor': 'black'},
+    #                         fontsize=fontsize, va='top', ha='center',
+    #                         color=vertical_ind_col)
+
+    # # Label panels
+    # titles = np.append('Synthetic', interval_options.label)
+    # for (i, a) in enumerate(ax):
+        
+    #     t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
+    #                fontsize=fontsize, va='bottom', ha='left')
+    #     t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+        
+    #     tit = a.text(1.05, 0.5, titles[i], transform=a.transAxes,
+    #                  fontsize=1.25 * fontsize, va='center', ha='center',
+    #                  rotation=-90.)
+        
+
+    # # Adjust margins etc
+    # fig.tight_layout()
+
+    # # Save to file
+    # fig.savefig(LS_fig)
+
+
+
+
+
+
+
+
 
 
 def LS_solar_cyc(sunspot_n_fdict={'color': 'lightgrey',
