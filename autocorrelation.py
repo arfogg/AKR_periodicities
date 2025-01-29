@@ -29,9 +29,6 @@ def autocorrelation(y, n_shifts, temporal_resolution=180, starting_lag=7200):
 
     Returns
     -------
-    shifted_y : np.ndarray
-        Array containing y shifted by lags, of shape
-        y.size x n_shifts.
     acf : np.array
         ACF as a function of lags.
     lags : np.array
@@ -42,14 +39,11 @@ def autocorrelation(y, n_shifts, temporal_resolution=180, starting_lag=7200):
     starting_lag_i = int(starting_lag / temporal_resolution)
 
     # Initialise arrays
-    # shifted_y = np.full((y.size, n_shifts), np.nan)
     acf = np.full(n_shifts, np.nan)
     lags = np.full(n_shifts, np.nan)
 
     for i in range(0, n_shifts):
         # Shift y
-        # shifted_y[:, i] = np.append(y[-(i+starting_lag_i):],
-        #                            y[:-(i+starting_lag_i)])
         shifted_y = np.append(y[-(i+starting_lag_i):],
                               y[:-(i+starting_lag_i)])
         # Calculate ACF
@@ -98,8 +92,11 @@ def plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
         Axes containing plot.
 
     """
+
+    # Define plotting window
     fig, ax = plt.subplots(figsize=(10, 7))
 
+    # Plot ACF as a function of lag
     ax.plot(lags, acf, **acf_fmt)
 
     # Convert x ticks from seconds to readable format
@@ -112,6 +109,7 @@ def plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
         tick_str.append(str(int(tick_sep_hrs * i)))
     ax.set_xticks(tick_pos, tick_str)
 
+    # Label axes
     ax.set_ylabel('ACF', fontsize=fontsize)
     ax.set_xlabel('Lag (hours)', fontsize=fontsize)
 
