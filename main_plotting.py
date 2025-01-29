@@ -181,6 +181,11 @@ def run_lomb_scargle():
 
     # Run Lomb-Scargle over the fake oscillator
     ftime, fsignal = read_synthetic_oscillator()
+    
+    # Remove NaN rows
+    clean_ind, = np.where(~np.isnan(fsignal))
+    ftime = ftime[clean_ind]
+    fsignal = fsignal[clean_ind]
 
     ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_synthetic.csv')
     if pathlib.Path(ls_csv).is_file():
@@ -224,7 +229,7 @@ def run_lomb_scargle():
         for h in vertical_indicators:
             trans = transforms.blended_transform_factory(ax[0].transData,
                                                          ax[0].transAxes)
-            ax[0].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.1),
+            ax[0].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
                            xycoords=trans, arrowprops={'facecolor': 'black'},
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
@@ -306,7 +311,7 @@ def run_lomb_scargle():
                    fontsize=fontsize, va='bottom', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
         
-        tit = a.text(1.05, 0.5, titles[i], transform=a.transAxes,
+        tit = a.text(1.025, 0.5, titles[i], transform=a.transAxes,
                      fontsize=1.25 * fontsize, va='center', ha='center',
                      rotation=-90.)
         
@@ -318,12 +323,12 @@ def run_lomb_scargle():
     fig.savefig(LS_fig)
 
 def run_ACF():
-    print('edit me')
+
 
     # Initialise variables
     temporal_resolution = 3. * 60.  # in seconds
     n_shifts = 5000
-    tick_sep_hrs=12.
+    tick_sep_hrs=24.
     highlight_period=24.
     highlight_fmt={'color': 'grey',
                    'linestyle': 'dashed',
@@ -336,7 +341,7 @@ def run_ACF():
     freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
     freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
 
-    LS_fig = os.path.join(fig_dir, "three_interval_ACF.png")
+    ACF_fig = os.path.join(fig_dir, "three_interval_ACF.png")
 
     # Read in interval data
     print('Reading AKR data over requested intervals')
@@ -347,6 +352,11 @@ def run_ACF():
 
     # Run ACF over the fake oscillator
     ftime, fsignal = read_synthetic_oscillator()
+    # Remove NaN rows
+    clean_ind, = np.where(~np.isnan(fsignal))
+    ftime = ftime[clean_ind]
+    fsignal = fsignal[clean_ind]
+
 
     acf_csv = os.path.join(data_dir, 'acf', 'ACF_synthetic.csv')
 
@@ -355,9 +365,9 @@ def run_ACF():
             fsignal, n_shifts, temporal_resolution=temporal_resolution,
             starting_lag=7200)
         acf_df = pd.DataFrame({'acf': acf, 'lags': lags})
-        acf_df.to_csv(index=False)
+        acf_df.to_csv(acf_csv, index=False)
     else:
-        acf_df = pd.read_csv(acf_csv, float_precision='round trip')
+        acf_df = pd.read_csv(acf_csv, float_precision='round_trip')
         acf = acf_df['acf']
         lags = acf_df['lags']
 
@@ -367,7 +377,7 @@ def run_ACF():
 
 
     for (i, interval_tag) in enumerate(interval_options['tag']):
-        print('Running Lomb-Scargle for ', interval_tag)
+        print('Running autocorrelation for ', interval_tag)
         
         base_dir = pathlib.Path(data_dir) / 'acf'
         file_paths = [base_dir / f"ACF_{interval_tag}_{f}.csv" for f in freq_tags]
@@ -406,13 +416,21 @@ def run_ACF():
                 acf = acf_df['acf']
                 lags = acf_df['lags']
 
-            ax[i + 1].plot(lags, acf, color=c, linewidth=1.)
+
+            if freq_column =='ipwr_50_100kHz':
+                tax = ax[i + 1].twinx()
+                tax.plot(lags, acf, color=c, linewidth=1.)
+                tax.set_ylabel('ACF\n(' + n + ')', color=c, fontsize=fontsize)
+                tax.tick_params(axis='y', labelcolor=(c), labelsize=fontsize)
+                tax.spines['right'].set_color(c)
+            else:
+                ax[i + 1].plot(lags, acf, color=c, linewidth=1.)
 
 
 
     # !!! need to twinx for the orange line
     # also deal with the weirdness in the cassini panel
-    # remove nan rows from the synthetic data??
+
 
 
     # Format all axes
@@ -428,7 +446,10 @@ def run_ACF():
             tick_str.append(str(int(tick_sep_hrs * i)))
         a.set_xticks(tick_pos, tick_str)
     
-        a.set_ylabel('ACF', fontsize=fontsize)
+        if j < 1:
+            a.set_ylabel('ACF', fontsize=fontsize)
+        else:
+            a.set_ylabel('ACF\n(' + freq_labels[0] + ')', fontsize=fontsize)
         a.set_xlabel('Lag (hours)', fontsize=fontsize)
     
         # Draw vertical lines each highlight period
@@ -439,72 +460,25 @@ def run_ACF():
         # Formatting
         a.tick_params(labelsize=fontsize)
            
-        t = a.text(0.01, 0.95, axes_labels[j], transform=a.transAxes,
-                   fontsize=fontsize, va='top', ha='left')
+        t = a.text(0.98, 0.95, axes_labels[j], transform=a.transAxes,
+                   fontsize=fontsize, va='top', ha='right')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
            
-        tit = a.text(1.05, 0.5, titles[j], transform=a.transAxes,
-                     fontsize=1.25 * fontsize, va='center', ha='center',
-                     rotation=-90.)     
+        # tit = a.text(1.1, 0.5, titles[j], transform=a.transAxes,
+        #              fontsize=1.25 * fontsize, va='center', ha='center',
+        #              rotation=-90.)     
+        tit = a.text(0.5, 1.01, titles[j], transform=a.transAxes,
+                     fontsize=1.25 * fontsize, va='bottom', ha='center')    
 
 
+        a.set_xlim(left=0., right=np.max(lags))
 
-    #         # ax[i + 1] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
-    #         #                                          vertical_indicators=[12.,
-    #         #                                                               24.],
-    #         #                                          ax=ax[i+1])
-    #         ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+    fig.tight_layout()
 
-    #     ax[i + 1].set_xscale('log')
-
-    #     # Formatting
-    #     ax[i + 1].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
-    #     ax[i + 1].set_xlabel('Period (hours)', fontsize=fontsize)
-    #     ax[i + 1].tick_params(labelsize=fontsize)
-    #     ax[i + 1].legend(fontsize=fontsize, loc='upper left')
-
-    #     if vertical_indicators != []:
-    #         for h in vertical_indicators:
-    #             # ax[i + 1].axvline(h, color=vertical_ind_col, linestyle='dashed',
-    #             #            linewidth=1.5)
-    #             trans = transforms.blended_transform_factory(ax[i + 1].transData,
-    #                                                          ax[i + 1].transAxes)
-    #             # ax[i + 1].text(h, 1.075, str(h), transform=trans,
-    #             #         fontsize=fontsize, va='top', ha='center',
-    #             #         color=vertical_ind_col)
-    #             ax[i + 1].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
-    #                         xycoords=trans, arrowprops={'facecolor': 'black'},
-    #                         fontsize=fontsize, va='top', ha='center',
-    #                         color=vertical_ind_col)
-
-    # # Label panels
-    # titles = np.append('Synthetic', interval_options.label)
-    # for (i, a) in enumerate(ax):
-        
-    #     t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
-    #                fontsize=fontsize, va='bottom', ha='left')
-    #     t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-        
-    #     tit = a.text(1.05, 0.5, titles[i], transform=a.transAxes,
-    #                  fontsize=1.25 * fontsize, va='center', ha='center',
-    #                  rotation=-90.)
-        
-
-    # # Adjust margins etc
-    # fig.tight_layout()
-
-    # # Save to file
-    # fig.savefig(LS_fig)
-
-
-
-
-
-
-
-
-
-
+    # Save to file
+    fig.savefig(ACF_fig)
+    
+    
 def LS_solar_cyc(sunspot_n_fdict={'color': 'lightgrey',
                                   'label': 'Mean',
                                   'linewidth': 1.},
