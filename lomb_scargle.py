@@ -8,7 +8,6 @@ Functions to run Lomb-Scargle analysis.
 """
 
 import numpy as np
-import pandas as pd
 
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
@@ -16,79 +15,70 @@ import matplotlib.transforms as transforms
 import scipy.signal as signal
 
 
-
-# def test_LS():
-        
-#     rng = np.random.default_rng()
-
-#     A = 2.
-#     w0 = 1.  # rad/sec
-#     nin = 150
-#     nout = 100000
-
-#     time = rng.uniform(0, 10*np.pi, nin)
-
-#     y = A * np.cos(w0*time)
-
-#     freqs = np.linspace(0.01, 10, nout)
-#     periods = freq_to_period(freqs)
-    
-#     ls_pgram = generic_lomb_scargle(time, y, freqs)
-    
-    
-#     plot_LS_summary(time, y, freqs, periods, ls_pgram,
-#                     vertical_indicators=[])
-
 def define_frequency_bins(T, f_min, f_max, n0=5):
-    
-    # T = length of entire dataset in seconds. i.e. the lowest
-    #   possible freq is 1/total amount of time observed
-    # f_max = desired maximum frequency, decided based on prior science
-    #   knowledge of the system
-    # n0 = number of samples needed to define a peak in a periodogram
-    #
-    # Vanderplas 2018 https://doi.org/10.3847/1538-4365/aab766
+    """
+    Function to define the Lomb-Scargle bins in frequency space. Theory
+    of bin selection from Vanderplas (2018)
+    https://doi.org/10.3847/1538-4365/aab766
 
-    print(f_min < f_max)
-    
+    Parameters
+    ----------
+    T : int
+        Length of entire dataset in seconds. The lowest possible freq
+        is 1/total amount of time observed.
+    f_min : float
+        Desired minimum frequency.
+    f_max : float
+        Desired maximum frequency.
+    n0 : TYPE, optional
+        Number of samples needed to define a peak in a periodogram. The
+        default is 5.
+
+    Returns
+    -------
+    f_min : float
+        Minimum frequency.
+    f_max : float
+        Maximum frequency.
+    N_f : int
+        Number of frequencies.
+    sample_f : np.array
+        Calculated frequency bins.
+
+    """
+
     # Number of frequencies to be sampled
     N_f = int(n0 * T * f_max)
-    
+
     # Distribute frequencies logarithmically
     sample_f = np.logspace(np.log10(f_min), np.log10(f_max), N_f)
-    
+
     return f_min, f_max, N_f, sample_f
 
-def generic_lomb_scargle(time, y, freqs):
-    
-    # time in seconds
-    # NaN rows removed
-    
 
+def generic_lomb_scargle(time, y, freqs):
+    """
+    Function to run Lomb Scargle as implemented in SciPy
+
+    Parameters
+    ----------
+    time : np.array
+        Time axis of the data in seconds.
+    y : np.array
+        Amplitude of the data. NaN rows must be removed.
+    freqs : np.array
+        Frequency bins to be sampled.
+
+    Returns
+    -------
+    ls_pgram : np.array
+        Normalised Lomb-Scargle amplitude as a function of freqs.
+
+    """
 
     ls_pgram = signal.lombscargle(time, y, freqs, normalize=True)
 
     return ls_pgram
-
-def detect_peak(ls_pgram, periods, freqs):
-    
-    
-    
-    
-    i = np.argmax(ls_pgram)
-    
-    peak_height = ls_pgram[i]
-    peak_freq = freqs[i]
-    peak_period = periods[i]
-    
-    
-    
-    # calc FAP here????
-    # not sure this is the best wway to calc the peak!
-    
-    
-    
-    return peak_height, peak_freq, peak_period
 
 
 def plot_LS_summary(periods, ls_pgram,
@@ -97,35 +87,67 @@ def plot_LS_summary(periods, ls_pgram,
                     pgram_fmt={'color': 'dimgrey', 'linewidth': 1.5},
                     vertical_ind_col='royalblue',
                     ax=None):
+    """
+    Function to plot Lomb-Scargle periodogram.
 
+    Parameters
+    ----------
+    periods : np.array
+        Periods for the x axis.
+    ls_pgram : np.array
+        Lomb-scargle amplitude for the y axis.
+    fontsize : float, optional
+        Fontsize for all text. The default is 15.
+    vertical_indicators : list, optional
+        X axis positions (in hours) to draw vertical arrows at. The
+        default is [].
+    pgram_fmt : dict, optional
+        Formatting options for the periodogram curve. The default is
+        {'color': 'dimgrey', 'linewidth': 1.5}.
+    vertical_ind_col : string, optional
+        Color for the vertical indicators. The default is 'royalblue'.
+    ax : matplotlib axis, optional
+        Axis to draw the plot on. The default is None.
+
+    Returns
+    -------
+    ax : matplotlib axis
+        Axis object containing the plot.
+
+    """
+
+    # Define plotting window if needed
     if ax is None:
         fig, ax = plt.subplots(figsize=(12, 6))
 
+    # Plot periodogram
     ax.plot(periods, ls_pgram, **pgram_fmt)
-    # lims=ax.get_ylim()
-    # ax.plot(periods, np.repeat((lims[1]-lims[0])/2, periods.size),
-    #         linewidth=0., marker='^', alpha=0.5, color='red',
-    #         fillstyle='none')
-    ax.set_xscale('log')
 
     # Formatting
+    ax.set_xscale('log')
     ax.set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
     ax.set_xlabel('Period (hours)', fontsize=fontsize)
     ax.tick_params(labelsize=fontsize)
 
+    # Draw vertical indicators
     if vertical_indicators != []:
         for h in vertical_indicators:
-            # ax.axvline(h, color=vertical_ind_col, linestyle='dashed',
-            #            linewidth=1.5)
             trans = transforms.blended_transform_factory(ax.transData,
                                                          ax.transAxes)
-            # ax.text(h, 1.075, str(h), transform=trans,
-            #         fontsize=fontsize, va='top', ha='center',
-            #         color=vertical_ind_col)
-            print(h)
-            ax.annotate(str(h), xy=(h, 1.0), xytext=(h, 1.1),
+            ax.annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
                         xycoords=trans, arrowprops={'facecolor': 'black'},
                         fontsize=fontsize, va='top', ha='center',
                         color=vertical_ind_col)
 
     return ax
+
+
+def DEPRECATED_detect_peak(ls_pgram, periods, freqs):
+
+    i = np.argmax(ls_pgram)
+
+    peak_height = ls_pgram[i]
+    peak_freq = freqs[i]
+    peak_period = periods[i]
+
+    return peak_height, peak_freq, peak_period
