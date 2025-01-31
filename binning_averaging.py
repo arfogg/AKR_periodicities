@@ -12,6 +12,7 @@ import string
 import matplotlib
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\misc_utility')
@@ -84,6 +85,68 @@ def calc_LT_flag(data_df,
         mlt_name[mlt_i] = n
 
     return mlt_flag, mlt_name
+
+
+def return_UT_trend(data_df, region_centres=[0, 6, 12, 18],
+                    region_width=6,
+                    region_names=['midn', 'dawn', 'noon', 'dusk'],
+                    region_flags=[0, 1, 2, 3], UT_bin_width=2,
+                    ipower_tag='integrated_power'):
+
+        # data_df includes mlt_flag and mlt_name
+
+    # # For now, just remove all rows where intensity is zero.
+    # # This needs to be investigated later!
+    # zero_ind, = np.where(data_df.integrated_power == 0.)
+    # data_df.drop(index=zero_ind, inplace=True)
+    # data_df.reset_index(drop=True, inplace=True)
+
+    UT_bins = np.linspace(0, 24-UT_bin_width, int(24/UT_bin_width)) +\
+        (UT_bin_width/2)
+    data_df['decimal_hr'] = (data_df.datetime -
+                             data_df.datetime.values.astype('datetime64[D]')).\
+        astype('timedelta64[m]') / 60.
+
+    UT_df = pd.DataFrame({'UT_bin_centre': UT_bins})
+
+    # Iterate through MLT sectors
+    for i, (c, n, f) in enumerate(zip(region_centres, region_names,
+                                      region_flags)):
+
+        LT_data_df = data_df.loc[data_df.mlt_flag == f].reset_index()
+
+        UT_median = np.full(UT_bins.size, np.nan)
+        UT_mad = np.full(UT_bins.size, np.nan)
+        UT_dist = []
+
+        UT_n = np.full(UT_bins.size, np.nan)
+
+        for j in range(UT_bins.size):
+
+            UT_ind, = np.where((LT_data_df.decimal_hr >=
+                                (UT_bins[j]-UT_bin_width/2))
+                               & (LT_data_df.decimal_hr <
+                                  (UT_bins[j]+UT_bin_width/2)))
+            dist_ = np.array(
+                LT_data_df[ipower_tag].iloc[UT_ind].values)
+            UT_mad[j], UT_median[j] = statistical_metrics.\
+                median_absolute_deviation(dist_)
+
+            UT_n[j] = dist_.size
+
+            UT_dist.append(dist_)
+
+        UT_df[n + '_median'] = UT_median
+        UT_df[n + '_median_norm'] = UT_median / np.nanmax(UT_median)
+        UT_df[n + '_mad'] = UT_mad
+        UT_df[n + 'n'] = UT_n
+
+    return UT_df
+
+
+
+
+
 
 
 def plot_UT_trend(data_df, region_centres=[0, 6, 12, 18],

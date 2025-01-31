@@ -134,9 +134,10 @@ def select_akr_intervals(interval):
     # Read in data
     # akr_df = concat_intensity_over_freq_bands(years)
     freq_bands = define_freq_bands()
-    akr_df = calc_integrated_power.read_run_store_power(syear, eyear,
-                                                        freq_bands=freq_bands)
-
+    # akr_df = calc_integrated_power.read_run_store_power(syear, eyear,
+    #                                                     freq_bands=freq_bands)
+    akr_df = calc_integrated_power.read_run_store_power_with_wind_location(
+        syear, eyear, freq_bands=freq_bands)
     # Select only the interval requested
     akr_df = akr_df.loc[(akr_df.datetime >= selected.stime[0]) &
                         (akr_df.datetime <= selected.etime[0]),

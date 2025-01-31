@@ -479,6 +479,175 @@ def run_ACF():
     fig.savefig(ACF_fig)
     
     
+
+
+def run_MLT_binning():
+
+    # Initialise variables
+    region_centres = [0, 6, 12, 18]
+    region_width = 6
+    region_names = ['midn', 'dawn', 'noon', 'dusk']
+    region_flags = [0, 1, 2, 3]
+    region_colors = ['grey', "#8d75ca", "#a39143", "#bb6c82"]
+    UT_bin_width = 2
+
+    # Different frequency channels
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'  # ,
+                          #'ipwr_100_650kHz'
+                          ])
+    freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
+    freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
+
+    MLT_fig = os.path.join(fig_dir, "three_interval_MLT_binned.png")
+
+    # Read in interval data
+    print('Reading AKR data over requested intervals')
+    interval_options = read_and_tidy_data.return_test_intervals()
+
+    # Initialise plotting window
+    fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(21, 13))
+
+    # # Run ACF over the fake oscillator
+    # ftime, fsignal = read_synthetic_oscillator()
+    # # Remove NaN rows
+    # clean_ind, = np.where(~np.isnan(fsignal))
+    # ftime = ftime[clean_ind]
+    # fsignal = fsignal[clean_ind]
+
+
+    # acf_csv = os.path.join(data_dir, 'acf', 'ACF_synthetic.csv')
+
+    # if (pathlib.Path(acf_csv).is_file()) is False:
+    #     acf, lags = autocorrelation.autocorrelation(
+    #         fsignal, n_shifts, temporal_resolution=temporal_resolution,
+    #         starting_lag=7200)
+    #     acf_df = pd.DataFrame({'acf': acf, 'lags': lags})
+    #     acf_df.to_csv(acf_csv, index=False)
+    # else:
+    #     acf_df = pd.read_csv(acf_csv, float_precision='round_trip')
+    #     acf = acf_df['acf']
+    #     lags = acf_df['lags']
+
+    # ax[0].plot(lags, acf, color=freq_colors[0], linewidth=1.)
+
+    # # DO I NEED TO DROP NANS???
+
+
+    abc_label_counter = 0
+    for (i, interval_tag) in enumerate(interval_options['tag']):
+        print('Running autocorrelation for ', interval_tag)
+
+        base_dir = pathlib.Path(data_dir) / 'MLT_binning'
+        file_paths = [base_dir / f"MLT_binned_{interval_tag}_{f}.csv" for f in freq_tags]
+        file_checks = [file_path.is_file() for file_path in file_paths]
+
+        if all(file_checks) is False:
+            # Read in AKR intensity data
+            akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+            mlt_flag, mlt_name = binning_averaging.calc_LT_flag(
+                akr_df, region_centres=region_centres,
+                region_width=region_width, region_names=region_names,
+                region_flags=region_flags)
+            akr_df['mlt_flag'] = mlt_flag
+            akr_df['mlt_name'] = mlt_name
+
+
+        # Remove any rows where intensity == np.nan
+        for (j, (freq_column, c, n)) in enumerate(zip(freq_tags, freq_colors, freq_labels)):
+            print('Frequency band: ', freq_column)
+            MLT_csv = os.path.join(data_dir, 'MLT_binning', 'MLT_binned_' +
+                                  interval_tag + '_' + freq_column + '.csv')
+
+            if pathlib.Path(MLT_csv).is_file() is False:
+
+                freq_df = akr_df.dropna(subset=[freq_column])
+                t1 = pd.Timestamp.now()
+                print('starting MLT binning at ', t1)              
+                UT_df = binning_averaging.return_UT_trend(
+                        akr_df, region_centres=region_centres,
+                        region_width=region_width, region_names=region_names,
+                        region_flags=region_flags, UT_bin_width=UT_bin_width,
+                        ipower_tag=freq_column)
+                t2 = pd.Timestamp.now()
+                print('MLT binning finished, time elapsed: ', t2-t1)
+                UT_df.to_csv(MLT_csv, index=False)                
+            else:
+
+                UT_df = pd.read_csv(MLT_csv, delimiter=',',
+                                    float_precision='round_trip')
+    
+
+
+            if freq_column == 'ipwr_100_400kHz':
+                for k, (MLT_n, c) in enumerate(zip(region_names, region_colors)):
+                    ax[i, 0].plot(UT_df.UT_bin_centre, UT_df[MLT_n + '_median_norm'],
+                                  color=c, label=MLT_n)
+
+
+            elif freq_column == 'ipwr_50_100kHz':
+                for k, (MLT_n, c) in enumerate(zip(region_names, region_colors)):
+                    ax[i, 1].plot(UT_df.UT_bin_centre, UT_df[MLT_n + '_median_norm'],
+                                  color=c, label=MLT_n)
+
+            # Formatting
+            ax[i, j].text(0.5, 1.01,
+                          interval_options.label[i] + ' (' + n + ')',
+                          transform=ax[i, j].transAxes,
+                          fontsize=1.25 * fontsize, va='bottom', ha='center')
+            ax[i, j].set_ylabel('Normalised median integrated power', fontsize=fontsize)
+            ax[i, j].set_xlabel('UT (hours)', fontsize=fontsize)
+            ax[i, j].set_xlim(left=0., right=24.)
+            ax[i, j].tick_params(labelsize=fontsize)
+            ax[i, j].legend(fontsize=fontsize, loc='best')
+            t = ax[i, j].text(0.02, 0.95, axes_labels[abc_label_counter],
+                              transform=ax[i, j].transAxes, fontsize=fontsize,
+                              va='top', ha='left')
+            t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+            abc_label_counter = abc_label_counter + 1
+
+    fig.tight_layout()
+
+    # Save to file
+    # fig.savefig(MLT_fig)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 def LS_solar_cyc(sunspot_n_fdict={'color': 'lightgrey',
                                   'label': 'Mean',
                                   'linewidth': 1.},
