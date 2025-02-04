@@ -608,7 +608,7 @@ def run_MLT_binning():
     fig.tight_layout()
 
     # Save to file
-    # fig.savefig(MLT_fig)
+    fig.savefig(MLT_fig)
 
 
 
