@@ -57,3 +57,27 @@ def produce_single_bootstrap_sample(data, extract_length):
     bootstrap_sample = np.array(bootstrap_sample[0:len(data)])
 
     return bootstrap_sample
+
+
+def generate_bootstrap(data):
+    """
+    Function to product a bootstrapping sample from one given
+    data set.
+
+    Parameters
+    ----------
+    data : np.array
+        The input data to be bootstrapped. Must be np.array,
+        pd.Series won't work.
+
+    Returns
+    -------
+    bootstrap_sample : np.array
+        A sample of length data.size of bootstrapped data.
+
+    """
+    # Random selection from the data
+    bootstrap_sample = np.random.choice(data, size=len(data))
+
+    return bootstrap_sample
+    

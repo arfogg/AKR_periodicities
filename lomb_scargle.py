@@ -141,6 +141,17 @@ def plot_LS_summary(periods, ls_pgram,
 
     return ax
 
+def false_alarm_probability(n_bootstrap, BS_signal, time, freqs):
+    
+    bootstrap_peak_magnitudes = np.full(n_bootstrap, np.nan)
+    for i in range(n_bootstrap):
+        
+        pgram = generic_lomb_scargle(time, BS_signal[:, i], freqs)
+        bootstrap_peak_magnitudes[i] = np.nanmax(pgram)
+
+    FAP = np.nanmean(bootstrap_peak_magnitudes)
+    
+    return bootstrap_peak_magnitudes, FAP
 
 def DEPRECATED_detect_peak(ls_pgram, periods, freqs):
 

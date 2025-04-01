@@ -9,6 +9,7 @@ import sys
 import os
 import pathlib
 import string
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,6 +31,7 @@ import wind_location
 import diurnal_oscillator
 import lomb_scargle
 import autocorrelation
+import bootstrap_functions
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 #import read_integrated_power
@@ -91,7 +93,7 @@ def read_synthetic_oscillator():
         
         
     return time, akr_osc
-        
+
 
 def trajectory_plots():
     """
@@ -172,6 +174,11 @@ def run_lomb_scargle():
 
     LS_fig = os.path.join(fig_dir, "three_interval_lomb_scargle.png")
 
+    # Bootstrap filenames
+    n_bootstrap = 400
+    synthetic_BS_pkl = os.path.join(data_dir, "synthetic_signal_"
+                                    + str(n_bootstrap) + "BS.pkl")
+
     # Read in interval data
     print('Reading AKR data over requested intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
@@ -234,6 +241,42 @@ def run_lomb_scargle():
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
 
+
+
+
+    if pathlib.Path(synthetic_BS_pkl).is_file():
+        # Read in bootstraps
+        with open(synthetic_BS_pkl, 'rb') as f:
+            synthetic_BS = pickle.load(f)
+            synthetic_bootstrap_peak_magnitudes = pickle.load(f)
+            synthetic_FAP = pickle.load(f)
+    else:
+        synthetic_BS = np.full((fsignal.size, n_bootstrap), np.nan)
+        for i in range(n_bootstrap):
+            # Generate bootstrap
+            synthetic_BS[:, i] = bootstrap_functions.generate_bootstrap(fsignal)
+        
+        # Calculate FAP
+        synthetic_bootstrap_peak_magnitudes, synthetic_FAP \
+            = lomb_scargle.false_alarm_probability(n_bootstrap, synthetic_BS,
+                                                   ftime, angular_freqs)
+        # Save bootstraps to file
+        with open(synthetic_BS_pkl, 'wb') as f:
+            pickle.dump(synthetic_BS, f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(synthetic_bootstrap_peak_magnitudes, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(synthetic_FAP, f, protocol=pickle.HIGHEST_PROTOCOL)
+       
+    breakpoint()
+    
+    
+    
+    # # Calculate FAP
+    # synthetic_bootstrap_peak_magnitudes, synthetic_FAP \
+    #     = lomb_scargle.false_alarm_probability(n_bootstrap, synthetic_BS,
+    #                                            ftime, angular_freqs)
+
+    breakpoint()
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running Lomb-Scargle for ', interval_tag)
         
@@ -289,15 +332,13 @@ def run_lomb_scargle():
         ax[i + 1].tick_params(labelsize=fontsize)
         ax[i + 1].legend(fontsize=fontsize, loc='upper left')
 
+        # Plot FAP here
+
+
         if vertical_indicators != []:
             for h in vertical_indicators:
-                # ax[i + 1].axvline(h, color=vertical_ind_col, linestyle='dashed',
-                #            linewidth=1.5)
-                trans = transforms.blended_transform_factory(ax[i + 1].transData,
-                                                             ax[i + 1].transAxes)
-                # ax[i + 1].text(h, 1.075, str(h), transform=trans,
-                #         fontsize=fontsize, va='top', ha='center',
-                #         color=vertical_ind_col)
+                trans = transforms.blended_transform_factory(
+                    ax[i + 1].transData, ax[i + 1].transAxes)
                 ax[i + 1].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
                             xycoords=trans, arrowprops={'facecolor': 'black'},
                             fontsize=fontsize, va='top', ha='center',
