@@ -414,6 +414,21 @@ def run_ACF():
 
     ax[0].plot(lags, acf, color=freq_colors[0], linewidth=1.)
 
+
+    acf_envelope = autocorrelation.fit_exp_envelope(lags, acf)
+
+    guess_tau = 200. * 60. * 60.
+    guess_omega = 2 * np.pi * (1. / (24. * 60. * 60.))
+    #res_lsq, y_model = autocorrelation.fit_decaying_sinusoid(lags, acf, acf[0], guess_tau, guess_omega, 0.)
+    #popt, pcov, y_model = autocorrelation.fit_decaying_sinusoid(lags, acf, acf[0], guess_tau, guess_omega, 0.)
+    figgy, axy = plt.subplots()
+    axy.plot(lags, acf, color='black', linewidth=1., label='acf')
+    axy.plot(lags, acf_envelope, color='blue', linestyle='dashed', linewidth=1., label='envelope')
+    #axy.plot(lags, y_model, color='red', linewidth=1., label='fit')
+
+    axy.legend()
+
+    return lags, acf
     # DO I NEED TO DROP NANS???
 
 

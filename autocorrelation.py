@@ -9,6 +9,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+from scipy.optimize import least_squares
+from scipy.optimize import curve_fit
+
 
 def autocorrelation(y, n_shifts, temporal_resolution=180, starting_lag=7200):
     """
@@ -122,3 +125,53 @@ def plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
     ax.tick_params(labelsize=fontsize)
 
     return fig, ax
+
+
+
+def fit_exp_envelope(lags, acf):
+    
+    from scipy.signal import hilbert
+    
+    acf_envelope = np.abs(hilbert(acf))
+    
+    return acf_envelope
+
+def fit_decaying_sinusoid(lags, acf, A0, tau, omega, b):
+    print('Fitting a decaying sinusoid to the parsed parameters')
+
+    # input_parameters = [A0, tau, omega, b]
+    # popt, pcov = curve_fit(func_decaying_sinusoid, lags, acf,
+    #                        p0=input_parameters)
+    popt, pcov = curve_fit(func_linear_decaying_sinusoid, lags, acf)
+    
+    return popt, pcov, func_linear_decaying_sinusoid(*popt, lags)
+    
+    # res_lsq = least_squares(func_decaying_sinusoid_residual,
+    #               input_parameters, args=(lags, acf))
+
+    # return res_lsq, func_decaying_sinusoid(res_lsq.x, lags)
+
+def func_linear_decaying_sinusoid(x, a, c, omega, b):
+    
+    y = ((a * x) + c) * np.cos((omega * x) + b)
+
+    return y
+    
+def func_decaying_sinusoid(x, A0, tau, omega, b):
+#def func_decaying_sinusoid(x, A0, tau):
+#def func_decaying_sinusoid(parameters, time):
+#    A0, tau, omega, b = parameters
+    y = (A0 * np.exp(-1. * (x / (2. * tau)))) * np.cos((omega * x) + b)
+    #y = (A0 * np.exp(-1. * (x / (2. * tau))))
+    #y = a * np.cos((omega * x) + b)
+    return y
+
+def func_decaying_sinusoid_residual(parameters, time, true_y):
+    #print('Function definition for decaying sinusoid')
+    
+    # A0: amplitude at t=0
+    #
+    #A0, tau, omega, b = parameters
+    y = func_decaying_sinusoid(parameters, time)
+    
+    return y - true_y
