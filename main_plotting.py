@@ -150,6 +150,33 @@ def trajectory_plots():
     fig.savefig(traj_fig)
 
 
+def read_subset_bootstraps(subset_n, n_bootstrap=100):
+    
+    if subset_n == 'synthetic':
+        # Run Lomb-Scargle over the fake oscillator
+        ftime, fsignal = read_synthetic_oscillator()
+        # Remove NaN rows
+        clean_ind, = np.where(~np.isnan(fsignal))
+        ftime = ftime[clean_ind]
+        fsignal = fsignal[clean_ind]
+        # Define fname
+        synthetic_BS_pkl = os.path.join(data_dir, "synthetic_signal_"
+                                        + str(n_bootstrap) + "_BSs.pkl")
+        if pathlib.Path(synthetic_BS_pkl).is_file():
+            # Read in bootstraps
+            with open(synthetic_BS_pkl, 'rb') as f:
+                BS = pickle.load(f)
+        else:
+            print('Generating ')
+            BS = np.full((fsignal.size, n_bootstrap), np.nan)
+            for i in range(n_bootstrap):
+                # Generate bootstrap
+                BS[:, i] = bootstrap_functions.generate_bootstrap(fsignal)
+            with open(synthetic_BS_pkl, 'wb') as f:
+                    pickle.dump(BS, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return BS
+
 def run_lomb_scargle():
 
     # Initialising variables
@@ -174,10 +201,13 @@ def run_lomb_scargle():
 
     LS_fig = os.path.join(fig_dir, "three_interval_lomb_scargle.png")
 
-    # Bootstrap filenames
-    n_bootstrap = 400
-    synthetic_BS_pkl = os.path.join(data_dir, "synthetic_signal_"
-                                    + str(n_bootstrap) + "BS.pkl")
+    # Number of bootstrap
+    n_bootstrap = 100
+    
+    # FAP filenames
+    FAP_peaks_dir = os.path.join(data_dir, "lomb_scargle", 'LS_peaks_for_FAP')
+    synthetic_FAP_pkl = os.path.join(data_dir, "synthetic_FAP_"
+                                    + str(n_bootstrap) + "_BSs.pkl")
 
     # Read in interval data
     print('Reading AKR data over requested intervals')
@@ -241,31 +271,48 @@ def run_lomb_scargle():
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
 
+    # Read in bootstrap
+    synthetic_BS = read_subset_bootstraps("synthetic", n_bootstrap=n_bootstrap)
+
+
+    bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
+        n_bootstrap, synthetic_BS, ftime, angular_freqs, FAP_peaks_dir,
+        'synthetic', synthetic_FAP_pkl)
+    
 
 
 
-    if pathlib.Path(synthetic_BS_pkl).is_file():
-        # Read in bootstraps
-        with open(synthetic_BS_pkl, 'rb') as f:
-            synthetic_BS = pickle.load(f)
-            synthetic_bootstrap_peak_magnitudes = pickle.load(f)
-            synthetic_FAP = pickle.load(f)
-    else:
-        synthetic_BS = np.full((fsignal.size, n_bootstrap), np.nan)
-        for i in range(n_bootstrap):
-            # Generate bootstrap
-            synthetic_BS[:, i] = bootstrap_functions.generate_bootstrap(fsignal)
+
+    breakpoint()
+    # synthetic_bootstrap_peak_magnitudes, synthetic_FAP \
+    #     = lomb_scargle.false_alarm_probability(n_bootstrap, synthetic_BS,
+    #                                            ftime, angular_freqs,
+    #                                            synthetic_FAP_csv)
+
+
+
+    # if pathlib.Path(synthetic_BS_pkl).is_file():
+    #     # Read in bootstraps
+    #     with open(synthetic_BS_pkl, 'rb') as f:
+    #         synthetic_BS = pickle.load(f)
+    #         synthetic_bootstrap_peak_magnitudes = pickle.load(f)
+    #         synthetic_FAP = pickle.load(f)
+    # else:
+    #     synthetic_BS = np.full((fsignal.size, n_bootstrap), np.nan)
+    #     for i in range(n_bootstrap):
+    #         # Generate bootstrap
+    #         synthetic_BS[:, i] = bootstrap_functions.generate_bootstrap(fsignal)
         
-        # Calculate FAP
-        synthetic_bootstrap_peak_magnitudes, synthetic_FAP \
-            = lomb_scargle.false_alarm_probability(n_bootstrap, synthetic_BS,
-                                                   ftime, angular_freqs)
-        # Save bootstraps to file
-        with open(synthetic_BS_pkl, 'wb') as f:
-            pickle.dump(synthetic_BS, f, protocol=pickle.HIGHEST_PROTOCOL)
-            pickle.dump(synthetic_bootstrap_peak_magnitudes, f,
-                        protocol=pickle.HIGHEST_PROTOCOL)
-            pickle.dump(synthetic_FAP, f, protocol=pickle.HIGHEST_PROTOCOL)
+    #     # Calculate FAP
+    #     synthetic_bootstrap_peak_magnitudes, synthetic_FAP \
+    #         = lomb_scargle.false_alarm_probability(n_bootstrap, synthetic_BS,
+    #                                                ftime, angular_freqs)
+    #     # Save bootstraps to file
+    #     with open(synthetic_BS_pkl, 'wb') as f:
+    #         pickle.dump(synthetic_BS, f, protocol=pickle.HIGHEST_PROTOCOL)
+    #         pickle.dump(synthetic_bootstrap_peak_magnitudes, f,
+    #                     protocol=pickle.HIGHEST_PROTOCOL)
+    #         pickle.dump(synthetic_FAP, f, protocol=pickle.HIGHEST_PROTOCOL)
        
     breakpoint()
     

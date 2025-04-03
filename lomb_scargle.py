@@ -7,12 +7,18 @@ Created on Thu Dec  5 16:50:12 2024
 Functions to run Lomb-Scargle analysis.
 """
 
+import pathlib
+import pickle
+
 import numpy as np
+import pandas as pd
 
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 
 import scipy.signal as signal
+
+from joblib import Parallel, delayed
 
 
 def define_frequency_bins(T, f_min, f_max, n0=5):
@@ -141,15 +147,54 @@ def plot_LS_summary(periods, ls_pgram,
 
     return ax
 
-def false_alarm_probability(n_bootstrap, BS_signal, time, freqs):
-    
-    bootstrap_peak_magnitudes = np.full(n_bootstrap, np.nan)
-    for i in range(n_bootstrap):
-        
-        pgram = generic_lomb_scargle(time, BS_signal[:, i], freqs)
-        bootstrap_peak_magnitudes[i] = np.nanmax(pgram)
 
-    FAP = np.nanmean(bootstrap_peak_magnitudes)
+def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
+    """ Compute Lomb-Scargle and save the result to a unique file. """
+    
+    fname = f"{directory}/{keyword}_LS_peak_bootstrap_{i}.csv"    
+    
+    if pathlib.Path(fname).is_file():
+        peak_magnitude = pd.read_csv(fname, float_precision="round_trip")
+    else:
+        peak_magnitude = np.nanmax(generic_lomb_scargle(time, signal, freqs))
+        # Save each iteration separately
+        pd.DataFrame({'Bootstrap_Index': [i],
+                      'Peak_Magnitude': [peak_magnitude]}
+                      ).to_csv(fname, index=False)
+
+    return peak_magnitude
+
+def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
+                            FAP_peak_directory, FAP_peak_keyword, FAP_fname):
+    
+    # bootstrap_peak_magnitudes = np.full(n_bootstrap, np.nan)
+    # for i in range(n_bootstrap):
+        
+    #     pgram = generic_lomb_scargle(time, BS_signal[:, i], freqs)
+    #     bootstrap_peak_magnitudes[i] = np.nanmax(pgram)
+
+
+    if pathlib.Path(FAP_fname).is_file():
+        with open(FAP_fname, 'rb') as f:
+            bootstrap_peak_magnitudes = pickle.load(f)
+            FAP = pickle.load(f)
+
+    else:
+        # Run compute_lomb_scargle_peak in parallel
+        bootstrap_peak_magnitudes = Parallel(n_jobs=-2)(
+            delayed(compute_lomb_scargle_peak)(time, BS_signal[:, i], freqs, i,
+                                               FAP_peak_directory,
+                                               FAP_peak_keyword
+                                               ) for i in range(n_bootstrap)
+        )
+    
+        # Compute FAP
+        FAP = np.nanmean(bootstrap_peak_magnitudes)
+
+        with open(FAP_fname, 'wb') as f:
+            pickle.dump(bootstrap_peak_magnitudes, f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(FAP, f, protocol=pickle.HIGHEST_PROTOCOL)
+        
     
     return bootstrap_peak_magnitudes, FAP
 
