@@ -153,8 +153,19 @@ def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
     
     fname = f"{directory}/{keyword}_LS_peak_bootstrap_{i}.csv"    
     
+    
+    #def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
+    print(f"Computing for bootstrap {i}...")
+    print(f"Time type: {type(time)}, Signal type: {type(signal)}, Freqs type: {type(freqs)}")
+    #breakpoint()
+    # Rest of your function...
+    time = np.asarray(time)
+    signal = np.asarray(signal)
+    
+    
     if pathlib.Path(fname).is_file():
-        peak_magnitude = pd.read_csv(fname, float_precision="round_trip")
+        peak_magnitude_df = pd.read_csv(fname, float_precision="round_trip")
+        peak_magnitude = peak_magnitude_df['Peak_Magnitude'].values[0]
     else:
         peak_magnitude = np.nanmax(generic_lomb_scargle(time, signal, freqs))
         # Save each iteration separately
@@ -166,13 +177,16 @@ def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
 
 def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
                             FAP_peak_directory, FAP_peak_keyword, FAP_fname):
-    
+    #breakpoint()
     # bootstrap_peak_magnitudes = np.full(n_bootstrap, np.nan)
     # for i in range(n_bootstrap):
         
     #     pgram = generic_lomb_scargle(time, BS_signal[:, i], freqs)
     #     bootstrap_peak_magnitudes[i] = np.nanmax(pgram)
 
+    print(generic_lomb_scargle)
+    print(type(time))
+    print(type(freqs))
 
     if pathlib.Path(FAP_fname).is_file():
         with open(FAP_fname, 'rb') as f:
@@ -182,12 +196,12 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
     else:
         # Run compute_lomb_scargle_peak in parallel
         bootstrap_peak_magnitudes = Parallel(n_jobs=-2)(
-            delayed(compute_lomb_scargle_peak)(time, BS_signal[:, i], freqs, i,
+            delayed(compute_lomb_scargle_peak)(time, BS_signal[:, i].copy(), freqs, i,
                                                FAP_peak_directory,
                                                FAP_peak_keyword
                                                ) for i in range(n_bootstrap)
         )
-    
+        bootstrap_peak_magnitudes = np.array(bootstrap_peak_magnitudes) 
         # Compute FAP
         FAP = np.nanmean(bootstrap_peak_magnitudes)
 

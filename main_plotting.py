@@ -74,24 +74,23 @@ def read_synthetic_oscillator():
                                         "synthetic_oscillatory_signal.csv")
     synthetic_signal_fig = os.path.join(fig_dir,
                                         "synthetic_oscillatory_signal.png")
-    
 
     if (pathlib.Path(synthetic_signal_csv).is_file()) & \
-        (pathlib.Path(synthetic_signal_fig).is_file()):
+            (pathlib.Path(synthetic_signal_fig).is_file()):
         signal_df = pd.read_csv(synthetic_signal_csv, delimiter=',',
                                 float_precision='round_trip')
         time = np.array(signal_df.time)
         akr_osc = np.array(signal_df.akr_osc)
     else:
-        time, akr_osc, fig, ax = diurnal_oscillator.oscillating_signal(24, plot=True)
+        time, akr_osc, fig, ax = diurnal_oscillator.\
+            oscillating_signal(24, plot=True)
 
         # Write to file
         signal_df = pd.DataFrame({'time': time, 'akr_osc': akr_osc})
         signal_df.to_csv(synthetic_signal_csv, index=False)
-        
+
         fig.savefig(synthetic_signal_fig)
-        
-        
+
     return time, akr_osc
 
 
@@ -206,7 +205,7 @@ def run_lomb_scargle():
     
     # FAP filenames
     FAP_peaks_dir = os.path.join(data_dir, "lomb_scargle", 'LS_peaks_for_FAP')
-    synthetic_FAP_pkl = os.path.join(data_dir, "synthetic_FAP_"
+    synthetic_FAP_pkl = os.path.join(data_dir, "lomb_scargle", "synthetic_FAP_"
                                     + str(n_bootstrap) + "_BSs.pkl")
 
     # Read in interval data
@@ -280,7 +279,7 @@ def run_lomb_scargle():
         'synthetic', synthetic_FAP_pkl)
     
 
-
+    print(FAP)
 
 
     breakpoint()
