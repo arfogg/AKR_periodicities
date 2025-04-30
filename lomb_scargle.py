@@ -18,7 +18,7 @@ import matplotlib.transforms as transforms
 
 import scipy.signal as signal
 
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, parallel_backend
 
 
 def define_frequency_bins(T, f_min, f_max, n0=5):
@@ -161,6 +161,7 @@ def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
     # Rest of your function...
     time = np.asarray(time)
     signal = np.asarray(signal)
+
     
     
     if pathlib.Path(fname).is_file():
@@ -187,19 +188,35 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
     print(generic_lomb_scargle)
     print(type(time))
     print(type(freqs))
-
+    print("DEBUG TYPES:")
+    print("  time:", type(time))
+    print("  signal:", type(BS_signal[:, 0]))
+    print("  freqs:", type(freqs))
     if pathlib.Path(FAP_fname).is_file():
         with open(FAP_fname, 'rb') as f:
             bootstrap_peak_magnitudes = pickle.load(f)
             FAP = pickle.load(f)
 
     else:
-        # Run compute_lomb_scargle_peak in parallel
-        bootstrap_peak_magnitudes = Parallel(n_jobs=-2)(
-            delayed(compute_lomb_scargle_peak)(time, BS_signal[:, i].copy(), freqs, i,
-                                               FAP_peak_directory,
-                                               FAP_peak_keyword
-                                               ) for i in range(n_bootstrap)
+        
+        
+        from joblib import Parallel, delayed, parallel_backend
+
+        with parallel_backend("threading"):
+            # bootstrap_peak_magnitudes = Parallel(n_jobs=-2)(
+            #     delayed(compute_lomb_scargle_peak)(
+            #         time, BS_signal[:, i], freqs, i,
+            #         FAP_peak_directory,
+            #         FAP_peak_keyword
+            #     ) for i in range(n_bootstrap)
+            # )
+
+            # Run compute_lomb_scargle_peak in parallel
+            bootstrap_peak_magnitudes = Parallel(n_jobs=-2)(
+                delayed(compute_lomb_scargle_peak)(time, BS_signal[:, i].copy(), freqs, i,
+                                                   FAP_peak_directory,
+                                                   FAP_peak_keyword
+                                                   ) for i in range(n_bootstrap)
         )
         bootstrap_peak_magnitudes = np.array(bootstrap_peak_magnitudes) 
         # Compute FAP
