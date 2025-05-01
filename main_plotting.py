@@ -149,7 +149,7 @@ def trajectory_plots():
     fig.savefig(traj_fig)
 
 
-def read_subset_bootstraps(subset_n, n_bootstrap=100):
+def read_subset_bootstraps(subset_n, freq_ch='ipwr_100_400kHz', n_bootstrap=100):
     
     if subset_n == 'synthetic':
         # Run Lomb-Scargle over the fake oscillator
@@ -172,9 +172,37 @@ def read_subset_bootstraps(subset_n, n_bootstrap=100):
                 # Generate bootstrap
                 BS[:, i] = bootstrap_functions.generate_bootstrap(fsignal)
             with open(synthetic_BS_pkl, 'wb') as f:
-                    pickle.dump(BS, f, protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dump(BS, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    return BS
+    else:
+        akr_df = read_and_tidy_data.select_akr_intervals(subset_n)
+
+        ftime = np.array(akr_df.datetime)
+        fsignal = np.array(akr_df[freq_ch])
+
+        # Remove NaN rows
+        clean_ind, = np.where(~np.isnan(fsignal))
+        ftime = ftime[clean_ind]
+        fsignal = fsignal[clean_ind]
+        # Define fname
+        BS_pkl = os.path.join(data_dir, subset_n + "_" + freq_ch +
+                              "_" + str(n_bootstrap) + "_BSs.pkl")
+
+        if pathlib.Path(BS_pkl).is_file():
+            # Read in bootstraps
+            with open(BS_pkl, 'rb') as f:
+                BS = pickle.load(f)
+        else:
+            print('Generating bootstraps for ', subset_n, freq_ch)
+            BS = np.full((fsignal.size, n_bootstrap), np.nan)
+            for i in range(n_bootstrap):
+                # Generate bootstrap
+                BS[:, i] = bootstrap_functions.generate_bootstrap(fsignal)
+            with open(BS_pkl, 'wb') as f:
+                pickle.dump(BS, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return ftime, BS
+
 
 def run_lomb_scargle():
 
@@ -183,8 +211,10 @@ def run_lomb_scargle():
     # freqs = periodicity_functions.period_to_freq(periods)
     f_min = 1 / (48. * 60. * 60.)
     f_max = 1 / (8. * 60. * 60.)
-    T = (pd.Timestamp(2005, 1, 1, 0) - pd.Timestamp(1995, 1, 1, 0)).total_seconds()
-    f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min, f_max, n0=5)
+    T = (pd.Timestamp(2005, 1, 1, 0) -
+         pd.Timestamp(1995, 1, 1, 0)).total_seconds()
+    f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min,
+                                                                  f_max, n0=5)
     freqs = freqs[::-1]
     angular_freqs = 2 * np.pi * freqs
     periods = periodicity_functions.freq_to_period(freqs)
@@ -207,6 +237,10 @@ def run_lomb_scargle():
     FAP_peaks_dir = os.path.join(data_dir, "lomb_scargle", 'LS_peaks_for_FAP')
     synthetic_FAP_pkl = os.path.join(data_dir, "lomb_scargle", "synthetic_FAP_"
                                     + str(n_bootstrap) + "_BSs.pkl")
+    FAP_fmt_dict = {'linewidth': 2.,
+                    'linestyle': 'dashed',
+                    'color': 'blueviolet'}
+
 
     # Read in interval data
     print('Reading AKR data over requested intervals')
@@ -255,6 +289,19 @@ def run_lomb_scargle():
 
     ax[0].set_xscale('log')
 
+
+
+    # Read in bootstrap
+    ftime_cl, synthetic_BS = read_subset_bootstraps("synthetic", n_bootstrap=n_bootstrap)
+
+
+    bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
+        n_bootstrap, synthetic_BS, ftime_cl, angular_freqs, FAP_peaks_dir,
+        'synthetic', synthetic_FAP_pkl)
+    
+    # Plot the FAP
+    ax[0].axhline(FAP, **FAP_fmt_dict, label='FAP')
+
     # Formatting
     ax[0].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
     ax[0].set_xlabel('Period (hours)', fontsize=fontsize)
@@ -269,20 +316,7 @@ def run_lomb_scargle():
                            xycoords=trans, arrowprops={'facecolor': 'black'},
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
-
-    # Read in bootstrap
-    synthetic_BS = read_subset_bootstraps("synthetic", n_bootstrap=n_bootstrap)
-
-
-    bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
-        n_bootstrap, synthetic_BS, ftime, angular_freqs, FAP_peaks_dir,
-        'synthetic', synthetic_FAP_pkl)
-    
-
-    print(FAP)
-
-
-    breakpoint()
+            
     # synthetic_bootstrap_peak_magnitudes, synthetic_FAP \
     #     = lomb_scargle.false_alarm_probability(n_bootstrap, synthetic_BS,
     #                                            ftime, angular_freqs,
@@ -313,8 +347,7 @@ def run_lomb_scargle():
     #                     protocol=pickle.HIGHEST_PROTOCOL)
     #         pickle.dump(synthetic_FAP, f, protocol=pickle.HIGHEST_PROTOCOL)
        
-    breakpoint()
-    
+
     
     
     # # Calculate FAP
@@ -322,7 +355,6 @@ def run_lomb_scargle():
     #     = lomb_scargle.false_alarm_probability(n_bootstrap, synthetic_BS,
     #                                            ftime, angular_freqs)
 
-    breakpoint()
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running Lomb-Scargle for ', interval_tag)
         
@@ -364,6 +396,21 @@ def run_lomb_scargle():
 
                 ls_pgram = np.array(ls_df.ls_pgram)
 
+            # Plot FAP here
+            FAP_pkl = os.path.join(data_dir, "lomb_scargle",
+                                   freq_column + "_FAP_" + str(n_bootstrap)
+                                   + "_BSs.pkl")
+            # Read in bootstrap
+            #!!! this is the bit we need to code up
+            ftime_cl, BS = read_subset_bootstraps(interval_tag, freq_ch=freq_column,
+                                        n_bootstrap=n_bootstrap)
+            bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
+                n_bootstrap, BS, ftime_cl, angular_freqs, FAP_peaks_dir,
+                freq_column, FAP_pkl)
+            
+            # Plot the FAP
+            ax[i + 1].axhline(FAP, **FAP_fmt_dict, label='FAP')
+
             # ax[i + 1] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
             #                                          vertical_indicators=[12.,
             #                                                               24.],
@@ -372,13 +419,15 @@ def run_lomb_scargle():
 
         ax[i + 1].set_xscale('log')
 
+        
+
         # Formatting
         ax[i + 1].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
         ax[i + 1].set_xlabel('Period (hours)', fontsize=fontsize)
         ax[i + 1].tick_params(labelsize=fontsize)
         ax[i + 1].legend(fontsize=fontsize, loc='upper left')
 
-        # Plot FAP here
+
 
 
         if vertical_indicators != []:
