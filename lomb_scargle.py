@@ -212,7 +212,7 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
             # )
 
             # Run compute_lomb_scargle_peak in parallel
-            bootstrap_peak_magnitudes = Parallel(n_jobs=-2)(
+            bootstrap_peak_magnitudes = Parallel(n_jobs=-3)(
                 delayed(compute_lomb_scargle_peak)(time, BS_signal[:, i].copy(), freqs, i,
                                                    FAP_peak_directory,
                                                    FAP_peak_keyword

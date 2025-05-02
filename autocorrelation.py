@@ -9,6 +9,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+from scipy.stats import linregress
 from scipy.optimize import least_squares
 from scipy.optimize import curve_fit
 
@@ -136,20 +137,52 @@ def fit_exp_envelope(lags, acf):
     
     return acf_envelope
 
-def fit_decaying_sinusoid(lags, acf, A0, tau, omega, b):
+def remove_linear_trend(lags, acf):
+    
+    linear_fit = linregress(lags, acf)
+    
+    line_y = linear_fit.intercept + linear_fit.slope * lags
+    
+    detrended_acf = acf - line_y
+    
+    return linear_fit, line_y, detrended_acf
+
+def normalise_with_mean_subtraction(acf):
+    
+    norm_acf = (acf - np.nanmean(acf)) / np.std(acf)
+    
+    return norm_acf
+
+def fit_decaying_sinusoid(lags, acf, A0, gamma0, omega0, phi0):
     print('Fitting a decaying sinusoid to the parsed parameters')
 
-    # input_parameters = [A0, tau, omega, b]
-    # popt, pcov = curve_fit(func_decaying_sinusoid, lags, acf,
-    #                        p0=input_parameters)
-    popt, pcov = curve_fit(func_linear_decaying_sinusoid, lags, acf)
+    initial_guess = (A0, gamma0, omega0, phi0)
+    #initial_guess = (5E18, 0.05, 0.0006, 0.0)
+
+    # Curve fitting
+    popt, pcov = curve_fit(damped_oscillator, lags, acf, p0=initial_guess)
+
+    # Extract fitted parameters
+    A_fit, gamma_fit, omega_fit, phi_fit = popt
+
+    y_fit = damped_oscillator(lags, *popt)
     
-    return popt, pcov, func_linear_decaying_sinusoid(*popt, lags)
+    return A_fit, gamma_fit, omega_fit, phi_fit, y_fit
+
+    # # input_parameters = [A0, tau, omega, b]
+    # popt, pcov = curve_fit(func_decaying_sinusoid, lags, acf,
+    #                         p0=input_parameters)
+    #popt, pcov = curve_fit(func_linear_decaying_sinusoid, lags, acf)
+    
+    # return popt, pcov, func_linear_decaying_sinusoid(*popt, lags)
     
     # res_lsq = least_squares(func_decaying_sinusoid_residual,
     #               input_parameters, args=(lags, acf))
 
     # return res_lsq, func_decaying_sinusoid(res_lsq.x, lags)
+
+def damped_oscillator(x, A, gamma, omega, phi):
+    return A * np.exp(-gamma * x) * np.cos(omega * x + phi)
 
 def func_linear_decaying_sinusoid(x, a, c, omega, b):
     
