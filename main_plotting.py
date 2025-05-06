@@ -462,8 +462,8 @@ def run_ACF():
 
     # Plotting variables
     detrended_acf_col = 'blue'
-    normalised_acf_col = 'darkorange'
-    shm_fit_col = 'darkorchid'
+    normalised_acf_col = 'black'
+    shm_fit_col = 'mediumseagreen'
 
     # Initialise variables
     temporal_resolution = 3. * 60.  # in seconds
@@ -513,7 +513,8 @@ def run_ACF():
 
     # Initialise ACF fit class
     synthetic_acf_fit = autocorrelation.decay_shm_fit(lags, acf)
-    
+
+    # Plot Synthetic ACF
     p1, = ax[0, 0].plot(synthetic_acf_fit.lags, synthetic_acf_fit.acf,
                         color=freq_colors[0], linewidth=1., label='ACF')
 
@@ -527,13 +528,11 @@ def run_ACF():
     # Extract required text labels
     synthetic_acf_fit.create_text_labels()
 
-    # Linear detrending
-    # linear_fit, line_y, detrended_acf = autocorrelation.remove_linear_trend(
-    #     lags, acf)
     # Plot line of best fit
-    p2, = ax[0, 0].plot(synthetic_acf_fit.lags, synthetic_acf_fit.linear_detrend_y,
-                  color=detrended_acf_col, linestyle='dashed', linewidth=2.,
-                  label=synthetic_acf_fit.text_linear_trend)
+    p2, = ax[0, 0].plot(synthetic_acf_fit.lags,
+                        synthetic_acf_fit.linear_detrend_y,
+                        color=detrended_acf_col, linestyle='dashed',
+                        linewidth=2., label='Linear Trend')
     # Plot detrended ACF
     ax_detrend = ax[0, 0].twinx()
     p3, = ax_detrend.plot(synthetic_acf_fit.lags,
@@ -542,63 +541,29 @@ def run_ACF():
                           label='Detrended ACF')
     # Decor
     ax[0, 0].set_ylabel('ACF', fontsize=fontsize)
-    ax_detrend.tick_params(axis='y', labelcolor=detrended_acf_col, labelsize=fontsize)
+    ax_detrend.tick_params(axis='y', labelcolor=detrended_acf_col,
+                           labelsize=fontsize)
     ax_detrend.spines['right'].set_color(detrended_acf_col)
-    ax_detrend.set_ylabel('Detrended ACF', color=detrended_acf_col, fontsize=fontsize)
+    ax_detrend.set_ylabel('Detrended ACF', color=detrended_acf_col,
+                          fontsize=fontsize)
     lines = [p1, p2, p3]
     ax_detrend.legend(lines, [l.get_label() for l in lines], fontsize=fontsize)
 
-    # Normalising
-    # norm_acf = autocorrelation.normalise_with_mean_subtraction(detrended_acf)
+    # Normalised ACF
     ax[0, 1].plot(synthetic_acf_fit.lags, synthetic_acf_fit.normalised_acf,
                   color=normalised_acf_col, linewidth=1.,
                   label='Normalised ACF')
 
-
-    # Fitting
-    # A_fit, gamma_fit, omega_fit, phi_fit, y_fit, popt, pcov = \
-    #     autocorrelation.fit_decaying_sinusoid(lags, norm_acf,
-    #                                           A0, gamma0, omega0, phi0)
-    # Plotting
+    # Plotting fitted SHM
     ax[0, 1].plot(synthetic_acf_fit.lags, synthetic_acf_fit.y_fitted,
                   color=shm_fit_col, linewidth=2.,
                   linestyle='dashed', label='Decaying SHM fit')
     # Decor
     ax[0, 1].legend(fontsize=fontsize)
     ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
-    
-    # Print fitting details onto the axis
 
-    breakpoint()
-    # return
-    # figgy, axy = plt.subplots(ncols=2, figsize=(16,5))
-    
-    # axy[0].plot(lags, acf, color='black', label='acf')
-    # axy[0].plot(lags, detrended_acf, color='blue', label='detrended')
-    
-    # axy[1].plot(lags, norm_acf, color='red', label='norm acf'),
-    # axy[1].plot(lags, y_fit, color='blue', label='fit')
+    # Print fitting details into a table!!!!
 
-
-    # # figgy, axy = plt.subplots()
-    # # axy.plot(lags, detrended_acf, color='black', linewidth=1., label='detrended acf')
-    # # axtw = axy.twinx()
-    # # axtw.plot(lags, norm_acf, color='red', linewidth=1., label='norm acf')
-    # # axtw.plot(lags, y_fit, color='blue', linestyle='dashed', linewidth=1., label='fit')
-    # # #axy.plot(lags, y_model, color='red', linewidth=1., label='fit')
-
-    # axy[0].legend()
-    # axy[1].legend()
-
-    # df = pd.DataFrame({'lags': lags, 'acf': acf,
-    #                    'detrended_acf': detrended_acf,
-    #                    'norm_acf': norm_acf})
-    # temp_output_csv = os.path.join(data_dir, 'acf', 'temp_acf_test_fit_data.csv')
-    # df.to_csv(temp_output_csv, index=False)
-
-    # breakpoint()
-    # return lags, acf
-    # # DO I NEED TO DROP NANS???
 
 
     for (i, interval_tag) in enumerate(interval_options['tag']):
@@ -649,9 +614,44 @@ def run_ACF():
                 tax.tick_params(axis='y', labelcolor=(c), labelsize=fontsize)
                 tax.spines['right'].set_color(c)
 
+                # Initialise ACF fit class
+                LFE_acf_fit = autocorrelation.decay_shm_fit(lags, acf)
+                # Initial guess parameters
+                A0 = 1.0
+                gamma0 = 1e-6
+                omega0 = 2 * np.pi / 100000  # Guessing ~100,000 lag period
+                phi0 = 0
+                # Detrend, Normalise and Fit
+                LFE_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0, phi0=phi0)
+                # Extract required text labels
+                LFE_acf_fit.create_text_labels()
+                # Plotting fitted SHM
+                ax[i + 1, 1].plot(LFE_acf_fit.lags, LFE_acf_fit.y_fitted,
+                                  color=c, linewidth=2.,
+                                  linestyle='dashed', label=freq_column)
+
             else:
                 ax[i + 1, 0].plot(lags, acf, color=c, linewidth=1.)
-
+                
+                # Initialise ACF fit class
+                mAKR_acf_fit = autocorrelation.decay_shm_fit(lags, acf)
+                # Initial guess parameters
+                A0 = 1.0
+                gamma0 = 1e-6
+                omega0 = 2 * np.pi / 100000  # Guessing ~100,000 lag period
+                phi0 = 0
+                # Detrend, Normalise and Fit
+                mAKR_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0, phi0=phi0)
+                # Extract required text labels
+                mAKR_acf_fit.create_text_labels()
+                # Plotting fitted SHM
+                ax[i + 1, 1].plot(mAKR_acf_fit.lags, mAKR_acf_fit.y_fitted,
+                                  color=c, linewidth=2.,
+                                  linestyle='dashed', label=freq_column)
+                # Add in CI here
+    # Decor
+    ax[0, 1].legend(fontsize=fontsize)
+    ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
 
 
     # !!! need to twinx for the orange line
@@ -659,6 +659,7 @@ def run_ACF():
 
 
     # Format all axes
+    ii = 0
     titles = np.append('Synthetic', interval_options.label)
     for (j, axes) in enumerate(ax):
         for (k, a) in enumerate(axes):
@@ -685,24 +686,21 @@ def run_ACF():
         
             # Formatting
             a.tick_params(labelsize=fontsize)
-               
-            t = a.text(0.98, 0.95, axes_labels[j], transform=a.transAxes,
-                       fontsize=fontsize, va='top', ha='right')
+            t = a.text(0.02, 0.95, axes_labels[ii], transform=a.transAxes,
+                       fontsize=1.5 * fontsize, va='top', ha='left')
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-               
-            # tit = a.text(1.1, 0.5, titles[j], transform=a.transAxes,
-            #              fontsize=1.25 * fontsize, va='center', ha='center',
-            #              rotation=-90.)     
+
             tit = a.text(0.5, 1.01, titles[j], transform=a.transAxes,
-                         fontsize=1.25 * fontsize, va='bottom', ha='center')    
-    
-    
+                         fontsize=1.25 * fontsize, va='bottom', ha='center')
+
             a.set_xlim(left=0., right=np.max(lags))
 
+            ii = ii + 1
+
     fig.tight_layout()
-    breakpoint()
+
     # Save to file
-    fig.savefig(ACF_fig)
+    #fig.savefig(ACF_fig)
     
     
 
