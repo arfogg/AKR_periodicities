@@ -460,6 +460,10 @@ def run_lomb_scargle():
 
 def run_ACF():
 
+    # Plotting variables
+    detrended_acf_col = 'blue'
+    normalised_acf_col = 'darkorange'
+    shm_fit_col = 'darkorchid'
 
     # Initialise variables
     temporal_resolution = 3. * 60.  # in seconds
@@ -484,7 +488,7 @@ def run_ACF():
     interval_options = read_and_tidy_data.return_test_intervals()
 
     # Initialise plotting window
-    fig, ax = plt.subplots(nrows=4, figsize=(10, 17))
+    fig, ax = plt.subplots(nrows=4, ncols=2, figsize=(20, 17))
 
     # Run ACF over the fake oscillator
     ftime, fsignal = read_synthetic_oscillator()
@@ -507,35 +511,75 @@ def run_ACF():
         acf = acf_df['acf']
         lags = acf_df['lags']
 
-    ax[0].plot(lags, acf, color=freq_colors[0], linewidth=1.)
+    p1, = ax[0, 0].plot(lags, acf, color=freq_colors[0], linewidth=1., label='ACF')
 
+    # Linear detrending
+    linear_fit, line_y, detrended_acf = autocorrelation.remove_linear_trend(
+        lags, acf)
+    ax_detrend = ax[0, 0].twinx()
+    p2, = ax_detrend.plot(lags, detrended_acf, color=detrended_acf_col, linewidth=1.,
+                    label='Detrended ACF')
+    # Decor
+    ax[0, 0].set_ylabel('ACF', fontsize=fontsize)
+    ax_detrend.tick_params(axis='y', labelcolor=detrended_acf_col, labelsize=fontsize)
+    ax_detrend.spines['right'].set_color(detrended_acf_col)
+    ax_detrend.set_ylabel('Detrended ACF', color=detrended_acf_col, fontsize=fontsize)
+    lines = [p1, p2]
+    ax_detrend.legend(lines, [l.get_label() for l in lines], fontsize=fontsize)
 
-    # acf_envelope = autocorrelation.fit_exp_envelope(lags, acf)
-
-    # guess_tau = 200. * 60. * 60.
-    # guess_omega = 2 * np.pi * (1. / (24. * 60. * 60.))
-    # #res_lsq, y_model = autocorrelation.fit_decaying_sinusoid(lags, acf, acf[0], guess_tau, guess_omega, 0.)
-    # popt, pcov, y_model = autocorrelation.fit_decaying_sinusoid(lags, acf, acf[0], guess_tau, guess_omega, 0.)
-
-    linear_fit, line_y, detrended_acf = autocorrelation.remove_linear_trend(lags, acf)
+    # Normalising
     norm_acf = autocorrelation.normalise_with_mean_subtraction(detrended_acf)
+    ax[0, 1].plot(lags, norm_acf, color=normalised_acf_col, linewidth=1.,
+                  label='Normalised ACF')
 
-
-    A_fit, gamma_fit, omega_fit, phi_fit, y_fit = autocorrelation.fit_decaying_sinusoid(lags, norm_acf,
-                                                                                        norm_acf[0], 400000, 0.0006, 0.)
-
-    figgy, axy = plt.subplots()
-    axy.plot(lags, detrended_acf, color='black', linewidth=1., label='detrended acf')
-    axtw = axy.twinx()
-    axtw.plot(lags, norm_acf, color='red', linewidth=1., label='norm acf')
-    #axy.plot(lags, y_fit, color='blue', linestyle='dashed', linewidth=1., label='fit')
-    #axy.plot(lags, y_model, color='red', linewidth=1., label='fit')
-
-    axy.legend()
+    # Initial guess parameters
+    A0 = 1.0
+    gamma0 = 1e-6
+    omega0 = 2 * np.pi / 100000  # Guessing ~100,000 lag period
+    phi0 = 0
+    # Fitting
+    A_fit, gamma_fit, omega_fit, phi_fit, y_fit, popt, pcov = \
+        autocorrelation.fit_decaying_sinusoid(lags, norm_acf,
+                                              A0, gamma0, omega0, phi0)
+    # Plotting
+    ax[0, 1].plot(lags, y_fit, color=shm_fit_col, linewidth=2.,
+                  linestyle='dashed', label='Decaying SHM fit')
+    # Decor
+    ax[0, 1].legend(fontsize=fontsize)
+    ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
+    
+    # Print fitting details onto the axis
 
     breakpoint()
-    return lags, acf
-    # DO I NEED TO DROP NANS???
+    # return
+    # figgy, axy = plt.subplots(ncols=2, figsize=(16,5))
+    
+    # axy[0].plot(lags, acf, color='black', label='acf')
+    # axy[0].plot(lags, detrended_acf, color='blue', label='detrended')
+    
+    # axy[1].plot(lags, norm_acf, color='red', label='norm acf'),
+    # axy[1].plot(lags, y_fit, color='blue', label='fit')
+
+
+    # # figgy, axy = plt.subplots()
+    # # axy.plot(lags, detrended_acf, color='black', linewidth=1., label='detrended acf')
+    # # axtw = axy.twinx()
+    # # axtw.plot(lags, norm_acf, color='red', linewidth=1., label='norm acf')
+    # # axtw.plot(lags, y_fit, color='blue', linestyle='dashed', linewidth=1., label='fit')
+    # # #axy.plot(lags, y_model, color='red', linewidth=1., label='fit')
+
+    # axy[0].legend()
+    # axy[1].legend()
+
+    # df = pd.DataFrame({'lags': lags, 'acf': acf,
+    #                    'detrended_acf': detrended_acf,
+    #                    'norm_acf': norm_acf})
+    # temp_output_csv = os.path.join(data_dir, 'acf', 'temp_acf_test_fit_data.csv')
+    # df.to_csv(temp_output_csv, index=False)
+
+    # breakpoint()
+    # return lags, acf
+    # # DO I NEED TO DROP NANS???
 
 
     for (i, interval_tag) in enumerate(interval_options['tag']):
@@ -580,13 +624,14 @@ def run_ACF():
 
 
             if freq_column =='ipwr_50_100kHz':
-                tax = ax[i + 1].twinx()
+                tax = ax[i + 1, 0].twinx()
                 tax.plot(lags, acf, color=c, linewidth=1.)
                 tax.set_ylabel('ACF\n(' + n + ')', color=c, fontsize=fontsize)
                 tax.tick_params(axis='y', labelcolor=(c), labelsize=fontsize)
                 tax.spines['right'].set_color(c)
+
             else:
-                ax[i + 1].plot(lags, acf, color=c, linewidth=1.)
+                ax[i + 1, 0].plot(lags, acf, color=c, linewidth=1.)
 
 
 
@@ -594,49 +639,49 @@ def run_ACF():
     # also deal with the weirdness in the cassini panel
 
 
-
     # Format all axes
     titles = np.append('Synthetic', interval_options.label)
-    for (j, a) in enumerate(ax):
-        # Convert x ticks from seconds to readable format
-        n_ticks = int(np.floor(np.max(a.get_xticks()) /
-                               (tick_sep_hrs * 60. * 60.)))
-        tick_pos = []
-        tick_str = []
-        for i in range(n_ticks):
-            tick_pos.append(i * (tick_sep_hrs * 60. * 60.))
-            tick_str.append(str(int(tick_sep_hrs * i)))
-        a.set_xticks(tick_pos, tick_str)
+    for (j, axes) in enumerate(ax):
+        for (k, a) in enumerate(axes):
+            # Convert x ticks from seconds to readable format
+            n_ticks = int(np.floor(np.max(a.get_xticks()) /
+                                   (tick_sep_hrs * 60. * 60.)))
+            tick_pos = []
+            tick_str = []
+            for i in range(n_ticks):
+                tick_pos.append(i * (tick_sep_hrs * 60. * 60.))
+                tick_str.append(str(int(tick_sep_hrs * i)))
+            a.set_xticks(tick_pos, tick_str)
+        
+            if j < 1:
+                a.set_ylabel('ACF', fontsize=fontsize)
+            else:
+                a.set_ylabel('ACF\n(' + freq_labels[0] + ')', fontsize=fontsize)
+            a.set_xlabel('Lag (hours)', fontsize=fontsize)
+        
+            # Draw vertical lines each highlight period
+            n_vert = int(np.floor((a.get_xlim()[1]) / (highlight_period * 60. * 60.)))
+            for i in range(n_vert):
+                a.axvline(((i + 1) * highlight_period)*(60. * 60.), **highlight_fmt)
+        
+            # Formatting
+            a.tick_params(labelsize=fontsize)
+               
+            t = a.text(0.98, 0.95, axes_labels[j], transform=a.transAxes,
+                       fontsize=fontsize, va='top', ha='right')
+            t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+               
+            # tit = a.text(1.1, 0.5, titles[j], transform=a.transAxes,
+            #              fontsize=1.25 * fontsize, va='center', ha='center',
+            #              rotation=-90.)     
+            tit = a.text(0.5, 1.01, titles[j], transform=a.transAxes,
+                         fontsize=1.25 * fontsize, va='bottom', ha='center')    
     
-        if j < 1:
-            a.set_ylabel('ACF', fontsize=fontsize)
-        else:
-            a.set_ylabel('ACF\n(' + freq_labels[0] + ')', fontsize=fontsize)
-        a.set_xlabel('Lag (hours)', fontsize=fontsize)
     
-        # Draw vertical lines each highlight period
-        n_vert = int(np.floor((a.get_xlim()[1]) / (highlight_period * 60. * 60.)))
-        for i in range(n_vert):
-            a.axvline(((i + 1) * highlight_period)*(60. * 60.), **highlight_fmt)
-    
-        # Formatting
-        a.tick_params(labelsize=fontsize)
-           
-        t = a.text(0.98, 0.95, axes_labels[j], transform=a.transAxes,
-                   fontsize=fontsize, va='top', ha='right')
-        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-           
-        # tit = a.text(1.1, 0.5, titles[j], transform=a.transAxes,
-        #              fontsize=1.25 * fontsize, va='center', ha='center',
-        #              rotation=-90.)     
-        tit = a.text(0.5, 1.01, titles[j], transform=a.transAxes,
-                     fontsize=1.25 * fontsize, va='bottom', ha='center')    
-
-
-        a.set_xlim(left=0., right=np.max(lags))
+            a.set_xlim(left=0., right=np.max(lags))
 
     fig.tight_layout()
-
+    breakpoint()
     # Save to file
     fig.savefig(ACF_fig)
     

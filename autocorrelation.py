@@ -167,7 +167,7 @@ def fit_decaying_sinusoid(lags, acf, A0, gamma0, omega0, phi0):
 
     y_fit = damped_oscillator(lags, *popt)
     
-    return A_fit, gamma_fit, omega_fit, phi_fit, y_fit
+    return A_fit, gamma_fit, omega_fit, phi_fit, y_fit, popt, pcov
 
     # # input_parameters = [A0, tau, omega, b]
     # popt, pcov = curve_fit(func_decaying_sinusoid, lags, acf,
@@ -184,27 +184,27 @@ def fit_decaying_sinusoid(lags, acf, A0, gamma0, omega0, phi0):
 def damped_oscillator(x, A, gamma, omega, phi):
     return A * np.exp(-gamma * x) * np.cos(omega * x + phi)
 
-def func_linear_decaying_sinusoid(x, a, c, omega, b):
+# def func_linear_decaying_sinusoid(x, a, c, omega, b):
     
-    y = ((a * x) + c) * np.cos((omega * x) + b)
+#     y = ((a * x) + c) * np.cos((omega * x) + b)
 
-    return y
+#     return y
     
-def func_decaying_sinusoid(x, A0, tau, omega, b):
-#def func_decaying_sinusoid(x, A0, tau):
-#def func_decaying_sinusoid(parameters, time):
-#    A0, tau, omega, b = parameters
-    y = (A0 * np.exp(-1. * (x / (2. * tau)))) * np.cos((omega * x) + b)
-    #y = (A0 * np.exp(-1. * (x / (2. * tau))))
-    #y = a * np.cos((omega * x) + b)
-    return y
+# def func_decaying_sinusoid(x, A0, tau, omega, b):
+# #def func_decaying_sinusoid(x, A0, tau):
+# #def func_decaying_sinusoid(parameters, time):
+# #    A0, tau, omega, b = parameters
+#     y = (A0 * np.exp(-1. * (x / (2. * tau)))) * np.cos((omega * x) + b)
+#     #y = (A0 * np.exp(-1. * (x / (2. * tau))))
+#     #y = a * np.cos((omega * x) + b)
+#     return y
 
-def func_decaying_sinusoid_residual(parameters, time, true_y):
-    #print('Function definition for decaying sinusoid')
+# def func_decaying_sinusoid_residual(parameters, time, true_y):
+#     #print('Function definition for decaying sinusoid')
     
-    # A0: amplitude at t=0
-    #
-    #A0, tau, omega, b = parameters
-    y = func_decaying_sinusoid(parameters, time)
+#     # A0: amplitude at t=0
+#     #
+#     #A0, tau, omega, b = parameters
+#     y = func_decaying_sinusoid(parameters, time)
     
-    return y - true_y
+#     return y - true_y
