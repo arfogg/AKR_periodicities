@@ -511,38 +511,57 @@ def run_ACF():
         acf = acf_df['acf']
         lags = acf_df['lags']
 
-    p1, = ax[0, 0].plot(lags, acf, color=freq_colors[0], linewidth=1., label='ACF')
-
-    # Linear detrending
-    linear_fit, line_y, detrended_acf = autocorrelation.remove_linear_trend(
-        lags, acf)
-    ax_detrend = ax[0, 0].twinx()
-    p2, = ax_detrend.plot(lags, detrended_acf, color=detrended_acf_col, linewidth=1.,
-                    label='Detrended ACF')
-    # Decor
-    ax[0, 0].set_ylabel('ACF', fontsize=fontsize)
-    ax_detrend.tick_params(axis='y', labelcolor=detrended_acf_col, labelsize=fontsize)
-    ax_detrend.spines['right'].set_color(detrended_acf_col)
-    ax_detrend.set_ylabel('Detrended ACF', color=detrended_acf_col, fontsize=fontsize)
-    lines = [p1, p2]
-    ax_detrend.legend(lines, [l.get_label() for l in lines], fontsize=fontsize)
-
-    # Normalising
-    norm_acf = autocorrelation.normalise_with_mean_subtraction(detrended_acf)
-    ax[0, 1].plot(lags, norm_acf, color=normalised_acf_col, linewidth=1.,
-                  label='Normalised ACF')
+    # Initialise ACF fit class
+    synthetic_acf_fit = autocorrelation.decay_shm_fit(lags, acf)
+    
+    p1, = ax[0, 0].plot(synthetic_acf_fit.lags, synthetic_acf_fit.acf,
+                        color=freq_colors[0], linewidth=1., label='ACF')
 
     # Initial guess parameters
     A0 = 1.0
     gamma0 = 1e-6
     omega0 = 2 * np.pi / 100000  # Guessing ~100,000 lag period
     phi0 = 0
+    # Detrend, Normalise and Fit
+    synthetic_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0, phi0=phi0)
+    # Extract required text labels
+    synthetic_acf_fit.create_text_labels()
+
+    # Linear detrending
+    # linear_fit, line_y, detrended_acf = autocorrelation.remove_linear_trend(
+    #     lags, acf)
+    # Plot line of best fit
+    p2, = ax[0, 0].plot(synthetic_acf_fit.lags, synthetic_acf_fit.linear_detrend_y,
+                  color=detrended_acf_col, linestyle='dashed', linewidth=2.,
+                  label=synthetic_acf_fit.text_linear_trend)
+    # Plot detrended ACF
+    ax_detrend = ax[0, 0].twinx()
+    p3, = ax_detrend.plot(synthetic_acf_fit.lags,
+                          synthetic_acf_fit.linear_detrended_acf,
+                          color=detrended_acf_col, linewidth=1.,
+                          label='Detrended ACF')
+    # Decor
+    ax[0, 0].set_ylabel('ACF', fontsize=fontsize)
+    ax_detrend.tick_params(axis='y', labelcolor=detrended_acf_col, labelsize=fontsize)
+    ax_detrend.spines['right'].set_color(detrended_acf_col)
+    ax_detrend.set_ylabel('Detrended ACF', color=detrended_acf_col, fontsize=fontsize)
+    lines = [p1, p2, p3]
+    ax_detrend.legend(lines, [l.get_label() for l in lines], fontsize=fontsize)
+
+    # Normalising
+    # norm_acf = autocorrelation.normalise_with_mean_subtraction(detrended_acf)
+    ax[0, 1].plot(synthetic_acf_fit.lags, synthetic_acf_fit.normalised_acf,
+                  color=normalised_acf_col, linewidth=1.,
+                  label='Normalised ACF')
+
+
     # Fitting
-    A_fit, gamma_fit, omega_fit, phi_fit, y_fit, popt, pcov = \
-        autocorrelation.fit_decaying_sinusoid(lags, norm_acf,
-                                              A0, gamma0, omega0, phi0)
+    # A_fit, gamma_fit, omega_fit, phi_fit, y_fit, popt, pcov = \
+    #     autocorrelation.fit_decaying_sinusoid(lags, norm_acf,
+    #                                           A0, gamma0, omega0, phi0)
     # Plotting
-    ax[0, 1].plot(lags, y_fit, color=shm_fit_col, linewidth=2.,
+    ax[0, 1].plot(synthetic_acf_fit.lags, synthetic_acf_fit.y_fitted,
+                  color=shm_fit_col, linewidth=2.,
                   linestyle='dashed', label='Decaying SHM fit')
     # Decor
     ax[0, 1].legend(fontsize=fontsize)

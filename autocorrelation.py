@@ -129,13 +129,13 @@ def plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
 
 
 
-def fit_exp_envelope(lags, acf):
+# def fit_exp_envelope(lags, acf):
     
-    from scipy.signal import hilbert
+#     from scipy.signal import hilbert
     
-    acf_envelope = np.abs(hilbert(acf))
+#     acf_envelope = np.abs(hilbert(acf))
     
-    return acf_envelope
+#     return acf_envelope
 
 def remove_linear_trend(lags, acf):
     
@@ -184,27 +184,40 @@ def fit_decaying_sinusoid(lags, acf, A0, gamma0, omega0, phi0):
 def damped_oscillator(x, A, gamma, omega, phi):
     return A * np.exp(-gamma * x) * np.cos(omega * x + phi)
 
-# def func_linear_decaying_sinusoid(x, a, c, omega, b):
-    
-#     y = ((a * x) + c) * np.cos((omega * x) + b)
 
-#     return y
+class decay_shm_fit():
     
-# def func_decaying_sinusoid(x, A0, tau, omega, b):
-# #def func_decaying_sinusoid(x, A0, tau):
-# #def func_decaying_sinusoid(parameters, time):
-# #    A0, tau, omega, b = parameters
-#     y = (A0 * np.exp(-1. * (x / (2. * tau)))) * np.cos((omega * x) + b)
-#     #y = (A0 * np.exp(-1. * (x / (2. * tau))))
-#     #y = a * np.cos((omega * x) + b)
-#     return y
+    
+    def __init__(self, lags, acf):
 
-# def func_decaying_sinusoid_residual(parameters, time, true_y):
-#     #print('Function definition for decaying sinusoid')
-    
-#     # A0: amplitude at t=0
-#     #
-#     #A0, tau, omega, b = parameters
-#     y = func_decaying_sinusoid(parameters, time)
-    
-#     return y - true_y
+        # Store the ACF data
+        self.lags = lags
+        self.acf = acf
+        
+    def fit_SHM(self, A0=1.0, gamma0=1e-6,
+                omega0=2 * np.pi / 100000, phi0=0):
+        
+        # Detrend the data, removing a linear trend
+        self.linear_detrend_fit, self.linear_detrend_y,\
+            self.linear_detrended_acf =\
+            remove_linear_trend(self.lags, self.acf)
+
+        # self.linear_detrend_fit = linear_fit
+        # self.linear_detrend_y = line_y
+        # self.linear_detrended_acf = detrended_acf
+        
+        # Normalise the Data
+        self.normalised_acf = normalise_with_mean_subtraction(self.linear_detrended_acf)
+
+        self.A, self.gamma, self.omega, self.phi, self.y_fitted, self.popt,\
+            self.pcov = fit_decaying_sinusoid(self.lags,
+                                              self.normalised_acf,
+                                              A0, gamma0, omega0, phi0)
+    def create_text_labels(self):
+        
+        self.text_linear_trend = "y = " + "{:.2e}".format(self.linear_detrend_fit.slope) +\
+            " x\n+ " + "{:.2e}".format(self.linear_detrend_fit.intercept)
+
+        self.text_shm_trend = "{:.2f}".format(self.A) + "exp(-" + "{:.2e}".format(self.gamma) + "x)" +\
+            "cos(" + "{:.2e}".format(self.omega) + "x + " + "{:.2e}".format(self.phi) + ")"
+        #A * np.exp(-gamma * x) * np.cos(omega * x + phi)
