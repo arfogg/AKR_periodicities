@@ -213,6 +213,11 @@ class decay_shm_fit():
             self.pcov = fit_decaying_sinusoid(self.lags,
                                               self.normalised_acf,
                                               A0, gamma0, omega0, phi0)
+            
+        # Confidence interval here?? Not sure on this code atm!
+        sigma_ab = np.sqrt(np.diagonal(self.pcov))
+        self.ci_upper = damped_oscillator(self.lags, *(self.popt + sigma_ab))
+        self.ci_lower = damped_oscillator(self.lags, *(self.popt - sigma_ab))
     def create_text_labels(self):
         
         self.text_linear_trend = "y = " + "{:.2e}".format(self.linear_detrend_fit.slope) +\

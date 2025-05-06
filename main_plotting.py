@@ -558,11 +558,15 @@ def run_ACF():
     ax[0, 1].plot(synthetic_acf_fit.lags, synthetic_acf_fit.y_fitted,
                   color=shm_fit_col, linewidth=2.,
                   linestyle='dashed', label='Decaying SHM fit')
+    ax[0, 1].fill_between(synthetic_acf_fit.lags, synthetic_acf_fit.ci_lower,
+                          synthetic_acf_fit.ci_lower, alpha=0.5, color=shm_fit_col,
+                          label='temporary CI')
     # Decor
     ax[0, 1].legend(fontsize=fontsize)
     ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
 
     # Print fitting details into a table!!!!
+    # Including some overall parameter for SHM fit, the linear fit, the SHM fit
 
 
 
@@ -629,6 +633,9 @@ def run_ACF():
                 ax[i + 1, 1].plot(LFE_acf_fit.lags, LFE_acf_fit.y_fitted,
                                   color=c, linewidth=2.,
                                   linestyle='dashed', label=freq_column)
+                ax[i + 1, 1].fill_between(LFE_acf_fit.lags, LFE_acf_fit.ci_lower,
+                                      LFE_acf_fit.ci_lower, alpha=0.5, color=c,
+                                      label=freq_column + ' CI')
 
             else:
                 ax[i + 1, 0].plot(lags, acf, color=c, linewidth=1.)
@@ -648,7 +655,10 @@ def run_ACF():
                 ax[i + 1, 1].plot(mAKR_acf_fit.lags, mAKR_acf_fit.y_fitted,
                                   color=c, linewidth=2.,
                                   linestyle='dashed', label=freq_column)
-                # Add in CI here
+                ax[i + 1, 1].fill_between(mAKR_acf_fit.lags, mAKR_acf_fit.ci_lower,
+                                      mAKR_acf_fit.ci_lower, alpha=0.5, color=c,
+                                      label=freq_column + ' CI')
+
     # Decor
     ax[0, 1].legend(fontsize=fontsize)
     ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
