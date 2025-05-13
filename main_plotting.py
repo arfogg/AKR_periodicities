@@ -527,6 +527,8 @@ def run_ACF():
     synthetic_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0, phi0=phi0)
     # Extract required text labels
     synthetic_acf_fit.create_text_labels()
+    # Calculate confidence interval
+    synthetic_acf_fit.calc_confidence_interval()
 
     # Plot line of best fit
     p2, = ax[0, 0].plot(synthetic_acf_fit.lags,
@@ -558,9 +560,10 @@ def run_ACF():
     ax[0, 1].plot(synthetic_acf_fit.lags, synthetic_acf_fit.y_fitted,
                   color=shm_fit_col, linewidth=2.,
                   linestyle='dashed', label='Decaying SHM fit')
-    ax[0, 1].fill_between(synthetic_acf_fit.lags, synthetic_acf_fit.ci_lower,
-                          synthetic_acf_fit.ci_lower, alpha=0.5, color=shm_fit_col,
-                          label='temporary CI')
+    ax[0, 1].fill_between(synthetic_acf_fit.lags, synthetic_acf_fit.y_ci[:, 0],
+                          synthetic_acf_fit.y_ci[:, 1], alpha=0.5, color=shm_fit_col,
+                          label='95% CI')
+
     # Decor
     ax[0, 1].legend(fontsize=fontsize)
     ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
@@ -629,13 +632,15 @@ def run_ACF():
                 LFE_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0, phi0=phi0)
                 # Extract required text labels
                 LFE_acf_fit.create_text_labels()
+                # Calculate confidence intervals on fit
+                LFE_acf_fit.calc_confidence_interval()
                 # Plotting fitted SHM
                 ax[i + 1, 1].plot(LFE_acf_fit.lags, LFE_acf_fit.y_fitted,
                                   color=c, linewidth=2.,
                                   linestyle='dashed', label=freq_column)
-                ax[i + 1, 1].fill_between(LFE_acf_fit.lags, LFE_acf_fit.ci_lower,
-                                      LFE_acf_fit.ci_lower, alpha=0.5, color=c,
-                                      label=freq_column + ' CI')
+                ax[i + 1, 1].fill_between(LFE_acf_fit.lags, LFE_acf_fit.y_ci[:, 0],
+                                      LFE_acf_fit.y_ci[:, 1], alpha=0.5, color=c,
+                                      label=freq_column + ' 95% CI')
 
             else:
                 ax[i + 1, 0].plot(lags, acf, color=c, linewidth=1.)
@@ -651,13 +656,15 @@ def run_ACF():
                 mAKR_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0, phi0=phi0)
                 # Extract required text labels
                 mAKR_acf_fit.create_text_labels()
+                # Calculate confidence intervals on fit
+                mAKR_acf_fit.calc_confidence_interval()
                 # Plotting fitted SHM
                 ax[i + 1, 1].plot(mAKR_acf_fit.lags, mAKR_acf_fit.y_fitted,
                                   color=c, linewidth=2.,
                                   linestyle='dashed', label=freq_column)
-                ax[i + 1, 1].fill_between(mAKR_acf_fit.lags, mAKR_acf_fit.ci_lower,
-                                      mAKR_acf_fit.ci_lower, alpha=0.5, color=c,
-                                      label=freq_column + ' CI')
+                ax[i + 1, 1].fill_between(mAKR_acf_fit.lags, mAKR_acf_fit.y_ci[:, 0],
+                                      mAKR_acf_fit.y_ci[:, 1], alpha=0.5, color=c,
+                                      label=freq_column + ' 95% CI')
 
     # Decor
     ax[0, 1].legend(fontsize=fontsize)

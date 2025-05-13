@@ -185,6 +185,30 @@ def damped_oscillator(x, A, gamma, omega, phi):
     return A * np.exp(-gamma * x) * np.cos(omega * x + phi)
 
 
+def damped_osc_ci(A, gamma, omega, phi, pcov,
+                  lags, n_bootstrap=100, ci=[2.5, 97.5]):
+    
+    print('hello')
+    
+    errors = np.sqrt(np.diag(pcov))
+    
+
+    bs_A = np.random.normal(A, errors[0], n_bootstrap)
+    bs_gamma = np.random.normal(gamma, errors[1], n_bootstrap)
+    bs_omega = np.random.normal(omega, errors[2], n_bootstrap)
+    bs_phi = np.random.normal(phi, errors[3], n_bootstrap)
+    
+    y_bs = np.full((len(lags), n_bootstrap), np.nan)
+    y_ci = np.full((len(lags), 2), np.nan)
+
+    for i in range(n_bootstrap):
+        y_bs[:, i] = damped_oscillator(lags, bs_A[i], bs_gamma[i],
+                                       bs_omega[i], bs_phi[i])
+    for i in range(len(lags)):
+        y_ci[i, :] = np.percentile(y_bs[i, :], ci)
+
+    return bs_A, bs_gamma, bs_omega, bs_phi, y_bs, y_ci   
+
 class decay_shm_fit():
     
     
@@ -226,3 +250,10 @@ class decay_shm_fit():
         self.text_shm_trend = "{:.2f}".format(self.A) + "exp(-" + "{:.2e}".format(self.gamma) + "x)" +\
             "cos(" + "{:.2e}".format(self.omega) + "x + " + "{:.2e}".format(self.phi) + ")"
         #A * np.exp(-gamma * x) * np.cos(omega * x + phi)
+        
+    def calc_confidence_interval(self):
+        
+        self.bs_A, self.bs_gamma, self.bs_omega, self.bs_phi,\
+            self.y_bs, self.y_ci = \
+            damped_osc_ci(self.A, self.gamma, self.omega, self.phi,
+                          self.pcov, self.lags, n_bootstrap=10, ci=95)
