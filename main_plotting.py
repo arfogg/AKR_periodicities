@@ -470,18 +470,16 @@ def run_ACF():
     # Initialise variables
     temporal_resolution = 3. * 60.  # in seconds
     n_shifts = 5000
-    tick_sep_hrs=24.
-    highlight_period=24.
-    highlight_fmt={'color': 'grey',
-                   'linestyle': 'dashed',
-                   'linewidth': 1.}
+    tick_sep_hrs = 24.
+    highlight_period = 24.
+    highlight_fmt = {'color': 'grey',
+                     'linestyle': 'dashed',
+                     'linewidth': 1.}
 
     # Different frequency channels
-    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'  # ,
-                          #'ipwr_100_650kHz'
-                          ])
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'])
     freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
-    freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
+    freq_colors = np.array(['dimgrey', 'darkorange'])
 
     ACF_fig = os.path.join(fig_dir, "three_interval_ACF.png")
 
@@ -499,7 +497,7 @@ def run_ACF():
     ftime = ftime[clean_ind]
     fsignal = fsignal[clean_ind]
 
-
+    # Define output ACF data csv
     acf_csv = os.path.join(data_dir, 'acf', 'ACF_synthetic.csv')
 
     if (pathlib.Path(acf_csv).is_file()) is False:
@@ -564,8 +562,8 @@ def run_ACF():
                   color=shm_fit_col, linewidth=2.,
                   linestyle='dashed', label='Decaying SHM fit')
     ax[0, 1].fill_between(synthetic_acf_fit.lags, synthetic_acf_fit.y_ci[:, 0],
-                          synthetic_acf_fit.y_ci[:, 1], alpha=ci_shade_alpha, color=shm_fit_col,
-                          label='95% CI')
+                          synthetic_acf_fit.y_ci[:, 1], alpha=ci_shade_alpha,
+                          color=shm_fit_col, label='95% CI')
 
     # Decor
     ax[0, 1].legend(fontsize=fontsize)
@@ -574,41 +572,38 @@ def run_ACF():
     # Print fitting details into a table!!!!
     # Including some overall parameter for SHM fit, the linear fit, the SHM fit
 
-
-
+    # Loop over datasets, calculating and plotting
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running autocorrelation for ', interval_tag)
-        
+
         base_dir = pathlib.Path(data_dir) / 'acf'
         file_paths = [base_dir / f"ACF_{interval_tag}_{f}.csv" for f in freq_tags]
         file_checks = [file_path.is_file() for file_path in file_paths]
 
-
+        # If no ACF calculations done, read integrated power data
         if all(file_checks) is False:
-            
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
 
-        # Remove any rows where intensity == np.nan
-        for (j, (freq_column, c, n)) in enumerate(zip(freq_tags, freq_colors, freq_labels)):
+        # Looping over frequency bands
+        for (j, (freq_column, c, n)) in enumerate(zip(freq_tags,
+                                                      freq_colors,
+                                                      freq_labels)):
             print('Frequency band: ', freq_column)
             acf_csv = os.path.join(data_dir, 'acf', 'ACF_' +
-                                  interval_tag + '_' + freq_column + '.csv')
+                                   interval_tag + '_' + freq_column + '.csv')
 
             if pathlib.Path(acf_csv).is_file() is False:
-
                 freq_df = akr_df.dropna(subset=[freq_column])
                 t1 = pd.Timestamp.now()
                 print('starting ACF at ', t1)
                 acf, lags = autocorrelation.autocorrelation(
-                    freq_df[freq_column], n_shifts, temporal_resolution=temporal_resolution,
-                    starting_lag=7200)
+                    freq_df[freq_column], n_shifts,
+                    temporal_resolution=temporal_resolution, starting_lag=7200)
                 t2 = pd.Timestamp.now()
                 print('ACF finished, time elapsed: ', t2-t1)
                 acf_df = pd.DataFrame({'acf': acf, 'lags': lags})
                 acf_df.to_csv(acf_csv, index=False)
 
-
-                
             else:
 
                 acf_df = pd.read_csv(acf_csv, delimiter=',',
@@ -616,8 +611,7 @@ def run_ACF():
                 acf = acf_df['acf']
                 lags = acf_df['lags']
 
-
-            if freq_column =='ipwr_50_100kHz':
+            if freq_column == 'ipwr_50_100kHz':
                 tax = ax[i + 1, 0].twinx()
                 tax.plot(lags, acf, color=c, linewidth=acf_lw, label=n)
                 tax.set_ylabel('ACF\n(' + n + ')', color=c, fontsize=fontsize)
@@ -633,7 +627,8 @@ def run_ACF():
                 omega0 = 2 * np.pi / 100000  # Guessing ~100,000 lag period
                 phi0 = 0
                 # Detrend, Normalise and Fit
-                LFE_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0, phi0=phi0)
+                LFE_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0,
+                                    phi0=phi0)
                 # Extract required text labels
                 LFE_acf_fit.create_text_labels()
                 # Calculate confidence intervals on fit
@@ -642,13 +637,16 @@ def run_ACF():
                 ax[i + 1, 1].plot(LFE_acf_fit.lags, LFE_acf_fit.y_fitted,
                                   color=c, linewidth=2.,
                                   linestyle='dashed', label=n)
-                ax[i + 1, 1].fill_between(LFE_acf_fit.lags, LFE_acf_fit.y_ci[:, 0],
-                                      LFE_acf_fit.y_ci[:, 1], alpha=ci_shade_alpha, color=c,
-                                      label='95% CI')
+                ax[i + 1, 1].fill_between(LFE_acf_fit.lags,
+                                          LFE_acf_fit.y_ci[:, 0],
+                                          LFE_acf_fit.y_ci[:, 1],
+                                          alpha=ci_shade_alpha, color=c,
+                                          label='95% CI')
 
             else:
-                ax[i + 1, 0].plot(lags, acf, color=c, linewidth=acf_lw, label=n)
-                
+                ax[i + 1, 0].plot(lags, acf, color=c, linewidth=acf_lw,
+                                  label=n)
+
                 # Initialise ACF fit class
                 mAKR_acf_fit = autocorrelation.decay_shm_fit(lags, acf)
                 # Initial guess parameters
@@ -657,7 +655,8 @@ def run_ACF():
                 omega0 = 2 * np.pi / 100000  # Guessing ~100,000 lag period
                 phi0 = 0
                 # Detrend, Normalise and Fit
-                mAKR_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0, phi0=phi0)
+                mAKR_acf_fit.fit_SHM(A0=A0, gamma0=gamma0, omega0=omega0,
+                                     phi0=phi0)
                 # Extract required text labels
                 mAKR_acf_fit.create_text_labels()
                 # Calculate confidence intervals on fit
@@ -666,16 +665,11 @@ def run_ACF():
                 ax[i + 1, 1].plot(mAKR_acf_fit.lags, mAKR_acf_fit.y_fitted,
                                   color=c, linewidth=2.,
                                   linestyle='dashed', label=n)
-                ax[i + 1, 1].fill_between(mAKR_acf_fit.lags, mAKR_acf_fit.y_ci[:, 0],
-                                      mAKR_acf_fit.y_ci[:, 1], alpha=ci_shade_alpha, color=c,
-                                      label='95% CI')
-                # breakpoint()
-
- 
-
-    # !!! need to twinx for the orange line
-    # also deal with the weirdness in the cassini panel
-
+                ax[i + 1, 1].fill_between(mAKR_acf_fit.lags,
+                                          mAKR_acf_fit.y_ci[:, 0],
+                                          mAKR_acf_fit.y_ci[:, 1],
+                                          alpha=ci_shade_alpha, color=c,
+                                          label='95% CI')
 
     # Format all axes
     ii = 0
@@ -691,7 +685,7 @@ def run_ACF():
                 tick_pos.append(i * (tick_sep_hrs * 60. * 60.))
                 tick_str.append(str(int(tick_sep_hrs * i)))
             a.set_xticks(tick_pos, tick_str)
-        
+
             if j < 1:
                 a.set_ylabel('ACF', fontsize=fontsize)
             elif (j >= 1) & (k == 0):
@@ -699,22 +693,27 @@ def run_ACF():
                              fontsize=fontsize)
                 from matplotlib.lines import Line2D
 
-                custom_lines = [Line2D([0], [0], color=freq_colors[0], lw=acf_lw),
-                                Line2D([0], [0], color=freq_colors[1], lw=acf_lw)]
-
-                #ax.legend(custom_lines, ['Cold', 'Medium', 'Hot'])
-                a.legend(custom_lines, freq_labels, fontsize=fontsize, loc='upper right')
+                custom_lines = [Line2D([0], [0], color=freq_colors[0],
+                                       lw=acf_lw),
+                                Line2D([0], [0], color=freq_colors[1],
+                                       lw=acf_lw)]
+                a.legend(custom_lines, freq_labels, fontsize=fontsize,
+                         loc='upper right')
             else:
                 a.set_ylabel('Normalised ACF',
                              fontsize=fontsize)
                 a.legend(fontsize=fontsize)
+
             a.set_xlabel('Lag (hours)', fontsize=fontsize)
-        
+
             # Draw vertical lines each highlight period
-            n_vert = int(np.floor((a.get_xlim()[1]) / (highlight_period * 60. * 60.)))
+            n_vert = int(np.floor((a.get_xlim()[1]) /
+                                  (highlight_period * 60. * 60.)))
+
             for i in range(n_vert):
-                a.axvline(((i + 1) * highlight_period)*(60. * 60.), **highlight_fmt)
-        
+                a.axvline(((i + 1) * highlight_period) * (60. * 60.),
+                          **highlight_fmt)
+
             # Formatting
             a.tick_params(labelsize=fontsize)
             a.yaxis.offsetText.set_fontsize(fontsize)
@@ -732,9 +731,7 @@ def run_ACF():
     fig.tight_layout()
 
     # Save to file
-    #fig.savefig(ACF_fig)
-    
-    
+    fig.savefig(ACF_fig)
 
 
 def run_MLT_binning():

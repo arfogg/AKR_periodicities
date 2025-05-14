@@ -128,36 +128,103 @@ def plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
     return fig, ax
 
 
-
-# def fit_exp_envelope(lags, acf):
-    
-#     from scipy.signal import hilbert
-    
-#     acf_envelope = np.abs(hilbert(acf))
-    
-#     return acf_envelope
-
 def remove_linear_trend(lags, acf):
-    
+    """
+    Detrend an ACF timeseries by fitting and removing a linear trend.
+
+    Parameters
+    ----------
+    lags : np.array
+        Lags (i.e. x axis of ACF plot).
+    acf : np.array
+        ACF (i.e. y axis of ACF plot).
+
+    Returns
+    -------
+    linear_fit : object
+        Class from scipy linregress, contains intercept and slope.
+    line_y : np.array
+        Linear fit y values as a function of input lags.
+    detrended_acf : np.array
+        Detrended ACF as a function of input lags.
+
+    """
+
+    # Generate linear fit to ACF
     linear_fit = linregress(lags, acf)
-    
+
+    # Return y values on line of best fit
     line_y = linear_fit.intercept + linear_fit.slope * lags
-    
+
+    # Subtract line of best fit from ACF
     detrended_acf = acf - line_y
-    
+
     return linear_fit, line_y, detrended_acf
 
+
 def normalise_with_mean_subtraction(acf):
-    
+    """
+    Normalise ACF values by subtracting the mean.
+
+    Parameters
+    ----------
+    acf : np.array
+        ACF values.
+
+    Returns
+    -------
+    norm_acf : np.array
+        ACF values with mean subtracted.
+
+    """
+
+    # Subtract mean from ACF
     norm_acf = (acf - np.nanmean(acf)) / np.std(acf)
-    
+
     return norm_acf
 
+
 def fit_decaying_sinusoid(lags, acf, A0, gamma0, omega0, phi0):
+    """
+    Fit a damped simple harmonic oscillator curve to ACF as a function of lag.
+
+    Parameters
+    ----------
+    lags : np.array
+        Lags (i.e. x axis of ACF plot).
+    acf : np.array
+        ACF (i.e. y axis of ACF plot). Better fit if detrended and normalised
+        before inputting to this function.
+    A0 : float
+        Initial guess for A.
+    gamma0 : float
+        Initial guess for gamma.
+    omega0 : float
+        Initial guess for omega.
+    phi0 : float
+        Initial guess for phi.
+
+    Returns
+    -------
+    A_fit : float
+        A for fitted curve.
+    gamma_fit : float
+        Gamma for fitted curve.
+    omega_fit : float
+        Omega for fitted curve.
+    phi_fit : float
+        Phi for fitted curve.
+    y_fit : np.array
+        Y values for fitted curve as a function of input lags.
+    popt : array
+        Parameters from curve fit.
+    pcov : array
+        Covariance of popt.
+
+    """
     print('Fitting a decaying sinusoid to the parsed parameters')
 
     initial_guess = (A0, gamma0, omega0, phi0)
-    #initial_guess = (5E18, 0.05, 0.0006, 0.0)
 
     # Curve fitting
     popt, pcov = curve_fit(damped_oscillator, lags, acf, p0=initial_guess)
@@ -165,49 +232,108 @@ def fit_decaying_sinusoid(lags, acf, A0, gamma0, omega0, phi0):
     # Extract fitted parameters
     A_fit, gamma_fit, omega_fit, phi_fit = popt
 
+    # Calculate y values of fitted curve as a function of lags
     y_fit = damped_oscillator(lags, *popt)
-    
+
     return A_fit, gamma_fit, omega_fit, phi_fit, y_fit, popt, pcov
 
-    # # input_parameters = [A0, tau, omega, b]
-    # popt, pcov = curve_fit(func_decaying_sinusoid, lags, acf,
-    #                         p0=input_parameters)
-    #popt, pcov = curve_fit(func_linear_decaying_sinusoid, lags, acf)
-    
-    # return popt, pcov, func_linear_decaying_sinusoid(*popt, lags)
-    
-    # res_lsq = least_squares(func_decaying_sinusoid_residual,
-    #               input_parameters, args=(lags, acf))
-
-    # return res_lsq, func_decaying_sinusoid(res_lsq.x, lags)
 
 def damped_oscillator(x, A, gamma, omega, phi):
+    """
+    Function defining a damped simple harmonic oscillator.
+
+    Parameters
+    ----------
+    x : np.array
+        X axis, i.e. lags in the ACF case.
+    A : float
+        Free parameter.
+    gamma : float
+        Free parameter.
+    omega : float
+        Free parameter.
+    phi : float
+        Free parameter.
+
+    Returns
+    -------
+    np.array
+        Y axis of curve as a function of x, given the input
+        free parameters.
+
+    """
     return A * np.exp(-gamma * x) * np.cos(omega * x + phi)
 
 
 def damped_osc_ci(A, gamma, omega, phi, pcov,
                   lags, n_bootstrap=100, ci=[2.5, 97.5]):
-    
-    print('hello')
-    
-    errors = np.sqrt(np.diag(pcov))
-    
+    """
+    Calculate confidence interval on SHM fit.
 
+    Parameters
+    ----------
+    A : float
+        Fitted free parameter A.
+    gamma : float
+        Fitted free parameter gamma.
+    omega : float
+        Fitted free parameter omega.
+    phi : float
+        Fitted free parameter phi.
+    pcov : array
+        Covariance of free parameters.
+    lags : np.array
+        X axis for model.
+    n_bootstrap : int, optional
+        Number of bootstraps to create. The default is 100.
+    ci : list, optional
+        Position for np.percentile to calculate confidence
+        interval. The default is [2.5, 97.5].
+
+    Returns
+    -------
+    bs_A : np.array
+        Bootstraps of free parameter A.
+    bs_gamma : np.array
+        Bootstraps of free parameter gamma.
+    bs_omega : np.array
+        Bootstraps of free parameter omega.
+    bs_phi : np.array
+        Bootstraps of free parameter phi.
+    y_bs : np.array
+        Array of shape len(lags) x n_bootstrap containing y as
+        a function of lags for each bootstrap.
+    y_ci : np.array
+        Array of shape len(lags) x 2 containing upper and lower
+        confidence interval.
+
+    """
+    # Calculate the 1SD errors on parameters
+    errors = np.sqrt(np.diag(pcov))
+
+    # Define a random distribution of each of the parameters
+    # within the 1SD errors
     bs_A = np.random.normal(A, errors[0], n_bootstrap)
     bs_gamma = np.random.normal(gamma, errors[1], n_bootstrap)
     bs_omega = np.random.normal(omega, errors[2], n_bootstrap)
     bs_phi = np.random.normal(phi, errors[3], n_bootstrap)
-    
+
+    # Initialise empty arrays to contain bootstrapped y and
+    # confidence interval
     y_bs = np.full((len(lags), n_bootstrap), np.nan)
     y_ci = np.full((len(lags), 2), np.nan)
 
+    # Estimate y values for n_bootstrap cases
     for i in range(n_bootstrap):
         y_bs[:, i] = damped_oscillator(lags, bs_A[i], bs_gamma[i],
                                        bs_omega[i], bs_phi[i])
+
+    # Calculate the confidence interval on the bootstraps
     for i in range(len(lags)):
         y_ci[i, :] = np.percentile(y_bs[i, :], ci)
 
-    return bs_A, bs_gamma, bs_omega, bs_phi, y_bs, y_ci   
+    return bs_A, bs_gamma, bs_omega, bs_phi, y_bs, y_ci
+
 
 class decay_shm_fit():
     
