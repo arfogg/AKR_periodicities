@@ -464,6 +464,8 @@ def run_ACF():
     detrended_acf_col = 'blue'
     normalised_acf_col = 'black'
     shm_fit_col = 'mediumseagreen'
+    ci_shade_alpha = 0.3
+    acf_lw = 1.
 
     # Initialise variables
     temporal_resolution = 3. * 60.  # in seconds
@@ -516,7 +518,7 @@ def run_ACF():
 
     # Plot Synthetic ACF
     p1, = ax[0, 0].plot(synthetic_acf_fit.lags, synthetic_acf_fit.acf,
-                        color=freq_colors[0], linewidth=1., label='ACF')
+                        color=freq_colors[0], linewidth=2., label='ACF')
 
     # Initial guess parameters
     A0 = 1.0
@@ -550,6 +552,7 @@ def run_ACF():
                           fontsize=fontsize)
     lines = [p1, p2, p3]
     ax_detrend.legend(lines, [l.get_label() for l in lines], fontsize=fontsize)
+    ax_detrend.yaxis.offsetText.set_fontsize(fontsize)
 
     # Normalised ACF
     ax[0, 1].plot(synthetic_acf_fit.lags, synthetic_acf_fit.normalised_acf,
@@ -561,7 +564,7 @@ def run_ACF():
                   color=shm_fit_col, linewidth=2.,
                   linestyle='dashed', label='Decaying SHM fit')
     ax[0, 1].fill_between(synthetic_acf_fit.lags, synthetic_acf_fit.y_ci[:, 0],
-                          synthetic_acf_fit.y_ci[:, 1], alpha=0.5, color=shm_fit_col,
+                          synthetic_acf_fit.y_ci[:, 1], alpha=ci_shade_alpha, color=shm_fit_col,
                           label='95% CI')
 
     # Decor
@@ -616,10 +619,11 @@ def run_ACF():
 
             if freq_column =='ipwr_50_100kHz':
                 tax = ax[i + 1, 0].twinx()
-                tax.plot(lags, acf, color=c, linewidth=1.)
+                tax.plot(lags, acf, color=c, linewidth=acf_lw, label=n)
                 tax.set_ylabel('ACF\n(' + n + ')', color=c, fontsize=fontsize)
                 tax.tick_params(axis='y', labelcolor=(c), labelsize=fontsize)
                 tax.spines['right'].set_color(c)
+                tax.yaxis.offsetText.set_fontsize(fontsize)
 
                 # Initialise ACF fit class
                 LFE_acf_fit = autocorrelation.decay_shm_fit(lags, acf)
@@ -637,13 +641,13 @@ def run_ACF():
                 # Plotting fitted SHM
                 ax[i + 1, 1].plot(LFE_acf_fit.lags, LFE_acf_fit.y_fitted,
                                   color=c, linewidth=2.,
-                                  linestyle='dashed', label=freq_column)
+                                  linestyle='dashed', label=n)
                 ax[i + 1, 1].fill_between(LFE_acf_fit.lags, LFE_acf_fit.y_ci[:, 0],
-                                      LFE_acf_fit.y_ci[:, 1], alpha=0.5, color=c,
-                                      label=freq_column + ' 95% CI')
+                                      LFE_acf_fit.y_ci[:, 1], alpha=ci_shade_alpha, color=c,
+                                      label='95% CI')
 
             else:
-                ax[i + 1, 0].plot(lags, acf, color=c, linewidth=1.)
+                ax[i + 1, 0].plot(lags, acf, color=c, linewidth=acf_lw, label=n)
                 
                 # Initialise ACF fit class
                 mAKR_acf_fit = autocorrelation.decay_shm_fit(lags, acf)
@@ -661,15 +665,13 @@ def run_ACF():
                 # Plotting fitted SHM
                 ax[i + 1, 1].plot(mAKR_acf_fit.lags, mAKR_acf_fit.y_fitted,
                                   color=c, linewidth=2.,
-                                  linestyle='dashed', label=freq_column)
+                                  linestyle='dashed', label=n)
                 ax[i + 1, 1].fill_between(mAKR_acf_fit.lags, mAKR_acf_fit.y_ci[:, 0],
-                                      mAKR_acf_fit.y_ci[:, 1], alpha=0.5, color=c,
-                                      label=freq_column + ' 95% CI')
+                                      mAKR_acf_fit.y_ci[:, 1], alpha=ci_shade_alpha, color=c,
+                                      label='95% CI')
+                # breakpoint()
 
-    # Decor
-    ax[0, 1].legend(fontsize=fontsize)
-    ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
-
+ 
 
     # !!! need to twinx for the orange line
     # also deal with the weirdness in the cassini panel
@@ -692,8 +694,20 @@ def run_ACF():
         
             if j < 1:
                 a.set_ylabel('ACF', fontsize=fontsize)
+            elif (j >= 1) & (k == 0):
+                a.set_ylabel('ACF\n(' + freq_labels[0] + ')',
+                             fontsize=fontsize)
+                from matplotlib.lines import Line2D
+
+                custom_lines = [Line2D([0], [0], color=freq_colors[0], lw=acf_lw),
+                                Line2D([0], [0], color=freq_colors[1], lw=acf_lw)]
+
+                #ax.legend(custom_lines, ['Cold', 'Medium', 'Hot'])
+                a.legend(custom_lines, freq_labels, fontsize=fontsize, loc='upper right')
             else:
-                a.set_ylabel('ACF\n(' + freq_labels[0] + ')', fontsize=fontsize)
+                a.set_ylabel('Normalised ACF',
+                             fontsize=fontsize)
+                a.legend(fontsize=fontsize)
             a.set_xlabel('Lag (hours)', fontsize=fontsize)
         
             # Draw vertical lines each highlight period
@@ -703,6 +717,7 @@ def run_ACF():
         
             # Formatting
             a.tick_params(labelsize=fontsize)
+            a.yaxis.offsetText.set_fontsize(fontsize)
             t = a.text(0.02, 0.95, axes_labels[ii], transform=a.transAxes,
                        fontsize=1.5 * fontsize, va='top', ha='left')
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))

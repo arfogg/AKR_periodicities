@@ -256,4 +256,4 @@ class decay_shm_fit():
         self.bs_A, self.bs_gamma, self.bs_omega, self.bs_phi,\
             self.y_bs, self.y_ci = \
             damped_osc_ci(self.A, self.gamma, self.omega, self.phi,
-                          self.pcov, self.lags, n_bootstrap=10, ci=95)
+                          self.pcov, self.lags, n_bootstrap=100, ci=[2.5, 97.5])
