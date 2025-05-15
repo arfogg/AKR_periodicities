@@ -271,7 +271,23 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
 
     return bootstrap_peak_magnitudes, FAP
 
+def normalise_bootstrapped_LS_peaks(n_bootstrap, BS_signal,
+                                    bootstrap_peak_magnitudes,
+                                    FAP_peak_directory, FAP_peak_keyword,
+                                    FAP_fname):
+    # Ideally, if we rerun we'll do this automatically in the scipy
+    # lomb scargle function, but this is a quick fix as rerunning is
+    # very computationally intensive.
 
+    # Initialise array
+    norm_bs_peak_magnitude = np.full()
+    # Loop through, normalising
+    for i in range(n_bootstrap):
+        #power = lombscargle(t, y, angular_freqs, precenter=True)
+        norm_bs_peak_magnitude[i] /= 0.5 * np.var(BS_signal[:, i])
+
+
+    # then save to a dir
 # def DEPRECATED_detect_peak(ls_pgram, periods, freqs):
 
 #     i = np.argmax(ls_pgram)
