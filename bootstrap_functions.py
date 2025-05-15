@@ -80,4 +80,3 @@ def generate_bootstrap(data):
     bootstrap_sample = np.random.choice(data, size=len(data))
 
     return bootstrap_sample
-    
