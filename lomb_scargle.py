@@ -149,92 +149,135 @@ def plot_LS_summary(periods, ls_pgram,
 
 
 def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
-    """ Compute Lomb-Scargle and save the result to a unique file. """
-    
-    fname = f"{directory}/{keyword}_LS_peak_bootstrap_{i}.csv"    
-    
-    
-    #def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
+    """
+    Compute the peak of a LS periodogram and save to file.
+
+    Parameters
+    ----------
+    time : np.array
+        Time for timeseries to be analysed.
+    signal : np.array
+        Amplitude for timeseries to be analysed.
+    freqs : np.array
+        Frequency bins to be assessed.
+    i : int
+        Bootstrap number.
+    directory : string
+        Directory for file to be saved.
+    keyword : string
+        Keyword to put into file.
+
+    Returns
+    -------
+    peak_magnitude : float
+        Magnitude of LS peak.
+
+    """
+
+    fname = f"{directory}/{keyword}_LS_peak_bootstrap_{i}.csv"
+
     print(f"Computing for bootstrap {i}...")
     print(f"Time type: {type(time)}, Signal type: {type(signal)}, Freqs type: {type(freqs)}")
-    #breakpoint()
-    # Rest of your function...
+
+    # Ensure inputs are in the right type
     time = np.asarray(time)
     signal = np.asarray(signal)
 
-    
-    
+    # Already saved, load in
     if pathlib.Path(fname).is_file():
         peak_magnitude_df = pd.read_csv(fname, float_precision="round_trip")
         peak_magnitude = peak_magnitude_df['Peak_Magnitude'].values[0]
+    # Else, calculate
     else:
         peak_magnitude = np.nanmax(generic_lomb_scargle(time, signal, freqs))
         # Save each iteration separately
         pd.DataFrame({'Bootstrap_Index': [i],
                       'Peak_Magnitude': [peak_magnitude]}
-                      ).to_csv(fname, index=False)
+                     ).to_csv(fname, index=False)
 
     return peak_magnitude
 
+
 def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
                             FAP_peak_directory, FAP_peak_keyword, FAP_fname):
-    #breakpoint()
-    # bootstrap_peak_magnitudes = np.full(n_bootstrap, np.nan)
-    # for i in range(n_bootstrap):
-        
-    #     pgram = generic_lomb_scargle(time, BS_signal[:, i], freqs)
-    #     bootstrap_peak_magnitudes[i] = np.nanmax(pgram)
+    """
+    Calculate the false alarm probability on a LS periodogram using
+    bootstrapped signals.
 
-    print(generic_lomb_scargle)
-    print(type(time))
-    print(type(freqs))
-    print("DEBUG TYPES:")
-    print("  time:", type(time))
-    print("  signal:", type(BS_signal[:, 0]))
-    print("  freqs:", type(freqs))
+    Parameters
+    ----------
+    n_bootstrap : int
+        Number of bootstraps.
+    BS_signal : np.ndarray
+        Of shape len(time) x n_bootstrap. Contains the bootstrapped signal.
+    time : np.array
+        Time axis for LS peridogram.
+    freqs : np.array
+        Frequency bins to be assessed.
+    FAP_peak_directory : string
+        Directory to save FAP peaks in.
+    FAP_peak_keyword : string
+        Keyword to put into FAP peak filenames.
+    FAP_fname : string
+        Filename to save overall FAP to.
+
+    Returns
+    -------
+    bootstrap_peak_magnitudes : TYPE
+        DESCRIPTION.
+    FAP : TYPE
+        DESCRIPTION.
+
+    """
+
+    # print(generic_lomb_scargle)
+    # print(type(time))
+    # print(type(freqs))
+    # print("DEBUG TYPES:")
+    # print("  time:", type(time))
+    # print("  signal:", type(BS_signal[:, 0]))
+    # print("  freqs:", type(freqs))
+
+    # FAP already calculated, loading
     if pathlib.Path(FAP_fname).is_file():
         with open(FAP_fname, 'rb') as f:
             bootstrap_peak_magnitudes = pickle.load(f)
             FAP = pickle.load(f)
 
+    # Otherwise, calculate
     else:
-        
-        
-        from joblib import Parallel, delayed, parallel_backend
-
+        # Run individual LS calculations in parallel.
+        # n_jobs=-3 uses all but 2 available processors
         with parallel_backend("threading"):
-            # bootstrap_peak_magnitudes = Parallel(n_jobs=-2)(
-            #     delayed(compute_lomb_scargle_peak)(
-            #         time, BS_signal[:, i], freqs, i,
-            #         FAP_peak_directory,
-            #         FAP_peak_keyword
-            #     ) for i in range(n_bootstrap)
-            # )
-
             # Run compute_lomb_scargle_peak in parallel
             bootstrap_peak_magnitudes = Parallel(n_jobs=-3)(
-                delayed(compute_lomb_scargle_peak)(time, BS_signal[:, i].copy(), freqs, i,
+                delayed(compute_lomb_scargle_peak)(time,
+                                                   BS_signal[:, i].copy(),
+                                                   freqs, i,
                                                    FAP_peak_directory,
                                                    FAP_peak_keyword
-                                                   ) for i in range(n_bootstrap)
-        )
-        bootstrap_peak_magnitudes = np.array(bootstrap_peak_magnitudes) 
+                                                   ) for i in range(
+                                                       n_bootstrap)
+                                                       )
+        bootstrap_peak_magnitudes = np.array(bootstrap_peak_magnitudes)
+
         # Compute FAP
         FAP = np.nanmean(bootstrap_peak_magnitudes)
-
+        # Save FAP to file
         with open(FAP_fname, 'wb') as f:
-            pickle.dump(bootstrap_peak_magnitudes, f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(bootstrap_peak_magnitudes, f,
+                        protocol=pickle.HIGHEST_PROTOCOL)
             pickle.dump(FAP, f, protocol=pickle.HIGHEST_PROTOCOL)
-        
-    
+
     return bootstrap_peak_magnitudes, FAP
 
-def DEPRECATED_detect_peak(ls_pgram, periods, freqs):
 
-    i = np.argmax(ls_pgram)
+# def DEPRECATED_detect_peak(ls_pgram, periods, freqs):
 
-    peak_height = ls_pgram[i]
-    peak_freq = freqs[i]
-    peak_period = periods[i]
+#     i = np.argmax(ls_pgram)
 
-    return peak_height, peak_freq, peak_period
+#     peak_height = ls_pgram[i]
+#     peak_freq = freqs[i]
+#     peak_period = periods[i]
+
+#     return peak_height, peak_freq, peak_period
