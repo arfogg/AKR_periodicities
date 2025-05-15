@@ -337,49 +337,97 @@ def damped_osc_ci(A, gamma, omega, phi, pcov,
 
 class decay_shm_fit():
     
-    
     def __init__(self, lags, acf):
+        """
+        Initialise decay_shm_fit class.
 
+        Parameters
+        ----------
+        lags : np.array
+            Lags (i.e. x axis of the ACF plot).
+        acf : np.array
+            ACF (i.e. y axis of the ACF plot).
+
+        Returns
+        -------
+        None.
+
+        """
         # Store the ACF data
         self.lags = lags
         self.acf = acf
-        
+
     def fit_SHM(self, A0=1.0, gamma0=1e-6,
                 omega0=2 * np.pi / 100000, phi0=0):
-        
+        """
+        Fit a damped SHM curve to the ACF as a function
+        of lag.
+
+        Parameters
+        ----------
+        A0 : float, optional
+            Initial guess for A. The default is 1.0.
+        gamma0 : float, optional
+            Initial guess for gamma. The default is 1e-6.
+        omega0 : float, optional
+            Initial guess for omega. The default is 2 * np.pi / 100000.
+        phi0 : float, optional
+            Initial guess for phi. The default is 0.
+
+        Returns
+        -------
+        None.
+
+        """
         # Detrend the data, removing a linear trend
         self.linear_detrend_fit, self.linear_detrend_y,\
             self.linear_detrended_acf =\
             remove_linear_trend(self.lags, self.acf)
 
-        # self.linear_detrend_fit = linear_fit
-        # self.linear_detrend_y = line_y
-        # self.linear_detrended_acf = detrended_acf
-        
         # Normalise the Data
-        self.normalised_acf = normalise_with_mean_subtraction(self.linear_detrended_acf)
+        self.normalised_acf = normalise_with_mean_subtraction(
+            self.linear_detrended_acf)
 
+        # Fit damped SHM
         self.A, self.gamma, self.omega, self.phi, self.y_fitted, self.popt,\
             self.pcov = fit_decaying_sinusoid(self.lags,
                                               self.normalised_acf,
                                               A0, gamma0, omega0, phi0)
-            
-        # Confidence interval here?? Not sure on this code atm!
-        sigma_ab = np.sqrt(np.diagonal(self.pcov))
-        self.ci_upper = damped_oscillator(self.lags, *(self.popt + sigma_ab))
-        self.ci_lower = damped_oscillator(self.lags, *(self.popt - sigma_ab))
+
+        # # Calculate confidence interval
+        # sigma_ab = np.sqrt(np.diagonal(self.pcov))
+        # self.ci_upper = damped_oscillator(self.lags, *(self.popt + sigma_ab))
+        # self.ci_lower = damped_oscillator(self.lags, *(self.popt - sigma_ab))
+
     def create_text_labels(self):
-        
-        self.text_linear_trend = "y = " + "{:.2e}".format(self.linear_detrend_fit.slope) +\
+        """
+        Create attribute containing text strings for plot labels.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.text_linear_trend = "y = " + \
+            "{:.2e}".format(self.linear_detrend_fit.slope) + \
             " x\n+ " + "{:.2e}".format(self.linear_detrend_fit.intercept)
 
-        self.text_shm_trend = "{:.2f}".format(self.A) + "exp(-" + "{:.2e}".format(self.gamma) + "x)" +\
-            "cos(" + "{:.2e}".format(self.omega) + "x + " + "{:.2e}".format(self.phi) + ")"
-        #A * np.exp(-gamma * x) * np.cos(omega * x + phi)
-        
+        self.text_shm_trend = "{:.2f}".format(self.A) + \
+            "exp(-" + "{:.2e}".format(self.gamma) + "x)" + \
+            "cos(" + "{:.2e}".format(self.omega) + "x + " + \
+            "{:.2e}".format(self.phi) + ")"
+
     def calc_confidence_interval(self):
-        
+        """
+        Calculate the confidence interval on fit.
+
+        Returns
+        -------
+        None.
+
+        """
         self.bs_A, self.bs_gamma, self.bs_omega, self.bs_phi,\
             self.y_bs, self.y_ci = \
             damped_osc_ci(self.A, self.gamma, self.omega, self.phi,
-                          self.pcov, self.lags, n_bootstrap=100, ci=[2.5, 97.5])
+                          self.pcov, self.lags, n_bootstrap=100,
+                          ci=[2.5, 97.5])
