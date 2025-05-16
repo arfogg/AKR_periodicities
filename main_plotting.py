@@ -33,11 +33,11 @@ import lomb_scargle
 import autocorrelation
 import bootstrap_functions
 
-sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
+sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
 #import read_integrated_power
 import read_wind_position
 
-sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\readers')
+sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
 import read_omni
 import read_supermag
 import read_sunspot_n
@@ -50,7 +50,7 @@ for a in alphabet:
     axes_labels.append('(' + a + ')')
 
 fig_dir = os.path.join("C:" + os.sep,
-                       r"Users\admin\Documents\figures\akr_periodicities")
+                       r"Users\Alexandra\Documents\figures\akr_periodicities")
 data_dir = os.path.join(fig_dir, "data_quickloads")
 
 # interesting stuff here on simulating intermittent oscillations
