@@ -16,16 +16,16 @@ from scipy import interpolate
 
 import utility
 
-sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
+sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
 #import read_integrated_power
 import calc_integrated_power
 
-sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\readers')
+sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
 import read_omni
 import read_supermag
 
 fig_dir = os.path.join("C:" + os.sep,
-                       r"Users\admin\Documents\figures\akr_periodicities")
+                       r"Users\Alexandra\Documents\figures\akr_periodicities")
 data_dir = os.path.join(fig_dir, "data_quickloads")
 
 

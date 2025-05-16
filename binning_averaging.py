@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\misc_utility')
+sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\misc_utility')
 import statistical_metrics
 
 alphabet = list(string.ascii_lowercase)
