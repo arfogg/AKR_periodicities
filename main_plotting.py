@@ -292,7 +292,15 @@ def run_lomb_scargle():
         'synthetic', synthetic_FAP_pkl)
 
     # Plot the FAP
-    ax[0].axhline(FAP, **FAP_fmt_dict, label='FAP')
+    # ax[0].axhline(FAP, **FAP_fmt_dict, label='FAP')
+    # Draw arrow for FAP
+    trans = transforms.blended_transform_factory(ax[0].transAxes,
+                                                 ax[0].transData)
+    ax[0].annotate("FAP", xy=(0, FAP), xytext=(-0.05, FAP),
+                   xycoords=trans, arrowprops={'facecolor': freq_colors[0]},
+                   fontsize=fontsize, va='center', ha='right',
+                   color=freq_colors[0])
+
 
     # Formatting
     ax[0].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
@@ -308,6 +316,8 @@ def run_lomb_scargle():
                            xycoords=trans, arrowprops={'facecolor': 'black'},
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
+
+    breakpoint()
 
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running Lomb-Scargle for ', interval_tag)
