@@ -301,7 +301,6 @@ def run_lomb_scargle():
                    fontsize=fontsize, va='center', ha='right',
                    color=freq_colors[0])
 
-
     # Formatting
     ax[0].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
     ax[0].set_xlabel('Period (hours)', fontsize=fontsize)
@@ -537,6 +536,7 @@ def run_ACF():
     ax[0, 1].legend(fontsize=fontsize)
     ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
 
+    return synthetic_acf_fit
     # Print fitting details into a table!!!!
     # Including some overall parameter for SHM fit, the linear fit, the SHM fit
 
@@ -699,7 +699,7 @@ def run_ACF():
     fig.tight_layout()
 
     # Save to file
-    fig.savefig(ACF_fig)
+    # fig.savefig(ACF_fig)
 
 
 def run_MLT_binning():

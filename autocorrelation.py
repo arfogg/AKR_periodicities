@@ -9,7 +9,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from scipy.stats import linregress
+from scipy.stats import linregress, chisquare
 from scipy.optimize import least_squares
 from scipy.optimize import curve_fit
 
@@ -178,10 +178,14 @@ def normalise_with_mean_subtraction(acf):
 
     """
 
+    # Mean ACF
+    mean_acf = np.nanmean(acf)
+    # Standard deviation
+    std_acf = np.std(acf)
     # Subtract mean from ACF
-    norm_acf = (acf - np.nanmean(acf)) / np.std(acf)
+    norm_acf = (acf - mean_acf) / std_acf
 
-    return norm_acf
+    return norm_acf, mean_acf, std_acf
 
 
 def fit_decaying_sinusoid(lags, acf, A0, gamma0, omega0, phi0):
@@ -383,17 +387,17 @@ class decay_shm_fit():
         self.linear_detrend_fit, self.linear_detrend_y,\
             self.linear_detrended_acf =\
             remove_linear_trend(self.lags, self.acf)
-
+                
         # Normalise the Data
-        self.normalised_acf = normalise_with_mean_subtraction(
-            self.linear_detrended_acf)
+        self.normalised_acf, self.normalisation_mean, self.normalisation_std =\
+            normalise_with_mean_subtraction(self.linear_detrended_acf)
 
         # Fit damped SHM
         self.A, self.gamma, self.omega, self.phi, self.y_fitted, self.popt,\
             self.pcov = fit_decaying_sinusoid(self.lags,
                                               self.normalised_acf,
                                               A0, gamma0, omega0, phi0)
-
+        self.shm_chi_sq, self.shm_chi_p = chisquare(self.normalised_acf, self.y_fitted)
         # # Calculate confidence interval
         # sigma_ab = np.sqrt(np.diagonal(self.pcov))
         # self.ci_upper = damped_oscillator(self.lags, *(self.popt + sigma_ab))
@@ -401,21 +405,33 @@ class decay_shm_fit():
 
     def create_text_labels(self):
         """
-        Create attribute containing text strings for plot labels.
+        Create attributes containing text strings for plot labels.
 
         Returns
         -------
         None.
 
         """
+        # Linear Trend
         self.text_linear_trend = "y = " + \
             "{:.2e}".format(self.linear_detrend_fit.slope) + \
             " x\n+ " + "{:.2e}".format(self.linear_detrend_fit.intercept)
+        # Linear Trend Pearson r
+        self.text_linear_trend_pearson_r = '{:.2e}'.format(
+            self.linear_detrend_fit.rvalue)
 
+        # Normalisation mean and std
+        self.text_normalisation_mean = "{:.2e}".format(self.normalisation_mean)
+        self.text_normalisation_std = "{:.2e}".format(self.normalisation_std)
+
+        # SHM fit
         self.text_shm_trend = "{:.2f}".format(self.A) + \
             "exp(-" + "{:.2e}".format(self.gamma) + "x)" + \
             "cos(" + "{:.2e}".format(self.omega) + "x + " + \
             "{:.2e}".format(self.phi) + ")"
+        # SHM fit statistics
+        self.text_shm_chi_sq = "{:.2f}".format(self.shm_chi_sq)
+        self.text_shm_chi_p = "{:.2f}".format(self.shm_chi_p)
 
     def calc_confidence_interval(self):
         """
