@@ -5,6 +5,12 @@ Created on Thu Apr  4 15:15:12 2024
 @author: A R Fogg
 """
 
+# import os
+# os.environ["OMP_NUM_THREADS"] = "1"
+# os.environ["OPENBLAS_NUM_THREADS"] = "1"
+# os.environ["MKL_NUM_THREADS"] = "1"
+# os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import sys
 import os
 import pathlib
@@ -316,7 +322,7 @@ def run_lomb_scargle():
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
 
-    breakpoint()
+    #breakpoint()
 
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running Lomb-Scargle for ', interval_tag)
@@ -326,7 +332,8 @@ def run_lomb_scargle():
         file_checks = [file_path.is_file() for file_path in file_paths]
 
         if all(file_checks) is False:
-
+            breakpoint()
+            print('banana')
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
 
         # Remove any rows where intensity == np.nan
@@ -336,9 +343,9 @@ def run_lomb_scargle():
             print('Frequency band: ', freq_column)
             ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_' +
                                   interval_tag + '_' + freq_column + '.csv')
-
+            print('apple')
             if pathlib.Path(ls_csv).is_file() is False:
-
+                print('pineapple')
                 freq_df = akr_df.dropna(subset=[freq_column])
                 t1 = pd.Timestamp.now()
                 print('starting LS at ', t1)
@@ -354,6 +361,7 @@ def run_lomb_scargle():
                 ls_df.to_csv(ls_csv, index=False)
 
             else:
+                print('guava')
                 ls_df = pd.read_csv(ls_csv, delimiter=',',
                                     float_precision='round_trip')
 
@@ -368,6 +376,7 @@ def run_lomb_scargle():
                                                   freq_ch=freq_column,
                                                   n_bootstrap=n_bootstrap)
             # Read in/calc peak magnitudes for bootstraps and FAP
+            print('tomato')
             bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
                 n_bootstrap, BS, ftime_cl, angular_freqs, FAP_peaks_dir,
                 interval_tag + '_' + freq_column, FAP_pkl)

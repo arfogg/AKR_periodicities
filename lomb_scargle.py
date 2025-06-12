@@ -7,6 +7,12 @@ Created on Thu Dec  5 16:50:12 2024
 Functions to run Lomb-Scargle analysis.
 """
 
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import pathlib
 import pickle
 
@@ -85,6 +91,14 @@ def generic_lomb_scargle(time, y, freqs):
     ls_pgram = signal.lombscargle(time, y, freqs, normalize=True)
 
     return ls_pgram
+
+def generic_lomb_scargle_chunked(time, y, freqs, chunk_size=1000):
+    ls_pgram_full = []
+    for start in range(0, len(freqs), chunk_size):
+        chunk_freqs = freqs[start:start+chunk_size]
+        ls_chunk = signal.lombscargle(time, y, chunk_freqs, normalize=True)
+        ls_pgram_full.append(ls_chunk)
+    return np.concatenate(ls_pgram_full)
 
 
 def plot_LS_summary(periods, ls_pgram,
@@ -189,7 +203,8 @@ def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
         peak_magnitude = peak_magnitude_df['Peak_Magnitude'].values[0]
     # Else, calculate
     else:
-        peak_magnitude = np.nanmax(generic_lomb_scargle(time, signal, freqs))
+        #peak_magnitude = np.nanmax(generic_lomb_scargle(time, signal, freqs))
+        peak_magnitude = np.nanmax(generic_lomb_scargle_chunked(time, signal, freqs))
         # Save each iteration separately
         pd.DataFrame({'Bootstrap_Index': [i],
                       'Peak_Magnitude': [peak_magnitude]}
@@ -246,11 +261,15 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
 
     # Otherwise, calculate
     else:
+        print(f"time size: {len(time)}")
+        print(f"freqs size: 1000")
+        print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * 1000 * 8) / 1e9:.2f}")
+
         # Run individual LS calculations in parallel.
         # n_jobs=-3 uses all but 2 available processors
         with parallel_backend("threading"):
             # Run compute_lomb_scargle_peak in parallel
-            bootstrap_peak_magnitudes = Parallel(n_jobs=-3)(
+            bootstrap_peak_magnitudes = Parallel(n_jobs=-4)(
                 delayed(compute_lomb_scargle_peak)(time,
                                                    BS_signal[:, i].copy(),
                                                    freqs, i,
