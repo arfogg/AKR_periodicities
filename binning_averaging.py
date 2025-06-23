@@ -103,9 +103,14 @@ def return_UT_trend(data_df, region_centres=[0, 6, 12, 18],
 
     UT_bins = np.linspace(0, 24-UT_bin_width, int(24/UT_bin_width)) +\
         (UT_bin_width/2)
-    data_df['decimal_hr'] = (data_df.datetime -
-                             data_df.datetime.values.astype('datetime64[D]')).\
-        astype('timedelta64[m]') / 60.
+    # data_df['decimal_hr'] = (data_df.datetime -
+    #                          data_df.datetime.values.astype('datetime64[D]')).\
+    #     astype('timedelta64[m]') / 60.
+    # Calculate the decimal hour of the observation in UT
+    data_df['decimal_hr'] = ((data_df['datetime'] -
+                              data_df['datetime'].dt.normalize()) 
+                             / pd.Timedelta(hours=1))
+
 
     UT_df = pd.DataFrame({'UT_bin_centre': UT_bins})
 
@@ -117,12 +122,17 @@ def return_UT_trend(data_df, region_centres=[0, 6, 12, 18],
 
         UT_median = np.full(UT_bins.size, np.nan)
         UT_mad = np.full(UT_bins.size, np.nan)
-        UT_dist = []
+        
+        UT_median_no0 = np.full(UT_bins.size, np.nan)
+        UT_mad_no0 = np.full(UT_bins.size, np.nan)
+        # UT_dist = []
 
         UT_n = np.full(UT_bins.size, np.nan)
+        UT_n_no0 = np.full(UT_bins.size, np.nan)
 
         for j in range(UT_bins.size):
-
+            print(i, c, n, f)
+            print(j, UT_bins[j], UT_bin_width)
             UT_ind, = np.where((LT_data_df.decimal_hr >=
                                 (UT_bins[j]-UT_bin_width/2))
                                & (LT_data_df.decimal_hr <
@@ -131,15 +141,29 @@ def return_UT_trend(data_df, region_centres=[0, 6, 12, 18],
                 LT_data_df[ipower_tag].iloc[UT_ind].values)
             UT_mad[j], UT_median[j] = statistical_metrics.\
                 median_absolute_deviation(dist_)
+            UT_mad_no0[j], UT_median_no0[j] = statistical_metrics.\
+                median_absolute_deviation(dist_[dist_>0.])
 
             UT_n[j] = dist_.size
+            UT_n_no0[j] = dist_[dist_>0.].size
 
-            UT_dist.append(dist_)
+
+            # UT_dist.append(dist_)
+            # if n== 'dawn':
+            #     breakpoint()
 
         UT_df[n + '_median'] = UT_median
         UT_df[n + '_median_norm'] = UT_median / np.nanmax(UT_median)
         UT_df[n + '_mad'] = UT_mad
+        UT_df[n + '_mad_norm'] = UT_mad / np.nanmax(UT_median)
+
+        UT_df[n + '_median_no0'] = UT_median_no0
+        UT_df[n + '_median_norm_no0'] = UT_median_no0 / np.nanmax(UT_median_no0)
+        UT_df[n + '_mad_no0'] = UT_mad_no0
+        UT_df[n + '_mad_norm_no0'] = UT_mad_no0 / np.nanmax(UT_median_no0)    
+
         UT_df[n + 'n'] = UT_n
+        UT_df[n + 'n_no0'] = UT_n_no0
 
     return UT_df
 
