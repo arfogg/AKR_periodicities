@@ -1029,7 +1029,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
             fig.tight_layout()
 
             # Save to file
-            # fig.savefig(fig_name)
+            fig.savefig(fig_name)
             return
 
 
