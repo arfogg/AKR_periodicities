@@ -87,3 +87,27 @@ def generate_random_phase_surrogate(data, plot=False):
         fig.tight_layout()
 
     return surrogate
+
+
+def calc_longitude_of_sun(data, lon_tag='lon_gsm', plot=False):
+    # data is a DataFrame containing datetime, decimal_gseLT, lon_gsm
+    # NEED TO CHECK WITH SIYUAN ABOUT LON GSM OR GSE!!
+    
+    print('hello')
+    
+    lon_sol = data[lon_tag] - ((12. - data.decimal_gseLT) * 15.)
+    lon_sol = lon_sol % 360
+    
+    if plot:
+        fig, ax = plt.subplots()
+        ax.set_facecolor('lightgrey')
+
+        ax.hist([data[lon_tag], lon_sol], color=['white', 'blue'],
+                edgecolor='black', density=True,
+                label=['$\lambda_{sc}$', '$\lambda_{sun}$'])
+
+        ax.legend()
+        ax.set_xlabel("Longitude ($^{\circ}$)")
+        ax.set_ylabel("Density")
+    
+    return lon_sol
