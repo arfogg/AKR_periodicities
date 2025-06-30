@@ -318,3 +318,116 @@ def plot_UT_trend(data_df, region_centres=[0, 6, 12, 18],
     fig_bp.tight_layout()
 
     return fig_med, fig_bp
+
+
+def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
+                    region_width=6,
+                    region_names=['midn', 'dawn', 'noon', 'dusk'],
+                    region_flags=[0, 1, 2, 3],
+                    lon_bin_width=30.,
+                    ipower_tag='integrated_power',
+                    lon_sol_tag="lon_sol", lon_sc_tag="lon_gsm"):
+    print('bananas')
+    
+    lon_bins = np.linspace(0, 360.-lon_bin_width, int(360./lon_bin_width)) +\
+        (lon_bin_width/2)
+        
+    data_df['decimal_hr'] = ((data_df['datetime'] -
+                              data_df['datetime'].dt.normalize()) 
+                             / pd.Timedelta(hours=1))
+
+
+    lon_df = pd.DataFrame({'lon_bin_centre': lon_bins})
+
+    # Iterate through MLT sectors
+    for i, (c, n, f) in enumerate(zip(region_centres, region_names,
+                                      region_flags)):
+
+        LT_data_df = data_df.loc[data_df.mlt_flag == f].reset_index()
+
+
+
+        # # Initialise variables for longitude of the Sun
+        # median_lonsol = np.full(lon_bins.size, np.nan)
+        # mad_lonsol = np.full(lon_bins.size, np.nan)
+        
+        # median_no0_lonsol = np.full(lon_bins.size, np.nan)
+        # mad_no0_lonsol = np.full(lon_bins.size, np.nan)
+
+        # n_lonsol = np.full(lon_bins.size, np.nan)
+        # n_no0_lonsol = np.full(lon_bins.size, np.nan)
+
+        # # Initialise variables for longitude of the spacecraft
+        # median_lonscr = np.full(lon_bins.size, np.nan)
+        # mad_lonscr = np.full(lon_bins.size, np.nan)
+        
+        # median_no0_lonscr = np.full(lon_bins.size, np.nan)
+        # mad_no0_lonscr = np.full(lon_bins.size, np.nan)
+        
+        # n_lonscr = np.full(lon_bins.size, np.nan)
+        # n_no0_lonscr = np.full(lon_bins.size, np.nan)
+
+        # Initialise variables for longitude bins
+        median_lon = np.full((lon_bins.size, 2), np.nan)
+        mad_lon = np.full((lon_bins.size, 2), np.nan)
+        
+        median_no0_lon = np.full((lon_bins.size, 2), np.nan)
+        mad_no0_lon = np.full((lon_bins.size, 2), np.nan)
+
+        n_lon = np.full((lon_bins.size, 2), np.nan)
+        n_no0_lon = np.full((lon_bins.size, 2), np.nan)
+        
+        for j in range(lon_bins.size):
+
+                        
+            for [k, ln_tg] in enumerate([lon_sol_tag, lon_sc_tag]):
+                # Find the right indices
+                lon_ind, = np.where((LT_data_df[ln_tg] >=
+                                    (lon_bins[j]-lon_bin_width/2))
+                                   & (LT_data_df[ln_tg] <
+                                      (lon_bins[j]+lon_bin_width/2)))
+                dist_ = np.array(
+                    LT_data_df[ipower_tag].iloc[lon_ind].values)
+                mad_lon[j, k], median_lon[j, k] = statistical_metrics.\
+                    median_absolute_deviation(dist_)
+                mad_no0_lon[j, k], median_no0_lon[j, k] = statistical_metrics.\
+                    median_absolute_deviation(dist_[dist_ > 0.])
+    
+                n_lon[j, k] = dist_.size
+                n_no0_lon[j, k] = dist_[dist_ > 0.].size
+    
+    
+                #UT_dist.append(dist_)
+                # if n== 'dawn':
+                #     breakpoint()
+
+        for [l, tg] in enumerate(['sol', 'sc']):
+            lon_df[n + '_median_' + tg] = median_lon[:, l]
+            lon_df[n + '_median_norm_' + tg] = median_lon[:, l] / np.nanmax(median_lon[:, l])
+            lon_df[n + '_mad_' + tg] = mad_lon[:, l]
+            lon_df[n + '_mad_norm_' + tg] = mad_lon[:, l] / np.nanmax(mad_lon[:, l])
+    
+            lon_df[n + '_median_no0_' + tg] = median_no0_lon[:, l]
+            lon_df[n + '_median_norm_no0_' + tg] = median_no0_lon[:, l] / np.nanmax(median_no0_lon[:, l])
+            lon_df[n + '_mad_no0_' + tg] = mad_no0_lon[:, l]
+            lon_df[n + '_mad_norm_no0_' + tg] = mad_no0_lon[:, l] / np.nanmax(mad_no0_lon[:, l])    
+    
+            lon_df[n + '_n_' + tg] = n_lon[:, l]
+            lon_df[n + '_n_no0_' + tg] = n_no0_lon[:, l]
+
+    return lon_df
+       
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    breakpoint()

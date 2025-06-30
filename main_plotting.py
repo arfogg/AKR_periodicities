@@ -38,6 +38,7 @@ import diurnal_oscillator
 import lomb_scargle
 import autocorrelation
 import bootstrap_functions
+import utility
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
 #import read_integrated_power
@@ -732,7 +733,7 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
         region_colors = ['grey', "#c18b40", "#a361c7", "#7ca343", "#6587cd",
                          "#cc5643", "#49ae8a", "#c65c8a"]       
 
-    UT_bin_width = 2
+    lon_bin_width = 30.
 
     # Different frequency channels
     freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'  # ,
@@ -788,6 +789,7 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
         if all(file_checks) is False:
             # Read in AKR intensity data
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+            # akr_df['lon_sol'] = utility.calc_longitude_of_sun(akr_df)
             mlt_flag, mlt_name = binning_averaging.calc_LT_flag(
                 akr_df, region_centres=region_centres,
                 region_width=region_width, region_names=region_names,
@@ -808,14 +810,22 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
                 t1 = pd.Timestamp.now()
                 print('starting MLT binning at ', t1)    
                 
-                UT_df = binning_averaging.return_UT_trend(
-                        akr_df, region_centres=region_centres,
+                UT_df =[]
+                # UT_df = binning_averaging.return_UT_trend(
+                #         akr_df, region_centres=region_centres,
+                #         region_width=region_width, region_names=region_names,
+                #         region_flags=region_flags, UT_bin_width=UT_bin_width,
+                #         ipower_tag=freq_column)
+                lon_df = binning_averaging.return_lon_trend(akr_df, region_centres=region_centres,
                         region_width=region_width, region_names=region_names,
-                        region_flags=region_flags, UT_bin_width=UT_bin_width,
-                        ipower_tag=freq_column)
+                        region_flags=region_flags,
+                        lon_bin_width=30.,
+                                    ipower_tag=freq_column,
+                                    lon_sol_tag="lon_sol", lon_sc_tag="lon_gsm")
+                breakpoint()
                 t2 = pd.Timestamp.now()
                 print('MLT binning finished, time elapsed: ', t2-t1)
-                UT_df.to_csv(MLT_csv, index=False)                
+                #UT_df.to_csv(MLT_csv, index=False)                
             else:
 
                 UT_df = pd.read_csv(MLT_csv, delimiter=',',
@@ -895,7 +905,8 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                          "#cc5643", "#49ae8a", "#c65c8a"]
 
     # UT bin is the same always
-    UT_bin_width = 2
+    # UT_bin_width = 2
+    lon_bin_width = 30.
 
     # Different frequency channels
     freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'])
@@ -912,13 +923,14 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
 
         base_dir = pathlib.Path(data_dir) / 'MLT_binning'
         file_paths = [base_dir /
-                      f"MLT_binned_{n_mlt_sectors}sector_{interval_tag}_{f}.csv"
+                      f"MLT_lon_binned_{n_mlt_sectors}sector_{interval_tag}_{f}.csv"
                       for f in freq_tags]
         file_checks = [file_path.is_file() for file_path in file_paths]
 
         if all(file_checks) is False:
             # Read in AKR intensity data
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+            akr_df['lon_sol'] = utility.calc_longitude_of_sun(akr_df)
             mlt_flag, mlt_name = binning_averaging.calc_LT_flag(
                 akr_df, region_centres=region_centres,
                 region_width=region_width, region_names=region_names,
@@ -947,11 +959,19 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                 # freq_df = akr_df.dropna(subset=[freq_column])
                 # t1 = pd.Timestamp.now()
                 # print('starting MLT binning at ', t1)
-                UT_df = binning_averaging.return_UT_trend(
-                        akr_df, region_centres=region_centres,
+                # UT_df = binning_averaging.return_UT_trend(
+                #         akr_df, region_centres=region_centres,
+                #         region_width=region_width, region_names=region_names,
+                #         region_flags=region_flags, UT_bin_width=UT_bin_width,
+                #         ipower_tag=freq_column)
+                lon_df = binning_averaging.return_lon_trend(akr_df, region_centres=region_centres,
                         region_width=region_width, region_names=region_names,
-                        region_flags=region_flags, UT_bin_width=UT_bin_width,
-                        ipower_tag=freq_column)
+                        region_flags=region_flags,
+                        lon_bin_width=30.,
+                                    ipower_tag=freq_column,
+                                    lon_sol_tag="lon_sol", lon_sc_tag="lon_gsm")
+                breakpoint()
+                UT_df=[]
                 # t2 = pd.Timestamp.now()
                 # print('MLT binning finished, time elapsed: ', t2-t1)
                 UT_df.to_csv(MLT_csv, index=False)
@@ -1030,7 +1050,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
 
             # Save to file
             fig.savefig(fig_name)
-            return
+            #return
 
 
 
