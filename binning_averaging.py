@@ -321,12 +321,12 @@ def plot_UT_trend(data_df, region_centres=[0, 6, 12, 18],
 
 
 def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
-                    region_width=6,
-                    region_names=['midn', 'dawn', 'noon', 'dusk'],
-                    region_flags=[0, 1, 2, 3],
-                    lon_bin_width=30.,
-                    ipower_tag='integrated_power',
-                    lon_sol_tag="lon_sol", lon_sc_tag="lon_gsm"):
+                     region_width=6,
+                     region_names=['midn', 'dawn', 'noon', 'dusk'],
+                     region_flags=[0, 1, 2, 3],
+                     lon_bin_width=30.,
+                     ipower_tag='integrated_power',
+                     lon_sol_tag="lon_sol", lon_sc_tag="lon_gse"):
     print('bananas')
     
     lon_bins = np.linspace(0, 360.-lon_bin_width, int(360./lon_bin_width)) +\
@@ -376,7 +376,7 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
 
         n_lon = np.full((lon_bins.size, 2), np.nan)
         n_no0_lon = np.full((lon_bins.size, 2), np.nan)
-        
+        #breakpoint()
         for j in range(lon_bins.size):
 
                         
@@ -395,8 +395,20 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
     
                 n_lon[j, k] = dist_.size
                 n_no0_lon[j, k] = dist_[dist_ > 0.].size
-    
-    
+
+                #breakpoint()
+
+                if int(n_lon[j, k]) == 0.:
+                    print(ln_tg, n_lon[j, k])
+                    print(lon_bins[j], lon_bin_width)
+                    print(lon_bins[j] - lon_bin_width/2, lon_bins[j] + lon_bin_width/2)
+                   # print(np.nanmin(LT_data_df[ln_tg].iloc[lon_ind]),
+                    #      np.nanmax(LT_data_df[ln_tg].iloc[lon_ind]))
+
+                    fig, ax = plt.subplots()
+                    ax.hist(LT_data_df[ln_tg].iloc[lon_ind])
+                    print('apples')
+                    breakpoint()
                 #UT_dist.append(dist_)
                 # if n== 'dawn':
                 #     breakpoint()

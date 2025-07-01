@@ -930,7 +930,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
         if all(file_checks) is False:
             # Read in AKR intensity data
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
-            akr_df['lon_sol'] = utility.calc_longitude_of_sun(akr_df)
+            akr_df['lon_sol'] = utility.calc_longitude_of_sun(akr_df, plot=True)
             mlt_flag, mlt_name = binning_averaging.calc_LT_flag(
                 akr_df, region_centres=region_centres,
                 region_width=region_width, region_names=region_names,
@@ -944,7 +944,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                                                       freq_labels)):
             print('Frequency band: ', freq_column)
             MLT_csv = os.path.join(data_dir, 'MLT_binning',
-                                   'MLT_binned_' + n_mlt_sectors + 'sector_' +
+                                   'MLT_lon_binned_' + n_mlt_sectors + 'sector_' +
                                    interval_tag + '_' + freq_column + '.csv')
 
             # Initialise plotting window
@@ -964,12 +964,12 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                 #         region_width=region_width, region_names=region_names,
                 #         region_flags=region_flags, UT_bin_width=UT_bin_width,
                 #         ipower_tag=freq_column)
-                lon_df = binning_averaging.return_lon_trend(akr_df, region_centres=region_centres,
-                        region_width=region_width, region_names=region_names,
-                        region_flags=region_flags,
-                        lon_bin_width=30.,
-                                    ipower_tag=freq_column,
-                                    lon_sol_tag="lon_sol", lon_sc_tag="lon_gsm")
+                lon_df = binning_averaging.return_lon_trend(
+                    akr_df, region_centres=region_centres,
+                    region_width=region_width, region_names=region_names,
+                    region_flags=region_flags, lon_bin_width=30.,
+                    ipower_tag=freq_column,
+                    lon_sol_tag="lon_sol", lon_sc_tag="lon_gsm")
                 breakpoint()
                 UT_df=[]
                 # t2 = pd.Timestamp.now()
