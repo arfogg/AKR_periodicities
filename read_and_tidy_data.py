@@ -214,7 +214,7 @@ def return_test_intervals():
                  'cassini_flyby',
                  'long_nightside_period'],
          'title': ['Decadal Archive\n(1995-2004)',
-                   'Cassini fly-by\n(15th Aug 1999-14th Sep 1999)',
+                   'Cassini flyby\n(15th Aug 1999-14th Sep 1999)',
                    'Nightside Interval\n(22:36 11th Oct 2003 - 09:36 2nd Mar 2004)'],
          # 'label': ['1995-2004', 'Cassini fly-by', 'Nightside viewing'],
          'label': ['Decadal archive', 'Cassini fly-by', 'Nightside interval'],
