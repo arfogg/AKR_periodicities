@@ -131,18 +131,18 @@ def plot_trajectory(sdtime, edtime, wind_position_df, ax, fontsize=15):
     # Invert x axis so Sun is on left
     ax.invert_xaxis()
 
-    # # Label the Earth
-    # ax.plot(0, 0, marker="*", markersize=fontsize, color='mediumblue',
-    #         linewidth=0., label='Earth')
-    # Draw the Earth
-    draw_emoji.draw_emoji('earth_africa', ax, coords=(0., 0.), zoom=0.03)
+    # Label the Earth
+    ax.plot(0, 0, marker="*", markersize=fontsize, color='mediumblue',
+            linewidth=0., label='Earth')
+    # # Draw the Earth
+    # draw_emoji.draw_emoji('earth_africa', ax, coords=(0., 0.), zoom=0.03)
 
     # Label the beginning and end of the orbit
     ax.plot(position_df['x_gse'].iloc[0], position_df['y_gse'].iloc[0],
             marker="o", markersize=0.6*fontsize, color='green', linewidth=0.,
             label='Start')
     ax.plot(position_df['x_gse'].iloc[-1], position_df['y_gse'].iloc[-1],
-            marker="^", markersize=0.6*fontsize, color='red', linewidth=0.,
+            marker="s", markersize=0.6*fontsize, color='red', linewidth=0.,
             label='End')
 
     # Formatting
