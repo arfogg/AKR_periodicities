@@ -223,11 +223,13 @@ def run_lomb_scargle():
          pd.Timestamp(1995, 1, 1, 0)).total_seconds()
     f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min,
                                                                   f_max, n0=5)
+
     freqs = freqs[::-1]
     angular_freqs = 2 * np.pi * freqs
     periods = periodicity_functions.freq_to_period(freqs)
     vertical_indicators = [12, 24]
     vertical_ind_col = 'black'
+
 
     # Different frequency channels
     freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'  # ,

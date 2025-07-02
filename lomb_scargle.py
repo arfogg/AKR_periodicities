@@ -15,6 +15,8 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 import pathlib
 import pickle
+import psutil
+import math
 
 import numpy as np
 import pandas as pd
@@ -92,12 +94,15 @@ def generic_lomb_scargle(time, y, freqs):
 
     return ls_pgram
 
-def generic_lomb_scargle_chunked(time, y, freqs, chunk_size=1000):
+def generic_lomb_scargle_chunked(time, y, freqs, chunk_size=200):
     ls_pgram_full = []
+    j=0
     for start in range(0, len(freqs), chunk_size):
+        print('chunk ', j)
         chunk_freqs = freqs[start:start+chunk_size]
         ls_chunk = signal.lombscargle(time, y, chunk_freqs, normalize=True)
         ls_pgram_full.append(ls_chunk)
+        j=j+1
     return np.concatenate(ls_pgram_full)
 
 
@@ -213,6 +218,73 @@ def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
     return peak_magnitude
 
 
+
+def calc_safe_njobs(est_mem_per_job_gb, frac_safe=0.5):
+    """
+    Dynamically scale n_jobs based on available memory to prevent crashes.
+
+    Parameters
+    ----------
+    task_list : list
+        List of arguments (as tuples) to pass to the function.
+    func : callable
+        Function to be called with arguments from task_list.
+    est_mem_per_job_gb : float
+        Estimated memory use per job, in gigabytes.
+    backend : str
+        Joblib backend. Default is 'loky' (process-based). Use 'threading' if needed.
+
+    Returns
+    -------
+    results : list
+        List of function results.
+    """
+    # Get available memory in GB
+    available_mem_gb = psutil.virtual_memory().available / 1e9
+    print(available_mem_gb, ' GB memory available')
+
+    # Leave some safety buffer (e.g., 30% of available RAM)
+    safe_mem_gb = available_mem_gb * frac_safe
+    print('Using only ',frac_safe*100., '%, i.e.:', safe_mem_gb, ' GB memory')
+
+    # Determine max safe number of parallel jobs
+    # Double / rounds down
+    max_safe_jobs = max(1, int(safe_mem_gb // est_mem_per_job_gb))
+
+    print(f"Using up to {max_safe_jobs} parallel jobs")
+
+    return max_safe_jobs
+
+
+def estimate_lombscargle_memory_gb(time, freqs, dtype=np.float64):
+    """
+    Estimate memory usage in gigabytes for one Lomb-Scargle job.
+
+    Parameters
+    ----------
+    time : np.ndarray
+        Time array (1D).
+    freqs : np.ndarray
+        Frequency bins (1D).
+    dtype : numpy dtype, optional
+        Data type of array elements. Default is float64.
+
+    Returns
+    -------
+    mem_gb : float
+        Estimated memory usage in gigabytes.
+    """
+    n_time = len(time)
+    n_freqs = len(freqs)
+    bytes_per_element = np.dtype(dtype).itemsize
+
+    # Estimate memory for internal matrix: shape (n_time, n_freqs)
+    total_bytes = n_time * n_freqs * bytes_per_element
+    mem_gb = total_bytes / 1e9
+
+    return mem_gb
+
+
 def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
                             FAP_peak_directory, FAP_peak_keyword, FAP_fname):
     """
@@ -262,22 +334,37 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
     # Otherwise, calculate
     else:
         print(f"time size: {len(time)}")
-        print(f"freqs size: 1000")
-        print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * 1000 * 8) / 1e9:.2f}")
+        print(f"freqs size: ", freqs.size)
+        print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * len(freqs) * 8) / 1e9:.2f}")
+        print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * 100 * 8) / 1e9:.2f}")
 
+        est_mem_per_job_gb = estimate_lombscargle_memory_gb(time, freqs[0:199], dtype=np.float64)
+        max_safe_jobs = calc_safe_njobs(est_mem_per_job_gb)
+
+
+        for i in range(n_bootstrap):
+            print('BS ', i)
+            bootstrap_peak_magnitudes[i] = compute_lomb_scargle_peak(
+                time, BS_signal[:, i], freqs, i, FAP_peak_directory,
+                FAP_peak_keyword)
+            # print(f"Bootstrap {i}: peak = {peak}")
+
+
+        #breakpoint()
         # Run individual LS calculations in parallel.
         # n_jobs=-3 uses all but 2 available processors
-        with parallel_backend("threading"):
-            # Run compute_lomb_scargle_peak in parallel
-            bootstrap_peak_magnitudes = Parallel(n_jobs=-4)(
-                delayed(compute_lomb_scargle_peak)(time,
-                                                   BS_signal[:, i].copy(),
-                                                   freqs, i,
-                                                   FAP_peak_directory,
-                                                   FAP_peak_keyword
-                                                   ) for i in range(
-                                                       n_bootstrap)
-                                                       )
+        # with parallel_backend("threading"):
+        # with parallel_backend("loky"):
+        #     # Run compute_lomb_scargle_peak in parallel
+        #     bootstrap_peak_magnitudes = Parallel(n_jobs=max_safe_jobs)(
+        #         delayed(compute_lomb_scargle_peak)(time,
+        #                                            BS_signal[:, i].copy(),
+        #                                            freqs, i,
+        #                                            FAP_peak_directory,
+        #                                            FAP_peak_keyword
+        #                                            ) for i in range(
+        #                                                n_bootstrap)
+        #                                                )
         bootstrap_peak_magnitudes = np.array(bootstrap_peak_magnitudes)
 
         # Compute FAP
