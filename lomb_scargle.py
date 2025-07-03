@@ -7,17 +7,11 @@ Created on Thu Dec  5 16:50:12 2024
 Functions to run Lomb-Scargle analysis.
 """
 
-# import os
-# os.environ["OMP_NUM_THREADS"] = "1"
-# os.environ["OPENBLAS_NUM_THREADS"] = "1"
-# os.environ["MKL_NUM_THREADS"] = "1"
-# os.environ["NUMEXPR_NUM_THREADS"] = "1"
-
 import pathlib
 import pickle
 import psutil
-import math
-import astropy
+# import math
+# import astropy
 
 from astropy.timeseries import LombScargle
 
@@ -27,53 +21,53 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 
-import scipy.signal as signal
+# import scipy.signal as signal
 
-from joblib import Parallel, delayed, parallel_backend
-
-
-def define_frequency_bins(T, f_min, f_max, n0=5):
-    """
-    Function to define the Lomb-Scargle bins in frequency space. Theory
-    of bin selection from Vanderplas (2018)
-    https://doi.org/10.3847/1538-4365/aab766
-
-    Parameters
-    ----------
-    T : int
-        Length of entire dataset in seconds. The lowest possible freq
-        is 1/total amount of time observed.
-    f_min : float
-        Desired minimum frequency.
-    f_max : float
-        Desired maximum frequency.
-    n0 : TYPE, optional
-        Number of samples needed to define a peak in a periodogram. The
-        default is 5.
-
-    Returns
-    -------
-    f_min : float
-        Minimum frequency.
-    f_max : float
-        Maximum frequency.
-    N_f : int
-        Number of frequencies.
-    sample_f : np.array
-        Calculated frequency bins.
-
-    """
-
-    # Number of frequencies to be sampled
-    N_f = int(n0 * T * f_max)
-
-    # Distribute frequencies logarithmically
-    sample_f = np.logspace(np.log10(f_min), np.log10(f_max), N_f)
-
-    return f_min, f_max, N_f, sample_f
+# from joblib import Parallel, delayed, parallel_backend
 
 
-def generic_lomb_scargle(time, y, f_min, f_max, n0=5):# freqs):
+# def define_frequency_bins(T, f_min, f_max, n0=5):
+#     """
+#     Function to define the Lomb-Scargle bins in frequency space. Theory
+#     of bin selection from Vanderplas (2018)
+#     https://doi.org/10.3847/1538-4365/aab766
+
+#     Parameters
+#     ----------
+#     T : int
+#         Length of entire dataset in seconds. The lowest possible freq
+#         is 1/total amount of time observed.
+#     f_min : float
+#         Desired minimum frequency.
+#     f_max : float
+#         Desired maximum frequency.
+#     n0 : TYPE, optional
+#         Number of samples needed to define a peak in a periodogram. The
+#         default is 5.
+
+#     Returns
+#     -------
+#     f_min : float
+#         Minimum frequency.
+#     f_max : float
+#         Maximum frequency.
+#     N_f : int
+#         Number of frequencies.
+#     sample_f : np.array
+#         Calculated frequency bins.
+
+#     """
+
+#     # Number of frequencies to be sampled
+#     N_f = int(n0 * T * f_max)
+
+#     # Distribute frequencies logarithmically
+#     sample_f = np.logspace(np.log10(f_min), np.log10(f_max), N_f)
+
+#     return f_min, f_max, N_f, sample_f
+
+
+def generic_lomb_scargle(time, y, f_min, f_max, n0=5):
     """
     Function to run Lomb Scargle as implemented in SciPy
 
@@ -83,37 +77,33 @@ def generic_lomb_scargle(time, y, f_min, f_max, n0=5):# freqs):
         Time axis of the data in seconds.
     y : np.array
         Amplitude of the data. NaN rows must be removed.
-    freqs : np.array
-        Frequency bins to be sampled.
+    f_min : float
+        Desired minimum frequency.
+    f_max : float
+        Desired maximum frequency.
+    n0 : int, optional
+        Number of samples needed to define a peak in a periodogram. The
+        default is 5.
 
     Returns
     -------
+    ls_object : object
+        Astropy LombScargle object containing Lomb Scargle results.
+    freqs : np.array
+        Frequencies along the periodogram axis.
     ls_pgram : np.array
         Normalised Lomb-Scargle amplitude as a function of freqs.
 
     """
 
-    # freqs, ls_pgram = LombScargle(time, y, normalization='standard').autopower(
-    #     minimum_frequency=f_min, maximum_frequency=f_max, samples_per_peak=n0)
-
+    # Run Lomb Scargle analysis, creating LombScargle object
     ls_object = LombScargle(time, y, normalization='standard')
+
+    # Extract frequencies and power
     freqs, ls_pgram = ls_object.autopower(
         minimum_frequency=f_min, maximum_frequency=f_max, samples_per_peak=n0)
-    #fap = ls_object.false_alarm_probability(ls_pgram.max())
-    # ls_pgram = signal.lombscargle(time, y, freqs, normalize=True)
 
-    return ls_object, freqs, ls_pgram#, fap
-
-# def generic_lomb_scargle_chunked(time, y, freqs, chunk_size=200):
-#     ls_pgram_full = []
-#     j=0
-#     for start in range(0, len(freqs), chunk_size):
-#         print('chunk ', j)
-#         chunk_freqs = freqs[start:start+chunk_size]
-#         ls_chunk = signal.lombscargle(time, y, chunk_freqs, normalize=True)
-#         ls_pgram_full.append(ls_chunk)
-#         j=j+1
-#     return np.concatenate(ls_pgram_full)
+    return ls_object, freqs, ls_pgram
 
 
 def plot_LS_summary(periods, ls_pgram,
@@ -177,8 +167,8 @@ def plot_LS_summary(periods, ls_pgram,
     return ax
 
 
-def compute_lomb_scargle_peak(time, signal, f_min, f_max, i, directory, keyword,
-                              n0=5):
+def compute_lomb_scargle_peak(time, signal, f_min, f_max, i,
+                              directory, keyword, n0=5):
     """
     Compute the peak of a LS periodogram and save to file.
 
@@ -188,14 +178,19 @@ def compute_lomb_scargle_peak(time, signal, f_min, f_max, i, directory, keyword,
         Time for timeseries to be analysed.
     signal : np.array
         Amplitude for timeseries to be analysed.
-    freqs : np.array
-        Frequency bins to be assessed.
+    f_min : float
+        Desired minimum frequency.
+    f_max : float
+        Desired maximum frequency.
     i : int
         Bootstrap number.
     directory : string
         Directory for file to be saved.
     keyword : string
         Keyword to put into file.
+    n0 : int, optional
+        Number of samples needed to define a peak in a periodogram. The
+        default is 5.
 
     Returns
     -------
@@ -204,10 +199,8 @@ def compute_lomb_scargle_peak(time, signal, f_min, f_max, i, directory, keyword,
 
     """
 
+    # Output filename for peak magnitude
     fname = f"{directory}/{keyword}_LS_peak_bootstrap_{i}.csv"
-
-    print(f"Computing for bootstrap {i}...")
-    #print(f"Time type: {type(time)}, Signal type: {type(signal)}, Freqs type: {type(freqs)}")
 
     # Ensure inputs are in the right type
     time = np.asarray(time)
@@ -219,10 +212,8 @@ def compute_lomb_scargle_peak(time, signal, f_min, f_max, i, directory, keyword,
         peak_magnitude = peak_magnitude_df['Peak_Magnitude'].values[0]
     # Else, calculate
     else:
-        #peak_magnitude = np.nanmax(generic_lomb_scargle(time, signal, freqs))
-        # peak_magnitude = np.nanmax(generic_lomb_scargle_chunked(time, signal, freqs))
         ls_object, freqs, ls_pgram = generic_lomb_scargle(time, signal,
-                                                     f_min, f_max, n0=n0)
+                                                          f_min, f_max, n0=n0)
         peak_magnitude = np.nanmax(ls_pgram)
         # Save each iteration separately
         pd.DataFrame({'Bootstrap_Index': [i],
@@ -232,71 +223,70 @@ def compute_lomb_scargle_peak(time, signal, f_min, f_max, i, directory, keyword,
     return peak_magnitude
 
 
+# def calc_safe_njobs(est_mem_per_job_gb, frac_safe=0.5):
+#     """
+#     Dynamically scale n_jobs based on available memory to prevent crashes.
 
-def calc_safe_njobs(est_mem_per_job_gb, frac_safe=0.5):
-    """
-    Dynamically scale n_jobs based on available memory to prevent crashes.
+#     Parameters
+#     ----------
+#     task_list : list
+#         List of arguments (as tuples) to pass to the function.
+#     func : callable
+#         Function to be called with arguments from task_list.
+#     est_mem_per_job_gb : float
+#         Estimated memory use per job, in gigabytes.
+#     backend : str
+#         Joblib backend. Default is 'loky' (process-based). Use 'threading' if needed.
 
-    Parameters
-    ----------
-    task_list : list
-        List of arguments (as tuples) to pass to the function.
-    func : callable
-        Function to be called with arguments from task_list.
-    est_mem_per_job_gb : float
-        Estimated memory use per job, in gigabytes.
-    backend : str
-        Joblib backend. Default is 'loky' (process-based). Use 'threading' if needed.
+#     Returns
+#     -------
+#     results : list
+#         List of function results.
+#     """
+#     # Get available memory in GB
+#     available_mem_gb = psutil.virtual_memory().available / 1e9
+#     print(available_mem_gb, ' GB memory available')
 
-    Returns
-    -------
-    results : list
-        List of function results.
-    """
-    # Get available memory in GB
-    available_mem_gb = psutil.virtual_memory().available / 1e9
-    print(available_mem_gb, ' GB memory available')
+#     # Leave some safety buffer (e.g., 30% of available RAM)
+#     safe_mem_gb = available_mem_gb * frac_safe
+#     print('Using only ',frac_safe*100., '%, i.e.:', safe_mem_gb, ' GB memory')
 
-    # Leave some safety buffer (e.g., 30% of available RAM)
-    safe_mem_gb = available_mem_gb * frac_safe
-    print('Using only ',frac_safe*100., '%, i.e.:', safe_mem_gb, ' GB memory')
+#     # Determine max safe number of parallel jobs
+#     # Double / rounds down
+#     max_safe_jobs = max(1, int(safe_mem_gb // est_mem_per_job_gb))
 
-    # Determine max safe number of parallel jobs
-    # Double / rounds down
-    max_safe_jobs = max(1, int(safe_mem_gb // est_mem_per_job_gb))
+#     print(f"Using up to {max_safe_jobs} parallel jobs")
 
-    print(f"Using up to {max_safe_jobs} parallel jobs")
-
-    return max_safe_jobs
+#     return max_safe_jobs
 
 
-def estimate_lombscargle_memory_gb(time, freqs, dtype=np.float64):
-    """
-    Estimate memory usage in gigabytes for one Lomb-Scargle job.
+# def estimate_lombscargle_memory_gb(time, freqs, dtype=np.float64):
+#     """
+#     Estimate memory usage in gigabytes for one Lomb-Scargle job.
 
-    Parameters
-    ----------
-    time : np.ndarray
-        Time array (1D).
-    freqs : np.ndarray
-        Frequency bins (1D).
-    dtype : numpy dtype, optional
-        Data type of array elements. Default is float64.
+#     Parameters
+#     ----------
+#     time : np.ndarray
+#         Time array (1D).
+#     freqs : np.ndarray
+#         Frequency bins (1D).
+#     dtype : numpy dtype, optional
+#         Data type of array elements. Default is float64.
 
-    Returns
-    -------
-    mem_gb : float
-        Estimated memory usage in gigabytes.
-    """
-    n_time = len(time)
-    n_freqs = len(freqs)
-    bytes_per_element = np.dtype(dtype).itemsize
+#     Returns
+#     -------
+#     mem_gb : float
+#         Estimated memory usage in gigabytes.
+#     """
+#     n_time = len(time)
+#     n_freqs = len(freqs)
+#     bytes_per_element = np.dtype(dtype).itemsize
 
-    # Estimate memory for internal matrix: shape (n_time, n_freqs)
-    total_bytes = n_time * n_freqs * bytes_per_element
-    mem_gb = total_bytes / 1e9
+#     # Estimate memory for internal matrix: shape (n_time, n_freqs)
+#     total_bytes = n_time * n_freqs * bytes_per_element
+#     mem_gb = total_bytes / 1e9
 
-    return mem_gb
+#     return mem_gb
 
 
 def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
@@ -314,14 +304,19 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
         Of shape len(time) x n_bootstrap. Contains the bootstrapped signal.
     time : np.array
         Time axis for LS peridogram.
-    freqs : np.array
-        Frequency bins to be assessed.
+    f_min : float
+        Desired minimum frequency.
+    f_max : float
+        Desired maximum frequency.
     FAP_peak_directory : string
         Directory to save FAP peaks in.
     FAP_peak_keyword : string
         Keyword to put into FAP peak filenames.
     FAP_fname : string
         Filename to save overall FAP to.
+    n0 : int, optional
+        Number of samples needed to define a peak in a periodogram. The
+        default is 5.
 
     Returns
     -------
@@ -332,14 +327,6 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
 
     """
 
-    # print(generic_lomb_scargle)
-    # print(type(time))
-    # print(type(freqs))
-    # print("DEBUG TYPES:")
-    # print("  time:", type(time))
-    # print("  signal:", type(BS_signal[:, 0]))
-    # print("  freqs:", type(freqs))
-
     # FAP already calculated, loading
     if pathlib.Path(FAP_fname).is_file():
         with open(FAP_fname, 'rb') as f:
@@ -348,39 +335,12 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
 
     # Otherwise, calculate
     else:
-        # print(f"time size: {len(time)}")
-        # print(f"freqs size: ", freqs.size)
-        # print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * len(freqs) * 8) / 1e9:.2f}")
-        # print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * 100 * 8) / 1e9:.2f}")
-
-        # est_mem_per_job_gb = estimate_lombscargle_memory_gb(time, freqs[0:199], dtype=np.float64)
-        # max_safe_jobs = calc_safe_njobs(est_mem_per_job_gb)
         bootstrap_peak_magnitudes = np.full(n_bootstrap, np.nan)
 
         for i in range(n_bootstrap):
-            print('BS ', i)
             bootstrap_peak_magnitudes[i] = compute_lomb_scargle_peak(
                 time, BS_signal[:, i], f_min, f_max, i, FAP_peak_directory,
                 FAP_peak_keyword, n0=n0)
-            # print(f"Bootstrap {i}: peak = {peak}")
-
-
-        # #breakpoint()
-        # # Run individual LS calculations in parallel.
-        # # n_jobs=-3 uses all but 2 available processors
-        # # with parallel_backend("threading"):
-        # # with parallel_backend("loky"):
-        # #     # Run compute_lomb_scargle_peak in parallel
-        # #     bootstrap_peak_magnitudes = Parallel(n_jobs=max_safe_jobs)(
-        # #         delayed(compute_lomb_scargle_peak)(time,
-        # #                                            BS_signal[:, i].copy(),
-        # #                                            freqs, i,
-        # #                                            FAP_peak_directory,
-        # #                                            FAP_peak_keyword
-        # #                                            ) for i in range(
-        # #                                                n_bootstrap)
-        # #                                                )
-        # bootstrap_peak_magnitudes = np.array(bootstrap_peak_magnitudes)
 
         # Compute FAP
         FAP = np.nanmean(bootstrap_peak_magnitudes)
@@ -391,20 +351,3 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
             pickle.dump(FAP, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     return bootstrap_peak_magnitudes, FAP
-
-# def normalise_bootstrapped_LS_peaks(n_bootstrap, BS_signal,
-#                                     bootstrap_peak_magnitudes,
-#                                     FAP_peak_directory, FAP_peak_keyword,
-#                                     FAP_fname):
-#     # Ideally, if we rerun we'll do this automatically in the scipy
-#     # lomb scargle function, but this is a quick fix as rerunning is
-#     # very computationally intensive.
-
-#     # Initialise array
-#     norm_bs_peak_magnitude = np.full()
-#     # Loop through, normalising
-#     for i in range(n_bootstrap):
-#         #power = lombscargle(t, y, angular_freqs, precenter=True)
-#         norm_bs_peak_magnitude[i] /= 0.5 * np.var(BS_signal[:, i])
-
-
