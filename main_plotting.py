@@ -1099,6 +1099,116 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
             fig.savefig(fig_name)
             #return
 
+   
+def lomb_scargle_cassini():
+    
+    # Run the Lomb-scargle analysis over each year of AKR intensity
+    # with sunspot number as another panel
+    
+    # Define time periods
+    years = np.arange(1995, 2004 + 1)
+    # stime = pd.Timestamp(years[0], 1, 1, 0, 0, 0)
+    # etime = pd.Timestamp(years[-1]+1, 1, 1, 0, 0, 0)
+    stime = 1994.5
+    etime = 2004.5
+    
+    # Define Lomb-Scargle freqs etc
+    f_min = 1 / (48. * 60. * 60.)
+    f_max = 1 / (8. * 60. * 60.)
+    T = (pd.Timestamp(2005, 1, 1, 0) -
+         pd.Timestamp(1995, 1, 1, 0)).total_seconds()
+    samples_per_peak = 5
+    # f_min = 1 / (48. * 60. * 60.)
+    # f_max = 1 / (8. * 60. * 60.)
+    # T = (pd.Timestamp(2005, 1, 1, 0) - pd.Timestamp(1995, 1, 1, 0)).total_seconds()
+    # f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min, f_max, n0=5)
+    # freqs = freqs[::-1]
+    # angular_freqs = 2 * np.pi * freqs
+    # periods = periodicity_functions.freq_to_period(freqs)    
+    
+    # Read in interval data
+    interval_options = read_and_tidy_data.return_test_intervals()
+    interval_details = interval_options.loc[
+        interval_options.tag == "cassini_flyby"]
+    interval_stime = interval_details.stime.iloc[0]
+    interval_etime = interval_details.etime.iloc[0]
+    # Read in *all* AKR integrated power
+    akr_df = read_and_tidy_data.select_akr_intervals("full_archive")
+    
+    # Sliding parameters
+    slides = 2
+    slide_width = pd.Timedelta(days=10)
+    slide_width_multiplier = np.linspace(0, slides, slides+1) - slides/2
+
+    ut_s = np.full(slides + 1, np.nan)
+    ut_e = np.full(slides + 1, np.nan)
+
+    x_lim = [interval_stime - ((slides / 2) * slide_width),
+             interval_etime + ((slides / 2) * slide_width)]
+
+    for i, factor in enumerate(slide_width_multiplier):
+        ut_s[i] = interval_stime - (factor * slide_width)
+        ut_e[i] = interval_etime - (factor * slide_width)
+
+   #  # LS analysis here
+   #  ls_pgram = np.full((periods.size, slides + 1), np.nan)
+   #  for i, yr in enumerate(slides + 1):
+   #      print('Running Lomb-Scargle analysis for ', yr)
+        
+   #      # Subselect AKR df
+    
+   #      # Run Lomb-Scargle
+        
+   #      # Current placeholder data
+   #      ls_pgram[:, i] = np.repeat(i, periods.size)
+    
+   #  # Find edges of pixels on period axis
+   #  period_edges = np.full(periods.size + 1, np.nan)
+   #  for k in range(period_edges.size):
+   #      if k == period_edges.size-2:
+   #          period_edges[k] = periods[k-1] + ((periods[k]-periods[k-1])/2)
+   #      elif k == period_edges.size-1:
+   #          period_edges[k] = periods[k-1] + ((periods[k-1]-periods[k-2])/2)
+   #      else:
+   #          period_edges[k] = periods[k] - ((periods[k+1]-periods[k])/2)
+    
+   #  # Perhaps a panel with discreet years and another with some smoothing?
+   #  # IF TIME
+    
+   # # breakpoint()
+    
+    
+   #  # Initialise plotting
+   #  fig, ax = plt.subplots(nrows=2, figsize=(16,8))
+   
+   #  # Plot Lomb-Scargles
+   #  X, Y = np.meshgrid(np.append(years-0.5, years[-1]+0.5), period_edges)
+   #  pcm = ax[0].pcolormesh(X, Y, ls_pgram, cmap='plasma')
+   #  cbar = plt.colorbar(pcm, ax=ax[0], label="Lomb-Scargle\nNormalised Amplitude")
+   #  cbar.ax.tick_params(labelsize=fontsize)
+   
+   #  ax[0].set_ylabel('Period (hours)', fontsize=fontsize)
+
+   #  ax_pos = ax[0].get_position().bounds
+
+
+
+
+   #  # Make width same as (a)
+   #  pos=ax[1].get_position().bounds
+   #  ax[1].set_position([ax_pos[0], pos[1], ax_pos[2], pos[3]])
+    
+    
+   #  # Formatting
+   #  for j, a in enumerate(ax):
+   #      a.set_xlim(stime, etime)
+   #      a.tick_params(labelsize=fontsize)
+
+   #      t = a.text(0.02, 0.92, axes_labels[j], transform=a.transAxes,
+   #                 fontsize=fontsize, va='top', ha='left')
+   #      t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+                
+
 
 
 
