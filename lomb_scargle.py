@@ -7,16 +7,19 @@ Created on Thu Dec  5 16:50:12 2024
 Functions to run Lomb-Scargle analysis.
 """
 
-import os
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
+# import os
+# os.environ["OMP_NUM_THREADS"] = "1"
+# os.environ["OPENBLAS_NUM_THREADS"] = "1"
+# os.environ["MKL_NUM_THREADS"] = "1"
+# os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 import pathlib
 import pickle
 import psutil
 import math
+import astropy
+
+from astropy.timeseries import LombScargle
 
 import numpy as np
 import pandas as pd
@@ -70,7 +73,7 @@ def define_frequency_bins(T, f_min, f_max, n0=5):
     return f_min, f_max, N_f, sample_f
 
 
-def generic_lomb_scargle(time, y, freqs):
+def generic_lomb_scargle(time, y, f_min, f_max, n0=5):# freqs):
     """
     Function to run Lomb Scargle as implemented in SciPy
 
@@ -90,20 +93,27 @@ def generic_lomb_scargle(time, y, freqs):
 
     """
 
-    ls_pgram = signal.lombscargle(time, y, freqs, normalize=True)
+    # freqs, ls_pgram = LombScargle(time, y, normalization='standard').autopower(
+    #     minimum_frequency=f_min, maximum_frequency=f_max, samples_per_peak=n0)
 
-    return ls_pgram
+    ls_object = LombScargle(time, y, normalization='standard')
+    freqs, ls_pgram = ls_object.autopower(
+        minimum_frequency=f_min, maximum_frequency=f_max, samples_per_peak=n0)
+    #fap = ls_object.false_alarm_probability(ls_pgram.max())
+    # ls_pgram = signal.lombscargle(time, y, freqs, normalize=True)
 
-def generic_lomb_scargle_chunked(time, y, freqs, chunk_size=200):
-    ls_pgram_full = []
-    j=0
-    for start in range(0, len(freqs), chunk_size):
-        print('chunk ', j)
-        chunk_freqs = freqs[start:start+chunk_size]
-        ls_chunk = signal.lombscargle(time, y, chunk_freqs, normalize=True)
-        ls_pgram_full.append(ls_chunk)
-        j=j+1
-    return np.concatenate(ls_pgram_full)
+    return ls_object, freqs, ls_pgram#, fap
+
+# def generic_lomb_scargle_chunked(time, y, freqs, chunk_size=200):
+#     ls_pgram_full = []
+#     j=0
+#     for start in range(0, len(freqs), chunk_size):
+#         print('chunk ', j)
+#         chunk_freqs = freqs[start:start+chunk_size]
+#         ls_chunk = signal.lombscargle(time, y, chunk_freqs, normalize=True)
+#         ls_pgram_full.append(ls_chunk)
+#         j=j+1
+#     return np.concatenate(ls_pgram_full)
 
 
 def plot_LS_summary(periods, ls_pgram,
@@ -167,7 +177,8 @@ def plot_LS_summary(periods, ls_pgram,
     return ax
 
 
-def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
+def compute_lomb_scargle_peak(time, signal, f_min, f_max, i, directory, keyword,
+                              n0=5):
     """
     Compute the peak of a LS periodogram and save to file.
 
@@ -196,7 +207,7 @@ def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
     fname = f"{directory}/{keyword}_LS_peak_bootstrap_{i}.csv"
 
     print(f"Computing for bootstrap {i}...")
-    print(f"Time type: {type(time)}, Signal type: {type(signal)}, Freqs type: {type(freqs)}")
+    #print(f"Time type: {type(time)}, Signal type: {type(signal)}, Freqs type: {type(freqs)}")
 
     # Ensure inputs are in the right type
     time = np.asarray(time)
@@ -209,7 +220,10 @@ def compute_lomb_scargle_peak(time, signal, freqs, i, directory, keyword):
     # Else, calculate
     else:
         #peak_magnitude = np.nanmax(generic_lomb_scargle(time, signal, freqs))
-        peak_magnitude = np.nanmax(generic_lomb_scargle_chunked(time, signal, freqs))
+        # peak_magnitude = np.nanmax(generic_lomb_scargle_chunked(time, signal, freqs))
+        ls_object, freqs, ls_pgram = generic_lomb_scargle(time, signal,
+                                                     f_min, f_max, n0=n0)
+        peak_magnitude = np.nanmax(ls_pgram)
         # Save each iteration separately
         pd.DataFrame({'Bootstrap_Index': [i],
                       'Peak_Magnitude': [peak_magnitude]}
@@ -285,8 +299,9 @@ def estimate_lombscargle_memory_gb(time, freqs, dtype=np.float64):
     return mem_gb
 
 
-def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
-                            FAP_peak_directory, FAP_peak_keyword, FAP_fname):
+def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
+                            FAP_peak_directory, FAP_peak_keyword, FAP_fname,
+                            n0=5):
     """
     Calculate the false alarm probability on a LS periodogram using
     bootstrapped signals.
@@ -333,39 +348,39 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
 
     # Otherwise, calculate
     else:
-        print(f"time size: {len(time)}")
-        print(f"freqs size: ", freqs.size)
-        print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * len(freqs) * 8) / 1e9:.2f}")
-        print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * 100 * 8) / 1e9:.2f}")
+        # print(f"time size: {len(time)}")
+        # print(f"freqs size: ", freqs.size)
+        # print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * len(freqs) * 8) / 1e9:.2f}")
+        # print(f"Estimated memory for lombscargle matrix (GB): {(len(time) * 100 * 8) / 1e9:.2f}")
 
-        est_mem_per_job_gb = estimate_lombscargle_memory_gb(time, freqs[0:199], dtype=np.float64)
-        max_safe_jobs = calc_safe_njobs(est_mem_per_job_gb)
-
+        # est_mem_per_job_gb = estimate_lombscargle_memory_gb(time, freqs[0:199], dtype=np.float64)
+        # max_safe_jobs = calc_safe_njobs(est_mem_per_job_gb)
+        bootstrap_peak_magnitudes = np.full(n_bootstrap, np.nan)
 
         for i in range(n_bootstrap):
             print('BS ', i)
             bootstrap_peak_magnitudes[i] = compute_lomb_scargle_peak(
-                time, BS_signal[:, i], freqs, i, FAP_peak_directory,
-                FAP_peak_keyword)
+                time, BS_signal[:, i], f_min, f_max, i, FAP_peak_directory,
+                FAP_peak_keyword, n0=n0)
             # print(f"Bootstrap {i}: peak = {peak}")
 
 
-        #breakpoint()
-        # Run individual LS calculations in parallel.
-        # n_jobs=-3 uses all but 2 available processors
-        # with parallel_backend("threading"):
-        # with parallel_backend("loky"):
-        #     # Run compute_lomb_scargle_peak in parallel
-        #     bootstrap_peak_magnitudes = Parallel(n_jobs=max_safe_jobs)(
-        #         delayed(compute_lomb_scargle_peak)(time,
-        #                                            BS_signal[:, i].copy(),
-        #                                            freqs, i,
-        #                                            FAP_peak_directory,
-        #                                            FAP_peak_keyword
-        #                                            ) for i in range(
-        #                                                n_bootstrap)
-        #                                                )
-        bootstrap_peak_magnitudes = np.array(bootstrap_peak_magnitudes)
+        # #breakpoint()
+        # # Run individual LS calculations in parallel.
+        # # n_jobs=-3 uses all but 2 available processors
+        # # with parallel_backend("threading"):
+        # # with parallel_backend("loky"):
+        # #     # Run compute_lomb_scargle_peak in parallel
+        # #     bootstrap_peak_magnitudes = Parallel(n_jobs=max_safe_jobs)(
+        # #         delayed(compute_lomb_scargle_peak)(time,
+        # #                                            BS_signal[:, i].copy(),
+        # #                                            freqs, i,
+        # #                                            FAP_peak_directory,
+        # #                                            FAP_peak_keyword
+        # #                                            ) for i in range(
+        # #                                                n_bootstrap)
+        # #                                                )
+        # bootstrap_peak_magnitudes = np.array(bootstrap_peak_magnitudes)
 
         # Compute FAP
         FAP = np.nanmean(bootstrap_peak_magnitudes)
@@ -377,29 +392,19 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, freqs,
 
     return bootstrap_peak_magnitudes, FAP
 
-def normalise_bootstrapped_LS_peaks(n_bootstrap, BS_signal,
-                                    bootstrap_peak_magnitudes,
-                                    FAP_peak_directory, FAP_peak_keyword,
-                                    FAP_fname):
-    # Ideally, if we rerun we'll do this automatically in the scipy
-    # lomb scargle function, but this is a quick fix as rerunning is
-    # very computationally intensive.
+# def normalise_bootstrapped_LS_peaks(n_bootstrap, BS_signal,
+#                                     bootstrap_peak_magnitudes,
+#                                     FAP_peak_directory, FAP_peak_keyword,
+#                                     FAP_fname):
+#     # Ideally, if we rerun we'll do this automatically in the scipy
+#     # lomb scargle function, but this is a quick fix as rerunning is
+#     # very computationally intensive.
 
-    # Initialise array
-    norm_bs_peak_magnitude = np.full()
-    # Loop through, normalising
-    for i in range(n_bootstrap):
-        #power = lombscargle(t, y, angular_freqs, precenter=True)
-        norm_bs_peak_magnitude[i] /= 0.5 * np.var(BS_signal[:, i])
+#     # Initialise array
+#     norm_bs_peak_magnitude = np.full()
+#     # Loop through, normalising
+#     for i in range(n_bootstrap):
+#         #power = lombscargle(t, y, angular_freqs, precenter=True)
+#         norm_bs_peak_magnitude[i] /= 0.5 * np.var(BS_signal[:, i])
 
 
-    # then save to a dir
-# def DEPRECATED_detect_peak(ls_pgram, periods, freqs):
-
-#     i = np.argmax(ls_pgram)
-
-#     peak_height = ls_pgram[i]
-#     peak_freq = freqs[i]
-#     peak_period = periods[i]
-
-#     return peak_height, peak_freq, peak_period

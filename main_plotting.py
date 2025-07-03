@@ -221,14 +221,17 @@ def run_lomb_scargle():
     f_max = 1 / (8. * 60. * 60.)
     T = (pd.Timestamp(2005, 1, 1, 0) -
          pd.Timestamp(1995, 1, 1, 0)).total_seconds()
-    f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min,
-                                                                  f_max, n0=5)
+    samples_per_peak = 5
+    # f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min,
+    #                                                               f_max, n0=5)
 
-    freqs = freqs[::-1]
-    angular_freqs = 2 * np.pi * freqs
-    periods = periodicity_functions.freq_to_period(freqs)
+    # freqs = freqs[::-1]
+    # angular_freqs = 2 * np.pi * freqs
+    # periods = periodicity_functions.freq_to_period(freqs)
     vertical_indicators = [12, 24]
     vertical_ind_col = 'black'
+
+    annotate_bbox = {"facecolor": "white", "edgecolor": "grey", "pad": 5.}
 
 
     # Different frequency channels
@@ -247,16 +250,16 @@ def run_lomb_scargle():
     FAP_peaks_dir = os.path.join(data_dir, "lomb_scargle", 'LS_peaks_for_FAP')
     synthetic_FAP_pkl = os.path.join(data_dir, "lomb_scargle", "synthetic_FAP_"
                                      + str(n_bootstrap) + "_BSs.pkl")
-    FAP_fmt_dict = {'linewidth': 2.,
-                    'linestyle': 'dashed',
-                    'color': 'blueviolet'}
+    # FAP_fmt_dict = {'linewidth': 2.,
+    #                 'linestyle': 'dashed',
+    #                 'color': 'blueviolet'}
 
     # Read in interval data
     print('Reading AKR data over requested intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
 
     # Initialise plotting window
-    fig, ax = plt.subplots(nrows=4, figsize=(10, 17))
+    fig, ax = plt.subplots(nrows=4, figsize=(12.5, 17))
 
     # Run Lomb-Scargle over the fake oscillator
     ftime, fsignal = read_synthetic_oscillator()
@@ -272,19 +275,20 @@ def run_lomb_scargle():
                             float_precision='round_trip')
 
         ls_pgram = np.array(ls_df.ls_pgram)
+        periods = np.array(ls_df.period_hr)
 
     else:
         print('Running LS analysis on synthetic oscillator')
         t1 = pd.Timestamp.now()
         print('starting LS at ', t1)
-        ls_pgram = lomb_scargle.generic_lomb_scargle(ftime, fsignal,
-                                                     angular_freqs)
+        ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
+            ftime, fsignal, f_min, f_max, n0=samples_per_peak)
         t2 = pd.Timestamp.now()
         print('LS finished, time elapsed: ', t2-t1)
         # Write to file
+        periods = periodicity_functions.freq_to_period(freqs)
         ls_df = pd.DataFrame({'period_hr': periods,
-                              'freq_Hz': freqs,
-                              'angular_freq': angular_freqs,
+                              'angular_freq': freqs,
                               'ls_pgram': ls_pgram})
         ls_df.to_csv(ls_csv, index=False)
 
@@ -297,18 +301,19 @@ def run_lomb_scargle():
                                                     n_bootstrap=n_bootstrap)
     # Read in peaks for bootstraps and FAP
     bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
-        n_bootstrap, synthetic_BS, ftime_cl, angular_freqs, FAP_peaks_dir,
-        'synthetic', synthetic_FAP_pkl)
+        n_bootstrap, synthetic_BS, ftime_cl, f_min, f_max, FAP_peaks_dir,
+        'synthetic', synthetic_FAP_pkl, n0=samples_per_peak)
 
     # Plot the FAP
     # ax[0].axhline(FAP, **FAP_fmt_dict, label='FAP')
     # Draw arrow for FAP
-    trans = transforms.blended_transform_factory(ax[0].transAxes,
+    trans = transforms.blended_transform_factory(ax[0].transData,
                                                  ax[0].transData)
-    ax[0].annotate("FAP", xy=(0, FAP), xytext=(-0.05, FAP),
+    ax[0].annotate("FAP\n" + "{:.3e}".format(FAP), xy=(9., FAP), xytext=(8., FAP),
                    xycoords=trans, arrowprops={'facecolor': freq_colors[0]},
                    fontsize=fontsize, va='center', ha='right',
-                   color=freq_colors[0])
+                   color=freq_colors[0],
+                   bbox=annotate_bbox, fontweight="bold")
 
     # Formatting
     ax[0].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
@@ -325,7 +330,7 @@ def run_lomb_scargle():
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
 
-    #breakpoint()
+    # breakpoint()
 
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running Lomb-Scargle for ', interval_tag)
@@ -335,7 +340,7 @@ def run_lomb_scargle():
         file_checks = [file_path.is_file() for file_path in file_paths]
 
         if all(file_checks) is False:
-            breakpoint()
+            
             print('banana')
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
 
@@ -352,15 +357,25 @@ def run_lomb_scargle():
                 freq_df = akr_df.dropna(subset=[freq_column])
                 t1 = pd.Timestamp.now()
                 print('starting LS at ', t1)
-                ls_pgram = lomb_scargle.generic_lomb_scargle(freq_df.unix,
-                                                             freq_df[freq_column],
-                                                             angular_freqs)
+                # ls_pgram = lomb_scargle.generic_lomb_scargle(freq_df.unix,
+                #                                              freq_df[freq_column],
+                #                                              angular_freqs)
+                ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
+                    freq_df.unix, freq_df[freq_column], f_min, f_max, n0=samples_per_peak)
                 t2 = pd.Timestamp.now()
                 print('LS finished, time elapsed: ', t2-t1)
+                # Write to file
+                periods = periodicity_functions.freq_to_period(freqs)
                 ls_df = pd.DataFrame({'period_hr': periods,
-                                      'freq_Hz': freqs,
-                                      'angular_freq': angular_freqs,
+                                      'angular_freq': freqs,
                                       'ls_pgram': ls_pgram})
+                ls_df.to_csv(ls_csv, index=False)
+                t2 = pd.Timestamp.now()
+                print('LS finished, time elapsed: ', t2-t1)
+                # ls_df = pd.DataFrame({'period_hr': periods,
+                #                       'freq_Hz': freqs,
+                #                       'angular_freq': angular_freqs,
+                #                       'ls_pgram': ls_pgram})
                 ls_df.to_csv(ls_csv, index=False)
 
             else:
@@ -369,6 +384,7 @@ def run_lomb_scargle():
                                     float_precision='round_trip')
 
                 ls_pgram = np.array(ls_df.ls_pgram)
+                periods = np.array(ls_df.period_hr)
 
             # Plot FAP here
             FAP_pkl = os.path.join(data_dir, "lomb_scargle",
@@ -380,20 +396,47 @@ def run_lomb_scargle():
                                                   n_bootstrap=n_bootstrap)
             # Read in/calc peak magnitudes for bootstraps and FAP
             print('tomato')
+            # bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
+            #     n_bootstrap, BS, ftime_cl, angular_freqs, FAP_peaks_dir,
+            #     interval_tag + '_' + freq_column, FAP_pkl)
             bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
-                n_bootstrap, BS, ftime_cl, angular_freqs, FAP_peaks_dir,
-                interval_tag + '_' + freq_column, FAP_pkl)
-            f, a = plt.subplots()
-            a.hist(bootstrap_peak_magnitudes)
+                n_bootstrap, BS, ftime_cl, f_min, f_max, FAP_peaks_dir,
+                'synthetic', synthetic_FAP_pkl, n0=samples_per_peak)
+            # f, a = plt.subplots()
+            # a.hist(bootstrap_peak_magnitudes)
             # Plot the FAP
-            ax[i + 1].axhline(FAP, **FAP_fmt_dict, label='FAP')
-            ax[i + 1].axhline(np.percentile(bootstrap_peak_magnitudes, 99), **FAP_fmt_dict, label='FAPpc')
+            #ax[i + 1].axhline(FAP, **FAP_fmt_dict, label='FAP')
+            ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+            if j == 0:
+                #ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+                
+                trans = transforms.blended_transform_factory(ax[i + 1].transAxes,
+                                                             ax[i + 1].transData)
+                ax[i + 1].annotate("FAP\n" + "{:.3e}".format(FAP), xy=(0.2, FAP), xytext=(0.1, FAP),
+                               xycoords=trans, arrowprops={'facecolor': c},
+                               fontsize=fontsize, va='center', ha='right',
+                               color=c,
+                               bbox=annotate_bbox, fontweight="bold")
+            elif j == 1:
+                #twax = ax[i + 1].twinx()
+                #twax.plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+                
+                trans = transforms.blended_transform_factory(ax[i + 1].transAxes,
+                                                             ax[i + 1].transData)
+                ax[i + 1].annotate("FAP\n" + "{:.3e}".format(FAP), xy=(0.8, FAP), xytext=(0.9, FAP),
+                               xycoords=trans, arrowprops={'facecolor': c},
+                               fontsize=fontsize, va='center', ha='left',
+                               color=c,
+                               bbox=annotate_bbox, fontweight="bold")
+            
+            # ax[i + 1].axhline(np.percentile(bootstrap_peak_magnitudes, 99), **FAP_fmt_dict, label='FAPpc')
 
             # ax[i + 1] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
             #                                          vertical_indicators=[12.,
             #                                                               24.],
             #                                          ax=ax[i+1])
-            ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+
+            # breakpoint()
 
         ax[i + 1].set_xscale('log')
 
@@ -425,10 +468,12 @@ def run_lomb_scargle():
                    fontsize=fontsize, va='bottom', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
         
-        tit = a.text(1.025, 0.5, titles[i], transform=a.transAxes,
-                     fontsize=1.25 * fontsize, va='center', ha='center',
-                     rotation=-90.)
-        
+        # tit = a.text(1.025, 0.5, titles[i], transform=a.transAxes,
+        #              fontsize=1.25 * fontsize, va='center', ha='center',
+        #              rotation=-90.)
+        tit = a.text(1.0, 1.05, titles[i], transform=a.transAxes,
+                     fontsize=1.25 * fontsize, va='center', ha='right')
+                
 
     # Adjust margins etc
     fig.tight_layout()
