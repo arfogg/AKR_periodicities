@@ -141,7 +141,7 @@ def select_akr_intervals(interval):
     # Select only the interval requested
     akr_df = akr_df.loc[(akr_df.datetime >= selected.stime[0]) &
                         (akr_df.datetime <= selected.etime[0]),
-                        :].reset_index()
+                        :].reset_index(drop=True)
     akr_df['unix'] = [t.timestamp() for t in akr_df.datetime]
 
 
