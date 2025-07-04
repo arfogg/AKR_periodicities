@@ -26,45 +26,45 @@ import matplotlib.transforms as transforms
 # from joblib import Parallel, delayed, parallel_backend
 
 
-# def define_frequency_bins(T, f_min, f_max, n0=5):
-#     """
-#     Function to define the Lomb-Scargle bins in frequency space. Theory
-#     of bin selection from Vanderplas (2018)
-#     https://doi.org/10.3847/1538-4365/aab766
+def define_frequency_bins(T, f_min, f_max, n0=5):
+    """
+    Function to define the Lomb-Scargle bins in frequency space. Theory
+    of bin selection from Vanderplas (2018)
+    https://doi.org/10.3847/1538-4365/aab766
 
-#     Parameters
-#     ----------
-#     T : int
-#         Length of entire dataset in seconds. The lowest possible freq
-#         is 1/total amount of time observed.
-#     f_min : float
-#         Desired minimum frequency.
-#     f_max : float
-#         Desired maximum frequency.
-#     n0 : TYPE, optional
-#         Number of samples needed to define a peak in a periodogram. The
-#         default is 5.
+    Parameters
+    ----------
+    T : int
+        Length of entire dataset in seconds. The lowest possible freq
+        is 1/total amount of time observed.
+    f_min : float
+        Desired minimum frequency.
+    f_max : float
+        Desired maximum frequency.
+    n0 : TYPE, optional
+        Number of samples needed to define a peak in a periodogram. The
+        default is 5.
 
-#     Returns
-#     -------
-#     f_min : float
-#         Minimum frequency.
-#     f_max : float
-#         Maximum frequency.
-#     N_f : int
-#         Number of frequencies.
-#     sample_f : np.array
-#         Calculated frequency bins.
+    Returns
+    -------
+    f_min : float
+        Minimum frequency.
+    f_max : float
+        Maximum frequency.
+    N_f : int
+        Number of frequencies.
+    sample_f : np.array
+        Calculated frequency bins.
 
-#     """
+    """
 
-#     # Number of frequencies to be sampled
-#     N_f = int(n0 * T * f_max)
+    # Number of frequencies to be sampled
+    N_f = int(n0 * T * f_max)
 
-#     # Distribute frequencies logarithmically
-#     sample_f = np.logspace(np.log10(f_min), np.log10(f_max), N_f)
+    # Distribute frequencies logarithmically
+    sample_f = np.logspace(np.log10(f_min), np.log10(f_max), N_f)
 
-#     return f_min, f_max, N_f, sample_f
+    return f_min, f_max, N_f, sample_f
 
 
 def generic_lomb_scargle(time, y, f_min, f_max, n0=5):
@@ -213,7 +213,7 @@ def compute_lomb_scargle_peak(time, signal, f_min, f_max, i,
     # Else, calculate
     else:
         ls_object, freqs, ls_pgram = generic_lomb_scargle(time, signal,
-                                                          f_min, f_max, n0=n0)
+                                                   f_min, f_max, n0=n0)
         peak_magnitude = np.nanmax(ls_pgram)
         # Save each iteration separately
         pd.DataFrame({'Bootstrap_Index': [i],
@@ -339,8 +339,8 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
 
         for i in range(n_bootstrap):
             bootstrap_peak_magnitudes[i] = compute_lomb_scargle_peak(
-                time, BS_signal[:, i], f_min, f_max, i, FAP_peak_directory,
-                FAP_peak_keyword, n0=n0)
+                time, BS_signal[:, i], freqs, i, FAP_peak_directory,
+                FAP_peak_keyword)#, n0=n0)
 
         # Compute FAP
         FAP = np.nanmean(bootstrap_peak_magnitudes)
