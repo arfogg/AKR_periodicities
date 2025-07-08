@@ -489,11 +489,11 @@ def freq_to_period(freq):
     return np.array(period)    
 
 
-def DEPRECATED_test_acf():
-    y = np.sin(np.linspace(0, 11, 51))
-    temporal_resolution = pd.Timedelta(minutes=3)
-    n_shifts = 5
-    lags = np.array(range(n_shifts)) * temporal_resolution
-    shifted_y, acf = autocorrelation(y, n_shifts)
+# def DEPRECATED_test_acf():
+#     y = np.sin(np.linspace(0, 11, 51))
+#     temporal_resolution = pd.Timedelta(minutes=3)
+#     n_shifts = 5
+#     lags = np.array(range(n_shifts)) * temporal_resolution
+#     shifted_y, acf = autocorrelation(y, n_shifts)
 
-    fig, ax = plot_autocorrelogram(lags, acf)
+#     fig, ax = plot_autocorrelogram(lags, acf)

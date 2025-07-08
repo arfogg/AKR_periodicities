@@ -311,7 +311,7 @@ def run_lomb_scargle():
     # Draw arrow for FAP
     trans = transforms.blended_transform_factory(ax[0].transData,
                                                  ax[0].transData)
-    ax[0].annotate("FAP\n" + "{:.3e}".format(FAP), xy=(9., FAP), xytext=(8., FAP),
+    ax[0].annotate("FAL\n" + "{:.3e}".format(FAP), xy=(9., FAP), xytext=(8., FAP),
                    xycoords=trans, arrowprops={'facecolor': freq_colors[0]},
                    fontsize=fontsize, va='center', ha='right',
                    color=freq_colors[0],
@@ -396,14 +396,17 @@ def run_lomb_scargle():
             ftime_cl, BS = read_subset_bootstraps(interval_tag,
                                                   freq_ch=freq_column,
                                                   n_bootstrap=n_bootstrap)
+            # Convert ftime_cl to unix
+            ftime_unix = [pd.Timestamp(t).timestamp() for t in ftime_cl]
+            #breakpoint()
             # Read in/calc peak magnitudes for bootstraps and FAP
             print('tomato')
             # bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
             #     n_bootstrap, BS, ftime_cl, angular_freqs, FAP_peaks_dir,
             #     interval_tag + '_' + freq_column, FAP_pkl)
             bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
-                n_bootstrap, BS, ftime_cl, f_min, f_max, FAP_peaks_dir,
-                'synthetic', synthetic_FAP_pkl, n0=samples_per_peak)
+                n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
+                interval_tag, FAP_pkl, n0=samples_per_peak)
             # f, a = plt.subplots()
             # a.hist(bootstrap_peak_magnitudes)
             # Plot the FAP
@@ -414,7 +417,7 @@ def run_lomb_scargle():
                 
                 trans = transforms.blended_transform_factory(ax[i + 1].transAxes,
                                                              ax[i + 1].transData)
-                ax[i + 1].annotate("FAP\n" + "{:.3e}".format(FAP), xy=(0.2, FAP), xytext=(0.1, FAP),
+                ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP), xy=(0.2, FAP), xytext=(0.1, FAP),
                                xycoords=trans, arrowprops={'facecolor': c},
                                fontsize=fontsize, va='center', ha='right',
                                color=c,
@@ -425,7 +428,7 @@ def run_lomb_scargle():
                 
                 trans = transforms.blended_transform_factory(ax[i + 1].transAxes,
                                                              ax[i + 1].transData)
-                ax[i + 1].annotate("FAP\n" + "{:.3e}".format(FAP), xy=(0.8, FAP), xytext=(0.9, FAP),
+                ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP), xy=(0.8, FAP), xytext=(0.9, FAP),
                                xycoords=trans, arrowprops={'facecolor': c},
                                fontsize=fontsize, va='center', ha='left',
                                color=c,
@@ -1247,6 +1250,7 @@ def lomb_scargle_cassini_expanding():
 
     # Run the Lomb-scargle analysis over each year of AKR intensity
     # with sunspot number as another panel
+    fig_png = os.path.join(fig_dir, "expanding_cassini_lomb_scargle.png")
 
     
     # Define Lomb-Scargle freqs etc
@@ -1275,8 +1279,8 @@ def lomb_scargle_cassini_expanding():
     akr_df = read_and_tidy_data.select_akr_intervals("full_archive")
 
     # Sliding parameters
-    slides = 20
-    slide_width = pd.Timedelta(days=10)
+    slides = 50
+    slide_width = pd.Timedelta(days=5)
     slide_width_multiplier = np.linspace(0, slides, slides+1)
 
     x_lim = [interval_stime - ((slides / 2) * slide_width),
@@ -1306,6 +1310,13 @@ def lomb_scargle_cassini_expanding():
     
     # LS analysis here
     #ls_pgram = np.full((periods.size, slides + 1), np.nan)
+    variable_freqs = []
+    variable_periods = []
+    ls_pgram =[]
+    
+    peak_freq = np.full(slides + 1, np.nan)
+    # peak_period = np.full(slides + 1, np.nan)
+    peak_height = np.full(slides + 1, np.nan)
     for i in range(slides + 1):
        # print('Running Lomb-Scargle analysis for ', yr)
         
@@ -1313,85 +1324,131 @@ def lomb_scargle_cassini_expanding():
         subset_df = akr_df.loc[(akr_df.datetime >= ut_s[i]) &
                                (akr_df.datetime <= ut_e[i]),
                                :].reset_index(drop=True)
-        if i == 0:
-            # Run Lomb-Scargle
-            ls_object, freqs, ls_pgram_0 = lomb_scargle.generic_lomb_scargle(
-                subset_df.unix, subset_df[freq_column],
-                f_min, f_max, n0=samples_per_peak)
-            ls_pgram = np.full((freqs.size, slides + 1), np.nan)
-            ls_pgram[:, i] = ls_pgram_0
-            periods = periodicity_functions.freq_to_period(freqs)  
-        else:
             
-           # output = lomb_scargle.generic_lomb_scargle(
-             #   subset_df.unix, subset_df[freq_column], angular_freqs)   
-            #breakpoint()
-            ls_object, freqs, ls_pgram[:, i] = lomb_scargle.generic_lomb_scargle(
-                subset_df.unix, subset_df[freq_column],
-                f_min, f_max, n0=samples_per_peak)            
-    # breakpoint()
-    # Find edges of pixels on period axis
-    period_edges = np.full(periods.size + 1, np.nan)
-    for k in range(period_edges.size):
-        if k == period_edges.size-2:
-            period_edges[k] = periods[k-1] + ((periods[k]-periods[k-1])/2)
-        elif k == period_edges.size-1:
-            period_edges[k] = periods[k-1] + ((periods[k-1]-periods[k-2])/2)
-        else:
-            period_edges[k] = periods[k] - ((periods[k+1]-periods[k])/2)
+        output = lomb_scargle.generic_lomb_scargle(
+               subset_df.unix, subset_df[freq_column], f_min, f_max, n0=samples_per_peak)   
+            # breakpoint()
+        variable_freqs.append(output[1])
+        ls_pgram.append(output[2])
+        variable_periods.append(periodicity_functions.freq_to_period(output[1]))
+
+        arg = output[2].argmax()
+        peak_height[i] = output[2][arg]
+        peak_freq[i] = output[1][arg]
+        #breakpoint()
+        # if i == 0:
+        #     # Run Lomb-Scargle
+        #     ls_object, freqs, ls_pgram_0 = lomb_scargle.generic_lomb_scargle(
+        #         subset_df.unix, subset_df[freq_column],
+        #         f_min, f_max, n0=samples_per_peak)
+        #     # ls_pgram = np.full((freqs.size, slides + 1), np.nan)
+        #     # ls_pgram[:, i] = ls_pgram_0
+        #     variable_freqs.append(freqs)
+        #     ls_pgram.append(ls_pgram_0)
+        #     # periods = periodicity_functions.freq_to_period(freqs)  
+        #     variable_periods.append(periodicity_functions.freq_to_period(freqs))
+            
+        # else:
+            
+        #     output = lomb_scargle.generic_lomb_scargle(
+        #        subset_df.unix, subset_df[freq_column], f_min, f_max, n0=samples_per_peak)   
+        #     # breakpoint()
+        #     variable_freqs.append(output[1])
+        #     ls_pgram.append(output[2])
+        #     variable_periods.append(periodicity_functions.freq_to_period(output[1]))
+        #     # ls_object, freqs, ls_pgram[:, i] = lomb_scargle.generic_lomb_scargle(
+        #     #     subset_df.unix, subset_df[freq_column],
+        #     #     f_min, f_max, n0=samples_per_peak)   
+        
     
-    # Perhaps a panel with discreet years and another with some smoothing?
-    # IF TIME
+    peak_period = periodicity_functions.freq_to_period(peak_freq)
     
-   # breakpoint()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    length_days = length /(60. * 60 * 24)
+    
+    ax.plot(length_days, peak_period, linewidth=0.,
+            marker='o', markersize=fontsize, color='deeppink',
+            alpha=0.65, markeredgecolor='black')
+    
+    ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
+    ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
+    ax.set_ylim([20, 40])
+    ax.axhline(24., linestyle='dashed', linewidth=2., zorder=0.5, color='black')
+    ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
+            transform=ax.transData, fontsize=fontsize, color='black')
+    
+    # fal = 7.870e-4
+    # passing_fal = peak_period > fal
+    
+    # Adjust margins etc
+    fig.tight_layout()
+
+    # Save to file
+    fig.savefig(fig_png)
+    # periods = variable_periods
+   #  # Find edges of pixels on period axis
+   #  period_edges = np.full(periods.size + 1, np.nan)
+   #  for k in range(period_edges.size):
+   #      if k == period_edges.size-2:
+   #          period_edges[k] = periods[k-1] + ((periods[k]-periods[k-1])/2)
+   #      elif k == period_edges.size-1:
+   #          period_edges[k] = periods[k-1] + ((periods[k-1]-periods[k-2])/2)
+   #      else:
+   #          period_edges[k] = periods[k] - ((periods[k+1]-periods[k])/2)
+    
+   #  # Perhaps a panel with discreet years and another with some smoothing?
+   #  # IF TIME
+    
+   # # breakpoint()
     
     
-    # Initialise plotting
-    fig, ax = plt.subplots(nrows=2, figsize=(16,8))
+   #  # Initialise plotting
+   #  fig, ax = plt.subplots(nrows=2, figsize=(16,8))
    
-    # Plot Lomb-Scargles
-    # X, Y = np.meshgrid(np.append(years-0.5, years[-1]+0.5), period_edges)
-    X, Y = np.meshgrid(np.append(length - (slide_width),
-                                 length[-1] + (slide_width)),
-                       period_edges)
-    # breakpoint()
-    pcm = ax[0].pcolormesh(X, Y, ls_pgram, cmap='binary_r')
-    cbar = plt.colorbar(pcm, ax=ax[0],
-                        label="Lomb-Scargle\nNormalised Amplitude")
-    cbar.ax.tick_params(labelsize=fontsize)
+   #  # Plot Lomb-Scargles
+   #  # X, Y = np.meshgrid(np.append(years-0.5, years[-1]+0.5), period_edges)
+   #  X, Y = np.meshgrid(np.append(length - (slide_width),
+   #                               length[-1] + (slide_width)),
+   #                     period_edges)
+   #  # breakpoint()
+   #  pcm = ax[0].pcolormesh(X, Y, ls_pgram, cmap='binary_r')
+   #  cbar = plt.colorbar(pcm, ax=ax[0],
+   #                      label="Lomb-Scargle\nNormalised Amplitude")
+   #  cbar.ax.tick_params(labelsize=fontsize)
 
-    ax[0].set_ylabel('Period (hours)', fontsize=fontsize)
+   #  ax[0].set_ylabel('Period (hours)', fontsize=fontsize)
 
-    for h in [12., 24., 36.]:
-        ax[0].axhline(h, linestyle='dashed', linewidth=2., color='orangered')
-        trans = transforms.blended_transform_factory(ax[0].transAxes,
-                                                     ax[0].transData)
-        ax[0].text(0.025, h * 1.05, str(int(h)), color='orangered',
-                   fontsize=fontsize, va='bottom', ha='left',
-                   transform=trans)
-        # t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-    ax_pos = ax[0].get_position().bounds
+   #  for h in [12., 24., 36.]:
+   #      ax[0].axhline(h, linestyle='dashed', linewidth=2., color='orangered')
+   #      trans = transforms.blended_transform_factory(ax[0].transAxes,
+   #                                                   ax[0].transData)
+   #      ax[0].text(0.025, h * 1.05, str(int(h)), color='orangered',
+   #                 fontsize=fontsize, va='bottom', ha='left',
+   #                 transform=trans)
+   #      # t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+   #  ax_pos = ax[0].get_position().bounds
 
-    ax[0].set_xlabel("Interval Length (seconds)", fontsize=fontsize)
-    # # Highlight Cassini period
-    # ax[0].axvline(interval_midtime - (slide_width/2.), color='royalblue',
-    #               linewidth=2., linestyle='dashed')
-    # ax[0].axvline(interval_midtime + (slide_width/2.), color='royalblue',
-    #               linewidth=2., linestyle='dashed')
+   #  ax[0].set_xlabel("Interval Length (seconds)", fontsize=fontsize)
+   #  # # Highlight Cassini period
+   #  # ax[0].axvline(interval_midtime - (slide_width/2.), color='royalblue',
+   #  #               linewidth=2., linestyle='dashed')
+   #  # ax[0].axvline(interval_midtime + (slide_width/2.), color='royalblue',
+   #  #               linewidth=2., linestyle='dashed')
 
-    # Make width same as (a)
-    pos = ax[1].get_position().bounds
-    ax[1].set_position([ax_pos[0], pos[1], ax_pos[2], pos[3]])
+   #  # Make width same as (a)
+   #  pos = ax[1].get_position().bounds
+   #  ax[1].set_position([ax_pos[0], pos[1], ax_pos[2], pos[3]])
     
     
-   #  # Formatting
-   #  for j, a in enumerate(ax):
-   #      a.set_xlim(stime, etime)
-   #      a.tick_params(labelsize=fontsize)
+   # #  # Formatting
+   # #  for j, a in enumerate(ax):
+   # #      a.set_xlim(stime, etime)
+   # #      a.tick_params(labelsize=fontsize)
 
-   #      t = a.text(0.02, 0.92, axes_labels[j], transform=a.transAxes,
-   #                 fontsize=fontsize, va='top', ha='left')
-   #      t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+   # #      t = a.text(0.02, 0.92, axes_labels[j], transform=a.transAxes,
+   # #                 fontsize=fontsize, va='top', ha='left')
+   # #      t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
 
 

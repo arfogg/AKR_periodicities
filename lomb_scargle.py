@@ -100,6 +100,7 @@ def generic_lomb_scargle(time, y, f_min, f_max, n0=5):
     ls_object = LombScargle(time, y, normalization='standard')
 
     # Extract frequencies and power
+    # breakpoint()
     freqs, ls_pgram = ls_object.autopower(
         minimum_frequency=f_min, maximum_frequency=f_max, samples_per_peak=n0)
 
@@ -339,8 +340,8 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
 
         for i in range(n_bootstrap):
             bootstrap_peak_magnitudes[i] = compute_lomb_scargle_peak(
-                time, BS_signal[:, i], freqs, i, FAP_peak_directory,
-                FAP_peak_keyword)#, n0=n0)
+                time, BS_signal[:, i], f_min, f_max, i, FAP_peak_directory,
+                FAP_peak_keyword, n0=n0)
 
         # Compute FAP
         FAP = np.nanmean(bootstrap_peak_magnitudes)
