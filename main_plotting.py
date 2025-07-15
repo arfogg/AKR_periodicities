@@ -559,6 +559,43 @@ def run_ACF():
     # Calculate confidence interval
     synthetic_acf_fit.calc_confidence_interval()
 
+
+    # Initialise table arrays
+    # table_title = np.full(5, ' ')
+    table_title = [' ']
+    table_subtitle = [' ']
+    table_linear_trend = ['Linear Trend']
+    table_linear_Rsq = ['$R^{2}$']
+    table_detrend_mean = ['Normalisation mean']
+    table_detrend_std = ['Normalisation STD']
+    table_shm_fit = ['SHM fit']
+    table_shm_chisq = ['$\chi^{2}$']
+
+    # Add in Synthetic table things
+    table_title.append('Synthetic')
+    table_subtitle.append(' ')
+    table_linear_trend.append(synthetic_acf_fit.text_linear_trend)
+    table_linear_Rsq.append(synthetic_acf_fit.text_linear_trend_pearson_r)
+    table_detrend_mean.append(synthetic_acf_fit.text_normalisation_mean)
+    table_detrend_std.append(synthetic_acf_fit.text_normalisation_std)
+    table_shm_fit.append(synthetic_acf_fit.text_shm_trend)
+    table_shm_chisq.append(synthetic_acf_fit.text_shm_chi_sq)
+    
+    # Add latex formatting
+    temp = [t + ' & ' for t in table_title[:-1]]
+    temp.append(table_title[-1])
+    temp.append(' \\')
+    table_title_fm = temp.copy()
+    print(table_title_fm)
+    
+
+
+    # breakpoint()
+
+#  & Synthetic & \multicolumn{2}{|c|}{Decadal} & \multicolumn{2}{|c|}{Cassini flyby} & \multicolumn{2}{|c|}{Nightside}  \\
+#  & & 100-400 kHz & 50-100 kHz & 100-400 kHz & 50-100 kHz & 100-400 kHz & 50-100 kHz \\
+
+
     # Plot line of best fit
     p2, = ax[0, 0].plot(synthetic_acf_fit.lags,
                         synthetic_acf_fit.linear_detrend_y,
@@ -598,7 +635,7 @@ def run_ACF():
     ax[0, 1].legend(fontsize=fontsize)
     ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
 
-    return synthetic_acf_fit
+    #return synthetic_acf_fit
     # Print fitting details into a table!!!!
     # Including some overall parameter for SHM fit, the linear fit, the SHM fit
 
@@ -613,6 +650,11 @@ def run_ACF():
         # If no ACF calculations done, read integrated power data
         if all(file_checks) is False:
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+
+        # Latex table title
+        table_title.append("\multicolumn{2}{|c|}{" + interval_options['label'].iloc[i] + "}")
+        
+
 
         # Looping over frequency bands
         for (j, (freq_column, c, n)) in enumerate(zip(freq_tags,
@@ -672,6 +714,12 @@ def run_ACF():
                                           LFE_acf_fit.y_ci[:, 1],
                                           alpha=ci_shade_alpha, color=c,
                                           label='95% CI')
+                table_linear_trend.append(LFE_acf_fit.text_linear_trend)
+                table_linear_Rsq.append(LFE_acf_fit.text_linear_trend_pearson_r)
+                table_detrend_mean.append(LFE_acf_fit.text_normalisation_mean)
+                table_detrend_std.append(LFE_acf_fit.text_normalisation_std)
+                table_shm_fit.append(LFE_acf_fit.text_shm_trend)
+                table_shm_chisq.append(LFE_acf_fit.text_shm_chi_sq)
 
             else:
                 ax[i + 1, 0].plot(lags, acf, color=c, linewidth=acf_lw,
@@ -700,6 +748,14 @@ def run_ACF():
                                           mAKR_acf_fit.y_ci[:, 1],
                                           alpha=ci_shade_alpha, color=c,
                                           label='95% CI')
+                    
+                table_linear_trend.append(mAKR_acf_fit.text_linear_trend)
+                table_linear_Rsq.append(mAKR_acf_fit.text_linear_trend_pearson_r)
+                table_detrend_mean.append(mAKR_acf_fit.text_normalisation_mean)
+                table_detrend_std.append(mAKR_acf_fit.text_normalisation_std)
+                table_shm_fit.append(mAKR_acf_fit.text_shm_trend)
+                table_shm_chisq.append(mAKR_acf_fit.text_shm_chi_sq)
+            table_subtitle.append(n)
 
     # Format all axes
     ii = 0
@@ -761,8 +817,60 @@ def run_ACF():
     fig.tight_layout()
 
     # Save to file
-    # fig.savefig(ACF_fig)
+    fig.savefig(ACF_fig)
 
+
+    # Add latex formatting
+    temp = [t + ' & ' for t in table_title[:-1]]
+    temp.append(table_title[-1])
+    temp.append(' \\')
+    table_title_fm = temp.copy()
+    print(''.join(table_title_fm))
+    
+    # Print out latex table
+    temp = [t + ' & ' for t in table_subtitle[:-1]]
+    temp.append(table_subtitle[-1])
+    temp.append(' \\')
+    table_subtitle_fm = temp.copy()
+    print(''.join(table_subtitle_fm))
+
+    temp = [t + ' & ' for t in table_linear_trend[:-1]]
+    temp.append(table_linear_trend[-1])
+    temp.append(' \\')
+    table_linear_trend_fm = temp.copy()
+    print(''.join(table_linear_trend_fm))
+
+    temp = [t + ' & ' for t in table_linear_Rsq[:-1]]
+    temp.append(table_linear_Rsq[-1])
+    temp.append(' \\')
+    table_linear_Rsq_fm = temp.copy()
+    print(''.join(table_linear_Rsq_fm))
+    
+    temp = [t + ' & ' for t in table_detrend_mean[:-1]]
+    temp.append(table_detrend_mean[-1])
+    temp.append(' \\')
+    table_detrend_mean_fm = temp.copy()
+    print(''.join(table_detrend_mean_fm))
+    
+    temp = [t + ' & ' for t in table_detrend_std[:-1]]
+    temp.append(table_detrend_std[-1])
+    temp.append(' \\')
+    table_detrend_std_fm = temp.copy()
+    print(''.join(table_detrend_std_fm))
+    
+    temp = [t + ' & ' for t in table_shm_fit[:-1]]
+    temp.append(table_shm_fit[-1])
+    temp.append(' \\')
+    table_shm_fit_fm = temp.copy()
+    print(''.join(table_shm_fit_fm))
+    
+    temp = [t + ' & ' for t in table_shm_chisq[:-1]]
+    temp.append(table_shm_chisq[-1])
+    temp.append(' \\')
+    table_shm_chisq_fm = temp.copy()
+    print(''.join(table_shm_chisq_fm))
+    #''.join(table_shm_chisq_fm)
+    #breakpoint()
 
 def run_MLT_binning_overlayed(n_mlt_sectors='four'):
 

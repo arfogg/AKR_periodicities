@@ -217,7 +217,7 @@ def return_test_intervals():
                    'Cassini flyby\n(15th Aug 1999-14th Sep 1999)',
                    'Nightside Interval\n(22:36 11th Oct 2003 - 09:36 2nd Mar 2004)'],
          # 'label': ['1995-2004', 'Cassini fly-by', 'Nightside viewing'],
-         'label': ['Decadal archive', 'Cassini fly-by', 'Nightside interval'],
+         'label': ['Decadal archive', 'Cassini flyby', 'Nightside interval'],
          'color': ['mediumpurple', 'gold', 'salmon'],
          'stime': [pd.Timestamp(1995, 1, 1, 0),
                    pd.Timestamp(1999, 8, 15, 0),
