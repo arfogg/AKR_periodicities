@@ -686,7 +686,7 @@ def run_ACF():
             if freq_column == 'ipwr_50_100kHz':
                 tax = ax[i + 1, 0].twinx()
                 tax.plot(lags, acf, color=c, linewidth=acf_lw, label=n)
-                tax.set_ylabel('ACF\n(' + n + ')', color=c, fontsize=fontsize)
+                tax.set_ylabel('ACF ($W^{2}$ $sr^{-2}$)\n(' + n + ')', color=c, fontsize=fontsize)
                 tax.tick_params(axis='y', labelcolor=(c), labelsize=fontsize)
                 tax.spines['right'].set_color(c)
                 tax.yaxis.offsetText.set_fontsize(fontsize)
@@ -773,9 +773,9 @@ def run_ACF():
             a.set_xticks(tick_pos, tick_str)
 
             if j < 1:
-                a.set_ylabel('ACF', fontsize=fontsize)
+                a.set_ylabel('ACF ($W^{2}$ $sr^{-2}$)', fontsize=fontsize)
             elif (j >= 1) & (k == 0):
-                a.set_ylabel('ACF\n(' + freq_labels[0] + ')',
+                a.set_ylabel('ACF ($W^{2}$ $sr^{-2}$)\n(' + freq_labels[0] + ')',
                              fontsize=fontsize)
                 from matplotlib.lines import Line2D
 
