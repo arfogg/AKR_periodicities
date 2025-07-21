@@ -417,7 +417,7 @@ class decay_shm_fit():
             "{:.2e}".format(self.linear_detrend_fit.slope) + \
             " x\n+ " + "{:.2e}".format(self.linear_detrend_fit.intercept)
         # Linear Trend Pearson r
-        self.text_linear_trend_pearson_r = '{:.2e}'.format(
+        self.text_linear_trend_pearson_r = '{:.2f}'.format(
             self.linear_detrend_fit.rvalue)
 
         # Normalisation mean and std

@@ -569,6 +569,7 @@ def run_ACF():
     table_detrend_mean = ['Normalisation mean']
     table_detrend_std = ['Normalisation STD']
     table_shm_fit = ['SHM fit']
+    table_smh_omega = ['$2\pi$ / $\omega (hours)$']
     table_shm_chisq = ['$\chi^{2}$']
 
     # Add in Synthetic table things
@@ -579,7 +580,10 @@ def run_ACF():
     table_detrend_mean.append(synthetic_acf_fit.text_normalisation_mean)
     table_detrend_std.append(synthetic_acf_fit.text_normalisation_std)
     table_shm_fit.append(synthetic_acf_fit.text_shm_trend)
+    table_smh_omega.append("{:.2f}".format(((2* np.pi) / synthetic_acf_fit.omega) / (60*60)))
     table_shm_chisq.append(synthetic_acf_fit.text_shm_chi_sq)
+    
+    # breakpoint()
     
     # Add latex formatting
     temp = [t + ' & ' for t in table_title[:-1]]
@@ -719,6 +723,7 @@ def run_ACF():
                 table_detrend_mean.append(LFE_acf_fit.text_normalisation_mean)
                 table_detrend_std.append(LFE_acf_fit.text_normalisation_std)
                 table_shm_fit.append(LFE_acf_fit.text_shm_trend)
+                table_smh_omega.append("{:.2f}".format(((2* np.pi) / LFE_acf_fit.omega) / (60*60)))
                 table_shm_chisq.append(LFE_acf_fit.text_shm_chi_sq)
 
             else:
@@ -754,6 +759,7 @@ def run_ACF():
                 table_detrend_mean.append(mAKR_acf_fit.text_normalisation_mean)
                 table_detrend_std.append(mAKR_acf_fit.text_normalisation_std)
                 table_shm_fit.append(mAKR_acf_fit.text_shm_trend)
+                table_smh_omega.append("{:.2f}".format(((2* np.pi) / mAKR_acf_fit.omega) / (60*60)))
                 table_shm_chisq.append(mAKR_acf_fit.text_shm_chi_sq)
             table_subtitle.append(n)
 
@@ -860,6 +866,12 @@ def run_ACF():
     
     temp = [t + ' & ' for t in table_shm_fit[:-1]]
     temp.append(table_shm_fit[-1])
+    temp.append(' \\')
+    table_shm_fit_fm = temp.copy()
+    print(''.join(table_shm_fit_fm))
+    
+    temp = [t + ' & ' for t in table_smh_omega[:-1]]
+    temp.append(table_smh_omega[-1])
     temp.append(' \\')
     table_shm_fit_fm = temp.copy()
     print(''.join(table_shm_fit_fm))
