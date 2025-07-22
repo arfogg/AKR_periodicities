@@ -383,9 +383,9 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
             for [k, ln_tg] in enumerate([lon_sol_tag, lon_sc_tag]):
                 # Find the right indices
                 lon_ind, = np.where((LT_data_df[ln_tg] >=
-                                    (lon_bins[j]-lon_bin_width/2))
+                                    (lon_bins[j] - lon_bin_width/2))
                                    & (LT_data_df[ln_tg] <
-                                      (lon_bins[j]+lon_bin_width/2)))
+                                      (lon_bins[j] + lon_bin_width/2)))
                 dist_ = np.array(
                     LT_data_df[ipower_tag].iloc[lon_ind].values)
                 mad_lon[j, k], median_lon[j, k] = statistical_metrics.\
@@ -406,7 +406,8 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
                     #      np.nanmax(LT_data_df[ln_tg].iloc[lon_ind]))
 
                     fig, ax = plt.subplots()
-                    ax.hist(LT_data_df[ln_tg].iloc[lon_ind])
+                    ax.hist(LT_data_df[ln_tg].iloc[lon_ind], label='hh')
+                    ax.legend()
                     print('apples')
                     breakpoint()
                 #UT_dist.append(dist_)

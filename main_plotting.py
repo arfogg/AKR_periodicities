@@ -1056,7 +1056,12 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
 
 def run_MLT_binning_seperate(n_mlt_sectors='four'):
 
+    
+    # GEOGRAPHIC??
+    print('geographic lon!')
+    breakpoint()
     fontsize = 20
+    lon_sc_tag = 'lon_gsm'
 
     if n_mlt_sectors == 'four':
         # Initialise variables
@@ -1086,7 +1091,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
     freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
 
     # Read in interval data
-    print('Reading AKR data over requested intervals')
+    print('Reading AKR intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
 
     # Loop through different intervals / datasets
@@ -1102,7 +1107,9 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
         if all(file_checks) is False:
             # Read in AKR intensity data
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
-            akr_df['lon_sol'] = utility.calc_longitude_of_sun(akr_df, plot=True)
+            akr_df['lon_sol'] = utility.calc_longitude_of_sun(akr_df,
+                                                              lon_tag=lon_sc_tag,
+                                                              plot=True)
             mlt_flag, mlt_name = binning_averaging.calc_LT_flag(
                 akr_df, region_centres=region_centres,
                 region_width=region_width, region_names=region_names,
@@ -1141,7 +1148,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                     region_width=region_width, region_names=region_names,
                     region_flags=region_flags, lon_bin_width=30.,
                     ipower_tag=freq_column,
-                    lon_sol_tag="lon_sol", lon_sc_tag="lon_gsm")
+                    lon_sol_tag="lon_sol", lon_sc_tag=lon_sc_tag)
                 breakpoint()
                 UT_df=[]
                 # t2 = pd.Timestamp.now()
