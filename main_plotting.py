@@ -1107,6 +1107,9 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
         if all(file_checks) is False:
             # Read in AKR intensity data
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+            
+            # Convert from GSE to GEO lat and lon
+            
             breakpoint()
             akr_df['lon_sol'] = utility.calc_longitude_of_sun(akr_df,
                                                               lon_tag=lon_sc_tag,

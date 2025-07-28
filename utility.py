@@ -5,13 +5,24 @@ Created on Thu Sep 12 17:18:04 2024
 @author: A R Fogg
 """
 
+import os
+import pathlib
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from scipy import interpolate
+from spacepy import coordinates as coord
+from spacepy.time import Ticktock
 
 import aaft
+
+import read_and_tidy_data
+
+fig_dir = os.path.join("C:" + os.sep,
+                       r"Users\Alexandra\Documents\figures\akr_periodicities")
+data_dir = os.path.join(fig_dir, "data_quickloads")
 
 
 def interpolate_mlt(desired_timestamps, data_df, mlt_flag='decimal_gseLT'):
@@ -88,9 +99,62 @@ def generate_random_phase_surrogate(data, plot=False):
 
     return surrogate
 
+def convert_gse_to_geo(data, rad_tag='radius', lat_tag='lat_gse',
+                       lon_tag='lon_gse', unix_tag='unix'):
+    # data is a DataFrame containing datetime, decimal_gseLT, lon_gse
+    # dim (n,3)
+    # rad, lat, lon
+    
+    input_coord_array = arr = np.array([data[rad_tag].values,
+                                        data[lat_tag].values,
+                                        data[lon_tag].values]).T
+    
+    # Initialise coord class
+    coord_cls = coord.Coords(input_coord_array, 'GSE', 'sph')
+    
+    # Fold in time
+    coord_cls.ticks = Ticktock(data[unix_tag].values, 'UNX')
+    
+    # from spacepy import coordinates as coord
+    # cvals = coord.Coords([[1,2,4],[1,2,2]], 'GEO', 'car')
+    # cvals.x  # returns all x coordinates
+    # from spacepy.time import Ticktock
+    # cvals.ticks = Ticktock(['2002-02-02T12:00:00', '2002-02-02T12:00:00'], 'ISO') # add ticks
+    # newcoord = cvals.convert('GSM', 'sph')
+    # newcoord
+    newcoord = coord_cls.convert('GEO', 'sph')
+    
+    geo_lat = newcoord.lati
+    geo_lon = newcoord.long
+    
+    return geo_lat, geo_lon
+
+def full_archive_geo_coord():
+
+    interval_options = read_and_tidy_data.return_test_intervals()    
+    data = read_and_tidy_data.select_akr_intervals(interval_options['tag'][0])
+ 
+    geo_coords_csv = os.path.join(data_dir, "full_archive_GEO_coords.csv")
+    
+    if pathlib.Path(geo_coords_csv).is_file():
+        out_df = pd.read_csv(geo_coords_csv, delimiter=',',
+                             float_precision='round_trip')
+        
+        
+    else:
+        print('Converting from GSE to GEO coordinates for full archive')
+        print('Started at:', pd.Timestamp.now())
+        geo_lat, geo_lon = convert_gse_to_geo(data)
+        out_df = pd.DataFrame({'datetime': data['datetime'],
+                               'unix': data['unix'],
+                               'lon_geo': geo_lon,
+                               'lat_geo': geo_lat})
+        out_df.to_csv(geo_coords_csv, index=False)
+        
+    breakpoint()
 
 def calc_longitude_of_sun(data, lon_tag='lon_gse', plot=False):
-    # data is a DataFrame containing datetime, decimal_gseLT, lon_gsm
+    # data is a DataFrame containing datetime, decimal_gseLT, lon_tag
     # NEED TO CHECK WITH SIYUAN ABOUT LON GSM OR GSE!!
 
     lon_sol = data[lon_tag] - ((12. - data.decimal_gseLT) * 15.)
