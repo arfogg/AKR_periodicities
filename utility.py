@@ -189,7 +189,7 @@ def full_archive_geo_coord():
                                'unix': data['unix'],
                                'lon_geo': geo_lon,
                                'lat_geo': geo_lat})
-        # out_df.to_csv(geo_coords_csv, index=False)
+        out_df.to_csv(geo_coords_csv, index=False)
         
     breakpoint()
 
