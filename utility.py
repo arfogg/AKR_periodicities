@@ -99,20 +99,37 @@ def generate_random_phase_surrogate(data, plot=False):
 
     return surrogate
 
+def chunk_gse_to_geo(data):
+    
+    print(data['datetime'][0], data['datetime'][len(data)-1])
+    
+#     o_csv = os.path.join(data_dir, 'coord_transform')
+
+def full_archive_geo_coord_parallel():
+    
+    interval_options = read_and_tidy_data.return_test_intervals()    
+    data = read_and_tidy_data.select_akr_intervals(interval_options['tag'][0])
+
+    chunk_gse_to_geo(data)
+
 def convert_gse_to_geo(data, rad_tag='radius', lat_tag='lat_gse',
                        lon_tag='lon_gse', unix_tag='unix'):
     # data is a DataFrame containing datetime, decimal_gseLT, lon_gse
     # dim (n,3)
     # rad, lat, lon
     
-    input_coord_array = arr = np.array([data[rad_tag].values,
+    # Check for output file
+    
+    input_coord_array = np.array([data[rad_tag].values,
                                         data[lat_tag].values,
                                         data[lon_tag].values]).T
     
     # Initialise coord class
+    # print('banana')
     coord_cls = coord.Coords(input_coord_array, 'GSE', 'sph')
     
     # Fold in time
+    # print('apple')
     coord_cls.ticks = Ticktock(data[unix_tag].values, 'UNX')
     
     # from spacepy import coordinates as coord
@@ -122,6 +139,7 @@ def convert_gse_to_geo(data, rad_tag='radius', lat_tag='lat_gse',
     # cvals.ticks = Ticktock(['2002-02-02T12:00:00', '2002-02-02T12:00:00'], 'ISO') # add ticks
     # newcoord = cvals.convert('GSM', 'sph')
     # newcoord
+    # print('guava')
     newcoord = coord_cls.convert('GEO', 'sph')
     
     geo_lat = newcoord.lati
@@ -133,7 +151,9 @@ def full_archive_geo_coord():
 
     interval_options = read_and_tidy_data.return_test_intervals()    
     data = read_and_tidy_data.select_akr_intervals(interval_options['tag'][0])
- 
+
+    print('full archive len ', len(data))
+    #data = data.iloc[0:100000]
     geo_coords_csv = os.path.join(data_dir, "full_archive_GEO_coords.csv")
     
     if pathlib.Path(geo_coords_csv).is_file():
@@ -143,13 +163,33 @@ def full_archive_geo_coord():
         
     else:
         print('Converting from GSE to GEO coordinates for full archive')
-        print('Started at:', pd.Timestamp.now())
-        geo_lat, geo_lon = convert_gse_to_geo(data)
+        t0 = pd.Timestamp.now()
+        print('Started at:', t0)
+        # Run this over chunks, so that it's quicker
+        chunk_length = 10000
+        n_loops = int(np.ceil(len(data)/chunk_length))
+
+        geo_lat, geo_lon = np.array([]), np.array([])
+        for i in range(n_loops):
+            print('Chunk ', i, 'time elapsed ', pd.Timestamp.now() - t0)
+            starting_i = (i * chunk_length)
+            ending_i = (i + 1) * chunk_length
+            if ending_i > len(data):
+                ending_i = len(data)
+
+            g_lat, g_lon = convert_gse_to_geo(data[starting_i:ending_i])
+            geo_lat = np.append(geo_lat, g_lat)
+            geo_lon = np.append(geo_lon, g_lon)
+        
+        # geo_lat, geo_lon = convert_gse_to_geo(data)
+        t2 = pd.Timestamp.now()
+        print('Ended at:', t2)
+        print('Time elapsed:', t2-t0)
         out_df = pd.DataFrame({'datetime': data['datetime'],
                                'unix': data['unix'],
                                'lon_geo': geo_lon,
                                'lat_geo': geo_lat})
-        out_df.to_csv(geo_coords_csv, index=False)
+        # out_df.to_csv(geo_coords_csv, index=False)
         
     breakpoint()
 
