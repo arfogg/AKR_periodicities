@@ -398,18 +398,18 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
 
                 #breakpoint()
 
-                if int(n_lon[j, k]) == 0.:
-                    print(ln_tg, n_lon[j, k])
-                    print(lon_bins[j], lon_bin_width)
-                    print(lon_bins[j] - lon_bin_width/2, lon_bins[j] + lon_bin_width/2)
-                   # print(np.nanmin(LT_data_df[ln_tg].iloc[lon_ind]),
-                    #      np.nanmax(LT_data_df[ln_tg].iloc[lon_ind]))
+                # if int(n_lon[j, k]) == 0.:
+                #     print(ln_tg, n_lon[j, k])
+                #     print(lon_bins[j], lon_bin_width)
+                #     print(lon_bins[j] - lon_bin_width/2, lon_bins[j] + lon_bin_width/2)
+                #    # print(np.nanmin(LT_data_df[ln_tg].iloc[lon_ind]),
+                #     #      np.nanmax(LT_data_df[ln_tg].iloc[lon_ind]))
 
-                    fig, ax = plt.subplots()
-                    ax.hist(LT_data_df[ln_tg].iloc[lon_ind], label='hh')
-                    ax.legend()
-                    print('apples')
-                    breakpoint()
+                #     fig, ax = plt.subplots()
+                #     ax.hist(LT_data_df[ln_tg].iloc[lon_ind], label='hh')
+                #     ax.legend()
+                #     print('apples')
+                #     breakpoint()
                 #UT_dist.append(dist_)
                 # if n== 'dawn':
                 #     breakpoint()

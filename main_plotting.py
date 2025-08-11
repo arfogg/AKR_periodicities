@@ -1056,12 +1056,9 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
 
 def run_MLT_binning_seperate(n_mlt_sectors='four'):
 
-    
-    # GEOGRAPHIC??
-    print('geographic lon!')
-    breakpoint()
+
     fontsize = 20
-    lon_sc_tag = 'lon_gsm'
+    lon_sc_tag = 'lon_geo'
 
     if n_mlt_sectors == 'four':
         # Initialise variables
@@ -1109,11 +1106,14 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
             
             # Convert from GSE to GEO lat and lon
-            
-            breakpoint()
+            geo_df = utility.full_archive_geo_coord()
+            akr_df['lon_geo'] = geo_df.lon_geo
+            akr_df['lat_geo'] = geo_df.lat_geo
+            # breakpoint()
             akr_df['lon_sol'] = utility.calc_longitude_of_sun(akr_df,
                                                               lon_tag=lon_sc_tag,
                                                               plot=True)
+            # breakpoint()
             mlt_flag, mlt_name = binning_averaging.calc_LT_flag(
                 akr_df, region_centres=region_centres,
                 region_width=region_width, region_names=region_names,
@@ -1153,14 +1153,14 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                     region_flags=region_flags, lon_bin_width=30.,
                     ipower_tag=freq_column,
                     lon_sol_tag="lon_sol", lon_sc_tag=lon_sc_tag)
-                breakpoint()
-                UT_df=[]
+                # breakpoint()
+                #UT_df=[]
                 # t2 = pd.Timestamp.now()
                 # print('MLT binning finished, time elapsed: ', t2-t1)
-                UT_df.to_csv(MLT_csv, index=False)
+                lon_df.to_csv(MLT_csv, index=False)
             # Else read in pre-sorted data
             else:
-                UT_df = pd.read_csv(MLT_csv, delimiter=',',
+                lon_df = pd.read_csv(MLT_csv, delimiter=',',
                                     float_precision='round_trip')
 
             # Loop through each MLT sector, plotting
@@ -1170,27 +1170,27 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                 # Set x axis limits
                 ax[k].set_xlim(left=0., right=24.)
 
-                # Plot number of observations
-                ax[k].bar(UT_df.UT_bin_centre, UT_df[MLT_n + "n"],
-                          zorder=0.5, color='gold', linewidth=.75,
-                          edgecolor='black', alpha=0.75, label='# all')
-                ax[k].bar(UT_df.UT_bin_centre, UT_df[MLT_n + "n_no0"],
-                          zorder=0.6, color='deeppink', linewidth=.75,
-                          edgecolor='black', alpha=0.75, label="# > 0")
+                # # Plot number of observations
+                # ax[k].bar(lon_df.lon_bin_centre, lon_df[MLT_n + "_n_"],
+                #           zorder=0.5, color='gold', linewidth=.75,
+                #           edgecolor='black', alpha=0.75, label='# all')
+                # ax[k].bar(lon_df.lon_bin_centre, lon_df[MLT_n + "_n_no0_"],
+                #           zorder=0.6, color='deeppink', linewidth=.75,
+                #           edgecolor='black', alpha=0.75, label="# > 0")
 
                 # Create twin axis
                 twax = ax[k].twinx()
 
                 # Plot intensity trend
-                twax.plot(UT_df.UT_bin_centre,
-                          UT_df[MLT_n + '_median_norm_no0'],
+                twax.plot(lon_df.lon_bin_centre,
+                          lon_df[MLT_n + '_median_norm_no0'],
                           color='black', label="median", marker='o',
                           markersize=fontsize, linewidth=1.5, zorder=2.5)
-                twax.fill_between(UT_df.UT_bin_centre,
-                                  UT_df[MLT_n + '_median_norm_no0'] -
-                                  UT_df[MLT_n + '_mad_norm_no0'],
-                                  UT_df[MLT_n + '_median_norm_no0'] +
-                                  UT_df[MLT_n + '_mad_norm_no0'],
+                twax.fill_between(lon_df.lon_bin_centre,
+                                  lon_df[MLT_n + '_median_norm_no0'] -
+                                  lon_df[MLT_n + '_mad_norm_no0'],
+                                  lon_df[MLT_n + '_median_norm_no0'] +
+                                  lon_df[MLT_n + '_mad_norm_no0'],
                                   color='grey', alpha=0.5, label="MAD",
                                   zorder=2)
 

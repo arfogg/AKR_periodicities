@@ -99,18 +99,18 @@ def generate_random_phase_surrogate(data, plot=False):
 
     return surrogate
 
-def chunk_gse_to_geo(data):
+# def chunk_gse_to_geo(data):
     
-    print(data['datetime'][0], data['datetime'][len(data)-1])
+#     print(data['datetime'][0], data['datetime'][len(data)-1])
     
-#     o_csv = os.path.join(data_dir, 'coord_transform')
+# #     o_csv = os.path.join(data_dir, 'coord_transform')
 
-def full_archive_geo_coord_parallel():
+# def full_archive_geo_coord_parallel():
     
-    interval_options = read_and_tidy_data.return_test_intervals()    
-    data = read_and_tidy_data.select_akr_intervals(interval_options['tag'][0])
+#     interval_options = read_and_tidy_data.return_test_intervals()    
+#     data = read_and_tidy_data.select_akr_intervals(interval_options['tag'][0])
 
-    chunk_gse_to_geo(data)
+#     chunk_gse_to_geo(data)
 
 def convert_gse_to_geo(data, rad_tag='radius', lat_tag='lat_gse',
                        lon_tag='lon_gse', unix_tag='unix'):
@@ -191,20 +191,20 @@ def full_archive_geo_coord():
                                'lat_geo': geo_lat})
         out_df.to_csv(geo_coords_csv, index=False)
         
-    breakpoint()
+    return out_df
 
 def calc_longitude_of_sun(data, lon_tag='lon_gse', plot=False):
     # data is a DataFrame containing datetime, decimal_gseLT, lon_tag
     # NEED TO CHECK WITH SIYUAN ABOUT LON GSM OR GSE!!
 
-    lon_sol = data[lon_tag] - ((12. - data.decimal_gseLT) * 15.)
+    lon_sol = (data[lon_tag] % 360) - ((12. - data.decimal_gseLT) * 15.)
     lon_sol = lon_sol % 360
 
     if plot:
         fig, ax = plt.subplots()
         ax.set_facecolor('lightgrey')
 
-        ax.hist([data[lon_tag], lon_sol], color=['white', 'blue'],
+        ax.hist([data[lon_tag] % 360, lon_sol], color=['white', 'blue'],
                 edgecolor='black', density=True,
                 label=['$\lambda_{sc}$', '$\lambda_{sun}$'])
 
