@@ -1218,6 +1218,18 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                     t.set_bbox(dict(facecolor='white', alpha=0.75,
                                     edgecolor='grey'))
 
+                    if interval_tag == "full_archive":
+
+                        imax = lon_df[MLT_n + '_median_norm_no0' + "_" +
+                                      f_tg].idxmax()
+
+                        twax.plot([lon_df.lon_bin_centre.iloc[imax]],
+                                  [lon_df[MLT_n + '_median_norm_no0' + "_" +
+                                          f_tg].iloc[imax]],
+                                  marker='*', linewidth=0, fillstyle='none',
+                                  markeredgecolor='black', zorder=5,
+                                  markersize=fontsize*3., markeredgewidth=2.5)
+
                 # More formatting
                 ax[0].text(0.5, 1.01,
                            interval_options.label[i] + ' (' + n + ')',
