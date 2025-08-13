@@ -329,6 +329,9 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
                      lon_sol_tag="lon_sol", lon_sc_tag="lon_gse"):
     print('bananas')
     
+    data_df[lon_sc_tag] = data_df[lon_sc_tag] % 360.
+    data_df[lon_sol_tag] = data_df[lon_sol_tag] % 360.
+    
     lon_bins = np.linspace(0, 360.-lon_bin_width, int(360./lon_bin_width)) +\
         (lon_bin_width/2)
         
@@ -360,26 +363,25 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
         # # Initialise variables for longitude of the spacecraft
         # median_lonscr = np.full(lon_bins.size, np.nan)
         # mad_lonscr = np.full(lon_bins.size, np.nan)
-        
+
         # median_no0_lonscr = np.full(lon_bins.size, np.nan)
         # mad_no0_lonscr = np.full(lon_bins.size, np.nan)
-        
+
         # n_lonscr = np.full(lon_bins.size, np.nan)
         # n_no0_lonscr = np.full(lon_bins.size, np.nan)
 
         # Initialise variables for longitude bins
         median_lon = np.full((lon_bins.size, 2), np.nan)
         mad_lon = np.full((lon_bins.size, 2), np.nan)
-        
+
         median_no0_lon = np.full((lon_bins.size, 2), np.nan)
         mad_no0_lon = np.full((lon_bins.size, 2), np.nan)
 
         n_lon = np.full((lon_bins.size, 2), np.nan)
         n_no0_lon = np.full((lon_bins.size, 2), np.nan)
-        #breakpoint()
+        # breakpoint()
         for j in range(lon_bins.size):
 
-                        
             for [k, ln_tg] in enumerate([lon_sol_tag, lon_sc_tag]):
                 # Find the right indices
                 lon_ind, = np.where((LT_data_df[ln_tg] >=
@@ -396,7 +398,7 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
                 n_lon[j, k] = dist_.size
                 n_no0_lon[j, k] = dist_[dist_ > 0.].size
 
-                #breakpoint()
+                # breakpoint()
 
                 # if int(n_lon[j, k]) == 0.:
                 #     print(ln_tg, n_lon[j, k])
@@ -419,28 +421,13 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
             lon_df[n + '_median_norm_' + tg] = median_lon[:, l] / np.nanmax(median_lon[:, l])
             lon_df[n + '_mad_' + tg] = mad_lon[:, l]
             lon_df[n + '_mad_norm_' + tg] = mad_lon[:, l] / np.nanmax(mad_lon[:, l])
-    
+
             lon_df[n + '_median_no0_' + tg] = median_no0_lon[:, l]
             lon_df[n + '_median_norm_no0_' + tg] = median_no0_lon[:, l] / np.nanmax(median_no0_lon[:, l])
             lon_df[n + '_mad_no0_' + tg] = mad_no0_lon[:, l]
             lon_df[n + '_mad_norm_no0_' + tg] = mad_no0_lon[:, l] / np.nanmax(mad_no0_lon[:, l])    
-    
+
             lon_df[n + '_n_' + tg] = n_lon[:, l]
             lon_df[n + '_n_no0_' + tg] = n_no0_lon[:, l]
 
     return lon_df
-       
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    breakpoint()

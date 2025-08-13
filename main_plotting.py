@@ -1059,6 +1059,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
 
     fontsize = 20
     lon_sc_tag = 'lon_geo'
+    lon_sol_tag = 'lon_sol'
 
     if n_mlt_sectors == 'four':
         # Initialise variables
@@ -1081,6 +1082,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
     # UT bin is the same always
     # UT_bin_width = 2
     lon_bin_width = 30.
+    bwidth = lon_bin_width * 0.8
 
     # Different frequency channels
     freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'])
@@ -1126,114 +1128,122 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                                                       freq_colors,
                                                       freq_labels)):
             print('Frequency band: ', freq_column)
+
             MLT_csv = os.path.join(data_dir, 'MLT_binning',
-                                   'MLT_lon_binned_' + n_mlt_sectors + 'sector_' +
-                                   interval_tag + '_' + freq_column + '.csv')
-
-            # Initialise plotting window
-            fig, ax = plt.subplots(nrows=len(region_centres), ncols=1,
-                                   figsize=(15, len(region_centres) * 3.))
-            fig_name = os.path.join(fig_dir, interval_tag + "_" + freq_column
-                                    + "_" + n_mlt_sectors + "MLT.png")
-
+                                       'MLT_lon_binned_' +
+                                       n_mlt_sectors + 'sector_' +
+                                       interval_tag + '_' + freq_column + '.csv')
             # Bin data into UT bins
             if pathlib.Path(MLT_csv).is_file() is False:
-
-                # freq_df = akr_df.dropna(subset=[freq_column])
-                # t1 = pd.Timestamp.now()
-                # print('starting MLT binning at ', t1)
-                # UT_df = binning_averaging.return_UT_trend(
-                #         akr_df, region_centres=region_centres,
-                #         region_width=region_width, region_names=region_names,
-                #         region_flags=region_flags, UT_bin_width=UT_bin_width,
-                #         ipower_tag=freq_column)
+    
                 lon_df = binning_averaging.return_lon_trend(
-                    akr_df, region_centres=region_centres,
-                    region_width=region_width, region_names=region_names,
-                    region_flags=region_flags, lon_bin_width=30.,
-                    ipower_tag=freq_column,
-                    lon_sol_tag="lon_sol", lon_sc_tag=lon_sc_tag)
-                # breakpoint()
-                #UT_df=[]
-                # t2 = pd.Timestamp.now()
-                # print('MLT binning finished, time elapsed: ', t2-t1)
+                        akr_df, region_centres=region_centres,
+                        region_width=region_width, region_names=region_names,
+                        region_flags=region_flags, lon_bin_width=30.,
+                        ipower_tag=freq_column,
+                        lon_sol_tag=lon_sol_tag, lon_sc_tag=lon_sc_tag)
+
                 lon_df.to_csv(MLT_csv, index=False)
             # Else read in pre-sorted data
             else:
                 lon_df = pd.read_csv(MLT_csv, delimiter=',',
-                                    float_precision='round_trip')
+                                        float_precision='round_trip')
+    
+            
+            
+            #breakpoint()
+            # Loop through lon sun and lon sc
+            for o, (tg, f_tg, tit_tg) in enumerate(zip([lon_sol_tag, lon_sc_tag],
+                                       ['sol', 'sc'],
+                                       ['Longitude of the Sun ($^{\circ}$)',
+                                        'Spacecraft Geographic Longitude ($^{\circ}$)'])):
+                
 
-            # Loop through each MLT sector, plotting
-            for k, (MLT_n, c, mrkr) in enumerate(zip(region_names,
-                                                     region_colors,
-                                                     region_mrkrs)):
-                # Set x axis limits
-                ax[k].set_xlim(left=0., right=24.)
+    
+                # Initialise plotting window
+                fig, ax = plt.subplots(nrows=len(region_centres), ncols=1,
+                                       figsize=(15, len(region_centres) * 3.))
+                fig_name = os.path.join(fig_dir, interval_tag +
+                                        "_" + freq_column +
+                                        "_" + f_tg +
+                                        "_" + n_mlt_sectors + "MLT.png")
+    
 
-                # # Plot number of observations
-                # ax[k].bar(lon_df.lon_bin_centre, lon_df[MLT_n + "_n_"],
-                #           zorder=0.5, color='gold', linewidth=.75,
-                #           edgecolor='black', alpha=0.75, label='# all')
-                # ax[k].bar(lon_df.lon_bin_centre, lon_df[MLT_n + "_n_no0_"],
-                #           zorder=0.6, color='deeppink', linewidth=.75,
-                #           edgecolor='black', alpha=0.75, label="# > 0")
-
-                # Create twin axis
-                twax = ax[k].twinx()
-
-                # Plot intensity trend
-                twax.plot(lon_df.lon_bin_centre,
-                          lon_df[MLT_n + '_median_norm_no0'],
-                          color='black', label="median", marker='o',
-                          markersize=fontsize, linewidth=1.5, zorder=2.5)
-                twax.fill_between(lon_df.lon_bin_centre,
-                                  lon_df[MLT_n + '_median_norm_no0'] -
-                                  lon_df[MLT_n + '_mad_norm_no0'],
-                                  lon_df[MLT_n + '_median_norm_no0'] +
-                                  lon_df[MLT_n + '_mad_norm_no0'],
-                                  color='grey', alpha=0.5, label="MAD",
-                                  zorder=2)
-
-                # Formatting
-                # Panel MLT sector
-                t = ax[k].text(0.98, 0.95, MLT_n + ' MLT',
-                               transform=ax[k].transAxes, fontsize=fontsize,
-                               va='top', ha='right')
-                t.set_bbox(dict(facecolor='white', alpha=0.75,
-                                edgecolor='grey'))
-                # Y labels
-                ax[k].set_ylabel("# averaged", fontsize=fontsize)
-                twax.set_ylabel('Normalised median\nintegrated power',
-                                fontsize=fontsize)
-                # Fontsize
-                ax[k].tick_params(labelsize=fontsize)
-                # Panel label
-                t = ax[k].text(0.02, 0.95, axes_labels[k],
-                               transform=ax[k].transAxes, fontsize=fontsize,
-                               va='top', ha='left')
-                t.set_bbox(dict(facecolor='white', alpha=0.75,
-                                edgecolor='grey'))
-
-            # More formatting
-            ax[0].text(0.5, 1.01,
-                       interval_options.label[i] + ' (' + n + ')',
-                       transform=ax[0].transAxes,
-                       fontsize=1.25 * fontsize, va='bottom', ha='center')
-            leg_ln = [*ax[k].get_legend_handles_labels()[0],
-                      *twax.get_legend_handles_labels()[0]]
-            leg_lab = [*ax[k].get_legend_handles_labels()[1],
-                       *twax.get_legend_handles_labels()[1]]
-            # ax[0].legend(leg_ln, leg_lab, fontsize=0.65*fontsize,
-            #              loc='lower center', ncol=3)
-            ax[0].legend(leg_ln, leg_lab, bbox_to_anchor=(1.13, 0.0, 0.2, 1.0),
-                         loc="center left", fontsize=fontsize)
-            ax[k].set_xlabel('UT (hours)', fontsize=fontsize)
-
-            fig.tight_layout()
-
-            # Save to file
-            fig.savefig(fig_name)
-            #return
+                    
+                # Loop through each MLT sector, plotting
+                for k, (MLT_n, c, mrkr) in enumerate(zip(region_names,
+                                                         region_colors,
+                                                         region_mrkrs)):
+                    # Set x axis limits
+                    ax[k].set_xlim(left=0., right=360.)
+                        
+                    # Plot number of observations
+                    ax[k].bar(lon_df.lon_bin_centre, lon_df[MLT_n + "_n_" + f_tg],
+                              zorder=0.5, color='gold', linewidth=.75,
+                              edgecolor='black', alpha=0.75, label='# all',
+                              width=bwidth)
+                    ax[k].bar(lon_df.lon_bin_centre, lon_df[MLT_n + "_n_no0_" + f_tg],
+                              zorder=0.6, color='deeppink', linewidth=.75,
+                              edgecolor='black', alpha=0.75, label="# > 0",
+                              width=bwidth)
+    
+                    # Create twin axis
+                    twax = ax[k].twinx()
+    
+                    # Plot intensity trend
+                    twax.plot(lon_df.lon_bin_centre,
+                              lon_df[MLT_n + '_median_norm_no0' + "_" + f_tg],
+                              color='black', label="median", marker='o',
+                              markersize=fontsize, linewidth=1.5, zorder=2.5)
+                    twax.fill_between(lon_df.lon_bin_centre,
+                                      lon_df[MLT_n + '_median_norm_no0' + "_" + f_tg] -
+                                      lon_df[MLT_n + '_mad_norm_no0' + "_" + f_tg],
+                                      lon_df[MLT_n + '_median_norm_no0' + "_" + f_tg] +
+                                      lon_df[MLT_n + '_mad_norm_no0' + "_" + f_tg],
+                                      color='grey', alpha=0.5, label="MAD",
+                                      zorder=2)
+    
+                    # Formatting
+                    # Panel MLT sector
+                    t = ax[k].text(0.98, 0.95, MLT_n + ' MLT',
+                                   transform=ax[k].transAxes, fontsize=fontsize,
+                                   va='top', ha='right')
+                    t.set_bbox(dict(facecolor='white', alpha=0.75,
+                                    edgecolor='grey'))
+                    # Y labels
+                    ax[k].set_ylabel("# averaged", fontsize=fontsize)
+                    twax.set_ylabel('Normalised median\nintegrated power',
+                                    fontsize=fontsize)
+                    # Fontsize
+                    ax[k].tick_params(labelsize=fontsize)
+                    twax.tick_params(labelsize=fontsize)
+                    # Panel label
+                    t = ax[k].text(0.02, 0.95, axes_labels[k],
+                                   transform=ax[k].transAxes, fontsize=fontsize,
+                                   va='top', ha='left')
+                    t.set_bbox(dict(facecolor='white', alpha=0.75,
+                                    edgecolor='grey'))
+    
+                # More formatting
+                ax[0].text(0.5, 1.01,
+                           interval_options.label[i] + ' (' + n + ')',
+                           transform=ax[0].transAxes,
+                           fontsize=1.25 * fontsize, va='bottom', ha='center')
+                leg_ln = [*ax[k].get_legend_handles_labels()[0],
+                          *twax.get_legend_handles_labels()[0]]
+                leg_lab = [*ax[k].get_legend_handles_labels()[1],
+                           *twax.get_legend_handles_labels()[1]]
+                # ax[0].legend(leg_ln, leg_lab, fontsize=0.65*fontsize,
+                #              loc='lower center', ncol=3)
+                ax[0].legend(leg_ln, leg_lab, bbox_to_anchor=(1.13, 0.0, 0.2, 1.0),
+                             loc="center left", fontsize=fontsize)
+                ax[k].set_xlabel(tit_tg, fontsize=fontsize)
+    
+                fig.tight_layout()
+    
+                # Save to file
+                fig.savefig(fig_name)
+                #return
 
    
 def lomb_scargle_cassini_sliding():
