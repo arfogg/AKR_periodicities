@@ -7,6 +7,7 @@ Created on Thu Sep 12 17:18:04 2024
 
 import os
 import pathlib
+import scipy
 
 import numpy as np
 import pandas as pd
@@ -23,7 +24,7 @@ import read_and_tidy_data
 fig_dir = os.path.join("C:" + os.sep,
                        r"Users\Alexandra\Documents\figures\akr_periodicities")
 data_dir = os.path.join(fig_dir, "data_quickloads")
-
+wu_dir = os.path.join(fig_dir, "SW_data")
 
 def interpolate_mlt(desired_timestamps, data_df, mlt_flag='decimal_gseLT'):
     """
@@ -213,3 +214,40 @@ def calc_longitude_of_sun(data, lon_tag='lon_gse', plot=False):
         ax.set_ylabel("Density")
 
     return lon_sol
+
+
+def read_wu_period():
+    
+    # fnames = [os.path.join(wu_dir, "AKR_period_LongitudeSC_LSSA_test_30_100_kHz_v0627.mat")]
+    
+    # for f in fnames:
+    #     m = scipy.io.loadmat(f)
+    #     print(m.keys())
+    #     print(f)
+    #     breakpoint()
+        
+    f = os.path.join(wu_dir, "AKR_period_LongitudeSC_LSSA_test_30_100_kHz_v0627.mat")
+    
+    m = scipy.io.loadmat(f)
+    
+    print(m.keys())
+    
+    days_since_0000 = m['time'].flatten()
+    
+    days_since_1990 = days_since_0000 - ((pd.Timestamp(1990,1,1,0) - pd.Timestamp(1,1,1,0)).days + 1 + 365)
+
+    timestamps = []
+    for d in days_since_1990:
+        timestamps.append(pd.Timedelta(days = d) + pd.Timestamp(1990,1,1,0))
+    
+    
+    #m['f_inDegreePerDay'].flatten() * (1/360) / 86400 # freq in hertz
+    #1 / (m['f_inDegreePerDay'].flatten() * (1/360) / 86400) # period in seconds
+    # THIS NEEDS CHECKING WITH SIYUAN
+    print('WARNING: NOT SURE IF PERIOD CONVERSION IS CORRECT')
+    period_hrs = (1 / (m['f_inDegreePerDay'].flatten() * (1/360) / 86400)) / (60*60) # period in hours
+    
+    out_dict = {'timestamp': timestamps,
+                'period_hours': period_hrs,
+                'freq_deg_per_day': m['f_inDegreePerDay'].flatten(),
+                'spectrogram': m['spec_LongitudeofSC']}
