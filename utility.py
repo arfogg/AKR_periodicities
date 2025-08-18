@@ -216,7 +216,10 @@ def calc_longitude_of_sun(data, lon_tag='lon_gse', plot=False):
     return lon_sol
 
 
-def read_wu_period():
+def read_wu_period(lon, f):
+    
+    # f= 'low' or 'high'
+    # lon= 'sc' or 'sun'
     
     # fnames = [os.path.join(wu_dir, "AKR_period_LongitudeSC_LSSA_test_30_100_kHz_v0627.mat")]
     
@@ -225,12 +228,27 @@ def read_wu_period():
     #     print(m.keys())
     #     print(f)
     #     breakpoint()
-        
-    f = os.path.join(wu_dir, "AKR_period_LongitudeSC_LSSA_test_30_100_kHz_v0627.mat")
+    if f == 'low':
+        freq_str = '30_100'
+    elif f == 'high':
+        freq_str = '100_800'
+    
+    if lon == 'sc':
+        lon_str = 'LongitudeSC'
+        spec_str = 'spec_LongitudeofSC'
+    elif lon == 'sun':
+        lon_str = 'LongitudeSun'
+        spec_str = 'spec_LongitudeofSun'
+    
+
+    f = os.path.join(wu_dir, "AKR_period_" + lon_str + "_LSSA_test_" + freq_str + "_kHz_v0627.mat")
+    # f = os.path.join(wu_dir, "AKR_period_LongitudeSC_LSSA_test_30_100_kHz_v0627.mat")
+    
+    
     
     m = scipy.io.loadmat(f)
     
-    print(m.keys())
+    # print(m.keys())
     
     days_since_0000 = m['time'].flatten()
     
@@ -250,4 +268,6 @@ def read_wu_period():
     out_dict = {'timestamp': timestamps,
                 'period_hours': period_hrs,
                 'freq_deg_per_day': m['f_inDegreePerDay'].flatten(),
-                'spectrogram': m['spec_LongitudeofSC']}
+                'spectrogram': m[spec_str]}
+    
+    return out_dict

@@ -18,6 +18,7 @@ import string
 import pickle
 
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy.signal as signal
@@ -1596,20 +1597,49 @@ def lomb_scargle_cassini_expanding():
    # #      t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
 
+def plot_sliding_spectrogram():
+
+    for k, (freq, freq_tit) in enumerate(zip(['high', 'low'],
+                                             ['100 - 800 kHz', '30 - 100 kHz'])):
+        # define fig filename
+        # initialise fig
+
+        fig, axes = plt.subplots(nrows=3, figsize=(12, 12))
+
+        for i, (lon, lon_tit) in enumerate(zip(['sun', 'sc'],
+                                          ['$\lambda_{sun}$', '$\lambda_{SC}$'])):
+            
+
+            out_dict = utility.read_wu_period(lon, freq)
+    
+            time_axis = np.array(out_dict['timestamp']) # 189
+            period_axis = np.array(out_dict['period_hours']) # 1201
+            spectrogram = np.array(out_dict['spectrogram']) # 1201, 189
+        
+
+            
+            #fig, ax = plt.subplots()
+        
+            norm = mpl.colors.Normalize(vmin=np.nanmin(spectrogram), vmax=np.nanmax(spectrogram))
+            print('change from jet colorbar')
+            axes[i].pcolormesh(time_axis, period_axis, spectrogram, norm=norm, cmap='jet', shading='nearest')
+            axes[i].set_title(freq_tit + ', organised by ' + lon_tit, fontsize=fontsize)
 
 
+        # Difference plot here on axes[2]
+        axes[2].set_title('Difference plot: $\lambda_{sun}$ - $\lambda_{SC}$', fontsize=fontsize)
+
+        # Formatting
+        for (j, a) in enumerate(axes):
+            a.tick_params(labelsize=fontsize)
+            a.set_xlabel('Year', fontsize=fontsize)
+            a.set_ylabel('Period (hours???????)', fontsize=fontsize)
+            t = a.text(0.02, 0.92, axes_labels[j], transform=a.transAxes,
+                           fontsize=fontsize, va='top', ha='left')
+            t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
 
-
-
-
-
-
-
-
-
-
-
+        fig.tight_layout()
 
 
 
