@@ -1598,6 +1598,9 @@ def lomb_scargle_cassini_expanding():
 
 
 def plot_sliding_spectrogram():
+    
+    ylim = [20, 30]
+    
 
     for k, (freq, freq_tit) in enumerate(zip(['high', 'low'],
                                              ['100 - 800 kHz', '30 - 100 kHz'])):
@@ -1620,14 +1623,34 @@ def plot_sliding_spectrogram():
             
             #fig, ax = plt.subplots()
         
-            norm = mpl.colors.Normalize(vmin=np.nanmin(spectrogram), vmax=np.nanmax(spectrogram))
-            print('change from jet colorbar')
-            axes[i].pcolormesh(time_axis, period_axis, spectrogram, norm=norm, cmap='jet', shading='nearest')
+            norm = mpl.colors.Normalize(vmin=np.nanmin(spectrogram),
+                                        vmax=0.9 * np.nanmax(spectrogram))
+
+            psm = axes[i].pcolormesh(time_axis, period_axis, spectrogram, norm=norm, cmap='plasma', shading='nearest')
+            cbar = fig.colorbar(psm, ax=axes[i])
+            cbar.ax.tick_params(labelsize=fontsize) 
+            cbar.set_label('????',fontsize=fontsize)
+            
             axes[i].set_title(freq_tit + ', organised by ' + lon_tit, fontsize=fontsize)
+            
+
 
 
         # Difference plot here on axes[2]
+        sun_dict = utility.read_wu_period('sun', freq)
+        sc_dict = utility.read_wu_period('sc', freq)
+        
+        time_axis = np.array(sun_dict['timestamp']) # 189
+        period_axis = np.array(sun_dict['period_hours']) # 1201
+        spectrogram = np.array(sun_dict['spectrogram'] - sc_dict['spectrogram'])
+        norm = mpl.colors.Normalize(vmin=np.nanmin(spectrogram), vmax=np.nanmax(spectrogram))
+
+        psm = axes[2].pcolormesh(time_axis, period_axis, spectrogram, norm=norm, cmap='PuOr', shading='nearest')
+
         axes[2].set_title('Difference plot: $\lambda_{sun}$ - $\lambda_{SC}$', fontsize=fontsize)
+        cbar = fig.colorbar(psm, ax=axes[2])
+        cbar.ax.tick_params(labelsize=fontsize) 
+        cbar.set_label('Difference',fontsize=fontsize)
 
         # Formatting
         for (j, a) in enumerate(axes):
@@ -1638,6 +1661,7 @@ def plot_sliding_spectrogram():
                            fontsize=fontsize, va='top', ha='left')
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
+            a.set_ylim(ylim)
 
         fig.tight_layout()
 
