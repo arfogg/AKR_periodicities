@@ -44,6 +44,7 @@ import utility
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
 #import read_integrated_power
 import read_wind_position
+import read_sunspot_n
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
 import read_omni
@@ -1599,15 +1600,27 @@ def lomb_scargle_cassini_expanding():
 
 def plot_sliding_spectrogram():
 
-    ylim = [20, 30]
+    
+
+    ylim = [22., 26.]
+    xlim = [pd.Timestamp(1995, 1, 1, 0), pd.Timestamp(2005, 1, 1, 0)]
+
+    # Read Wind position data
+    years = np.arange(1995, 2004 + 1)
+    wind_position_df = read_wind_position.concat_data_years(years)
+    
+    # Read Sunspot data
+    sunspot_df = read_sunspot_n.read_monthly_smoothed_sunspot()
 
     for k, (freq, freq_tit) in enumerate(zip(['high', 'low'],
                                              ['100 - 800 kHz',
                                               '30 - 100 kHz'])):
         # define fig filename
         # initialise fig
+        fig_png = os.path.join(fig_dir, "modulation_spectrogram_" +
+                               freq + '.png')
 
-        fig, axes = plt.subplots(nrows=3, figsize=(12, 12))
+        fig, axes = plt.subplots(nrows=5, figsize=(12, 18))
 
         for i, (lon, lon_tit) in enumerate(zip(['sun', 'sc'],
                                                ['$\lambda_{sun}$',
@@ -1618,16 +1631,30 @@ def plot_sliding_spectrogram():
             time_axis = np.array(out_dict['timestamp'])  # 189
             period_axis = np.array(out_dict['period_hours'])  # 1201
             spectrogram = np.array(out_dict['spectrogram'])  # 1201, 189
+            
+            #breakpoint()
+            
+            # Restrict spectrogram
+            t_ind, = np.where(time_axis <= pd.Timestamp(2005, 1, 10))
+            ind, = np.where((period_axis >= ylim[0]) & 
+                            (period_axis <= ylim[1]))
+            time_axis = time_axis[t_ind]
+            period_axis = period_axis[ind]
+            spectrogram = spectrogram[ind, :]
+            spectrogram = spectrogram[:, t_ind]
 
             norm = mpl.colors.Normalize(vmin=np.nanmin(spectrogram),
                                         vmax=0.9 * np.nanmax(spectrogram))
+            # norm = mpl.colors.LogNorm(vmin=np.nanmin(spectrogram),
+            #                           vmax=np.nanmax(spectrogram),
+            #                           clip=True)
 
             psm = axes[i].pcolormesh(time_axis, period_axis, spectrogram,
                                      norm=norm, cmap='plasma',
                                      shading='nearest')
             cbar = fig.colorbar(psm, ax=axes[i])
             cbar.ax.tick_params(labelsize=fontsize)
-            cbar.set_label('????', fontsize=fontsize)
+            cbar.set_label('Normalised Power [proxy]', fontsize=fontsize)
 
             axes[i].set_title(freq_tit + ', organised by ' + lon_tit,
                               fontsize=fontsize)
@@ -1640,8 +1667,19 @@ def plot_sliding_spectrogram():
         period_axis = np.array(sun_dict['period_hours'])  # 1201
         spectrogram = np.array(sun_dict['spectrogram']
                                - sc_dict['spectrogram'])
-        norm = mpl.colors.Normalize(vmin=np.nanmin(spectrogram),
-                                    vmax=np.nanmax(spectrogram))
+        
+        # Restrict axes
+        t_ind, = np.where(time_axis <= pd.Timestamp(2005, 1, 10))
+        ind, = np.where((period_axis >= ylim[0]) & 
+                        (period_axis <= ylim[1]))
+        time_axis = time_axis[t_ind]
+        period_axis = period_axis[ind]
+        spectrogram = spectrogram[ind, :]
+        spectrogram = spectrogram[:, t_ind]
+        
+        # norm = mpl.colors.Normalize(vmin=np.nanmin(spectrogram),
+        #                             vmax=np.nanmax(spectrogram))
+        norm = mpl.colors.CenteredNorm()
 
         psm = axes[2].pcolormesh(time_axis, period_axis, spectrogram,
                                  norm=norm, cmap='PuOr', shading='nearest')
@@ -1652,22 +1690,54 @@ def plot_sliding_spectrogram():
         cbar.ax.tick_params(labelsize=fontsize)
         cbar.set_label('Difference', fontsize=fontsize)
 
+        # Wind LT on axes[3]
+        axes[3].plot(wind_position_df.datetime,
+                     wind_position_df.decimal_gseLT,
+                     color='black', linewidth=1.)
+        
+        # Plot a dot for every nightside observation
+        nightside_lt_dtime = wind_position_df.loc[
+            (wind_position_df.decimal_gseLT >= 18.) |
+            (wind_position_df.decimal_gseLT <= 6.)]
+        axes[3].plot(nightside_lt_dtime.datetime,
+                     np.repeat(23.5, len(nightside_lt_dtime)),
+                     linewidth=0., color='lightcoral', marker='.')
+
+        # Sunspot Number on axes[4]
+        axes[4].plot(sunspot_df.month_mid_dtime, sunspot_df.smooth_s_n,
+                     color='darkmagenta', linewidth=2.)
+        axes[4].set_ylim(top=215)
+
+
         # Formatting
+        axes[3].set_ylabel('Wind Spacecraft LT\n(GSE, hours)', fontsize=fontsize)
+        axes[4].set_ylabel('Sunspot Number', fontsize=fontsize)
         for (j, a) in enumerate(axes):
             a.tick_params(labelsize=fontsize)
             a.set_xlabel('Year', fontsize=fontsize)
-            a.set_ylabel('Period (hours???????)', fontsize=fontsize)
             t = a.text(0.02, 0.92, axes_labels[j], transform=a.transAxes,
                        fontsize=fontsize, va='top', ha='left')
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
-            a.set_ylim(ylim)
+            # a.set_ylim(ylim)
+            a.set_xlim(xlim)
+            if j < 3:
+                a.set_ylabel('Period [proxy, hours]', fontsize=fontsize)
+
 
         fig.tight_layout()
 
+        # Adjust axis width
+        pos_cbar = axes[2].get_position().bounds
+        pos_lt = axes[3].get_position().bounds
+        axes[3].set_position([pos_cbar[0], pos_lt[1],
+                              pos_cbar[2], pos_lt[3]])
 
+        pos_sn = axes[4].get_position().bounds
+        axes[4].set_position([pos_cbar[0], pos_sn[1],
+                              pos_cbar[2], pos_sn[3]])
 
-
+        fig.savefig(fig_png)
 
 
 

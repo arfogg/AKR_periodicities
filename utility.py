@@ -261,8 +261,6 @@ def read_wu_period(lon, f):
     
     #m['f_inDegreePerDay'].flatten() * (1/360) / 86400 # freq in hertz
     #1 / (m['f_inDegreePerDay'].flatten() * (1/360) / 86400) # period in seconds
-    # THIS NEEDS CHECKING WITH SIYUAN
-    print('WARNING: NOT SURE IF PERIOD CONVERSION IS CORRECT')
     period_hrs = (1 / (m['f_inDegreePerDay'].flatten() * (1/360) / 86400)) / (60*60) # period in hours
     
     out_dict = {'timestamp': timestamps,
