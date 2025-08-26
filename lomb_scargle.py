@@ -9,9 +9,7 @@ Functions to run Lomb-Scargle analysis.
 
 import pathlib
 import pickle
-import psutil
-# import math
-# import astropy
+# import psutil
 
 from astropy.timeseries import LombScargle
 
@@ -20,10 +18,6 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
-
-# import scipy.signal as signal
-
-# from joblib import Parallel, delayed, parallel_backend
 
 
 def define_frequency_bins(T, f_min, f_max, n0=5):
@@ -214,7 +208,7 @@ def compute_lomb_scargle_peak(time, signal, f_min, f_max, i,
     # Else, calculate
     else:
         ls_object, freqs, ls_pgram = generic_lomb_scargle(time, signal,
-                                                   f_min, f_max, n0=n0)
+                                                          f_min, f_max, n0=n0)
         peak_magnitude = np.nanmax(ls_pgram)
         # Save each iteration separately
         pd.DataFrame({'Bootstrap_Index': [i],
@@ -222,72 +216,6 @@ def compute_lomb_scargle_peak(time, signal, f_min, f_max, i,
                      ).to_csv(fname, index=False)
 
     return peak_magnitude
-
-
-# def calc_safe_njobs(est_mem_per_job_gb, frac_safe=0.5):
-#     """
-#     Dynamically scale n_jobs based on available memory to prevent crashes.
-
-#     Parameters
-#     ----------
-#     task_list : list
-#         List of arguments (as tuples) to pass to the function.
-#     func : callable
-#         Function to be called with arguments from task_list.
-#     est_mem_per_job_gb : float
-#         Estimated memory use per job, in gigabytes.
-#     backend : str
-#         Joblib backend. Default is 'loky' (process-based). Use 'threading' if needed.
-
-#     Returns
-#     -------
-#     results : list
-#         List of function results.
-#     """
-#     # Get available memory in GB
-#     available_mem_gb = psutil.virtual_memory().available / 1e9
-#     print(available_mem_gb, ' GB memory available')
-
-#     # Leave some safety buffer (e.g., 30% of available RAM)
-#     safe_mem_gb = available_mem_gb * frac_safe
-#     print('Using only ',frac_safe*100., '%, i.e.:', safe_mem_gb, ' GB memory')
-
-#     # Determine max safe number of parallel jobs
-#     # Double / rounds down
-#     max_safe_jobs = max(1, int(safe_mem_gb // est_mem_per_job_gb))
-
-#     print(f"Using up to {max_safe_jobs} parallel jobs")
-
-#     return max_safe_jobs
-
-
-# def estimate_lombscargle_memory_gb(time, freqs, dtype=np.float64):
-#     """
-#     Estimate memory usage in gigabytes for one Lomb-Scargle job.
-
-#     Parameters
-#     ----------
-#     time : np.ndarray
-#         Time array (1D).
-#     freqs : np.ndarray
-#         Frequency bins (1D).
-#     dtype : numpy dtype, optional
-#         Data type of array elements. Default is float64.
-
-#     Returns
-#     -------
-#     mem_gb : float
-#         Estimated memory usage in gigabytes.
-#     """
-#     n_time = len(time)
-#     n_freqs = len(freqs)
-#     bytes_per_element = np.dtype(dtype).itemsize
-
-#     # Estimate memory for internal matrix: shape (n_time, n_freqs)
-#     total_bytes = n_time * n_freqs * bytes_per_element
-#     mem_gb = total_bytes / 1e9
-
-#     return mem_gb
 
 
 def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
