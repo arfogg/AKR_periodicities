@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.stats import linregress, chisquare
-from scipy.optimize import least_squares
+# from scipy.optimize import least_squares
 from scipy.optimize import curve_fit
 
 
@@ -340,7 +340,7 @@ def damped_osc_ci(A, gamma, omega, phi, pcov,
 
 
 class decay_shm_fit():
-    
+
     def __init__(self, lags, acf):
         """
         Initialise decay_shm_fit class.
@@ -384,24 +384,21 @@ class decay_shm_fit():
 
         """
         # Detrend the data, removing a linear trend
-        self.linear_detrend_fit, self.linear_detrend_y,\
+        self.linear_detrend_fit, self.linear_detrend_y, \
             self.linear_detrended_acf =\
             remove_linear_trend(self.lags, self.acf)
-                
+
         # Normalise the Data
         self.normalised_acf, self.normalisation_mean, self.normalisation_std =\
             normalise_with_mean_subtraction(self.linear_detrended_acf)
 
         # Fit damped SHM
-        self.A, self.gamma, self.omega, self.phi, self.y_fitted, self.popt,\
+        self.A, self.gamma, self.omega, self.phi, self.y_fitted, self.popt, \
             self.pcov = fit_decaying_sinusoid(self.lags,
                                               self.normalised_acf,
                                               A0, gamma0, omega0, phi0)
-        self.shm_chi_sq, self.shm_chi_p = chisquare(self.normalised_acf, self.y_fitted)
-        # # Calculate confidence interval
-        # sigma_ab = np.sqrt(np.diagonal(self.pcov))
-        # self.ci_upper = damped_oscillator(self.lags, *(self.popt + sigma_ab))
-        # self.ci_lower = damped_oscillator(self.lags, *(self.popt - sigma_ab))
+        self.shm_chi_sq, self.shm_chi_p = chisquare(self.normalised_acf,
+                                                    self.y_fitted)
 
     def create_text_labels(self):
         """
@@ -442,7 +439,7 @@ class decay_shm_fit():
         None.
 
         """
-        self.bs_A, self.bs_gamma, self.bs_omega, self.bs_phi,\
+        self.bs_A, self.bs_gamma, self.bs_omega, self.bs_phi, \
             self.y_bs, self.y_ci = \
             damped_osc_ci(self.A, self.gamma, self.omega, self.phi,
                           self.pcov, self.lags, n_bootstrap=100,
