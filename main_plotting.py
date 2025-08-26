@@ -5,12 +5,6 @@ Created on Thu Apr  4 15:15:12 2024
 @author: A R Fogg
 """
 
-# import os
-# os.environ["OMP_NUM_THREADS"] = "1"
-# os.environ["OPENBLAS_NUM_THREADS"] = "1"
-# os.environ["MKL_NUM_THREADS"] = "1"
-# os.environ["NUMEXPR_NUM_THREADS"] = "1"
-
 import sys
 import os
 import pathlib
@@ -21,17 +15,13 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
-import scipy.signal as signal
 import matplotlib.transforms as transforms
 
 from numpy.fft import fft, ifft
 
 from neurodsp.sim import sim_oscillation
 
-# import fastgoertzel as G
-
 import periodicity_functions
-# import feature_importance
 import read_and_tidy_data
 import binning_averaging
 import wind_location
@@ -42,7 +32,6 @@ import bootstrap_functions
 import utility
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
-#import read_integrated_power
 import read_wind_position
 import read_sunspot_n
 
@@ -50,7 +39,6 @@ sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
 import read_omni
 import read_supermag
 import read_sunspot_n
-
 
 fontsize = 15
 alphabet = list(string.ascii_lowercase)
@@ -61,10 +49,6 @@ for a in alphabet:
 fig_dir = os.path.join("C:" + os.sep,
                        r"Users\Alexandra\Documents\figures\akr_periodicities")
 data_dir = os.path.join(fig_dir, "data_quickloads")
-
-# interesting stuff here on simulating intermittent oscillations
-# https://neurodsp-tools.github.io/neurodsp/auto_tutorials/sim/plot_SimulatePeriodic.html
-
 
 
 def read_synthetic_oscillator():
@@ -160,7 +144,26 @@ def trajectory_plots():
 
 def read_subset_bootstraps(subset_n, freq_ch='ipwr_100_400kHz',
                            n_bootstrap=100):
+    """
+    Read in bootstraps
 
+    Parameters
+    ----------
+    subset_n : string
+        String name for the interval, or synthetic.
+    freq_ch : string, optional
+        Frequency channel. The default is 'ipwr_100_400kHz'.
+    n_bootstrap : int, optional
+        Number of bootstraps. The default is 100.
+
+    Returns
+    -------
+    ftime : np.array
+        Time axis for bootstraps.
+    BS : np.array
+        Bootstrapped intensity.
+
+    """
     if subset_n == 'synthetic':
         # Run Lomb-Scargle over the fake oscillator
         ftime, fsignal = read_synthetic_oscillator()
@@ -215,49 +218,38 @@ def read_subset_bootstraps(subset_n, freq_ch='ipwr_100_400kHz',
 
 
 def run_lomb_scargle():
+    """
+    Run the Lomb Scargle analysis, creating and saving plots.
 
+    Returns
+    -------
+    None.
+
+    """
     # Initialising variables
-    # periods = np.logspace(np.log10(1), np.log10(48), 500)  # in hours
-    # freqs = periodicity_functions.period_to_freq(periods)
     f_min = 1 / (48. * 60. * 60.)
     f_max = 1 / (8. * 60. * 60.)
-    # T = (pd.Timestamp(2005, 1, 1, 0) -
-    #      pd.Timestamp(1995, 1, 1, 0)).total_seconds()
     samples_per_peak = 5
-    # f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(
-    #     T, f_min, f_max, n0=samples_per_peak)
-    
-    #periods = periodicity_functions.freq_to_period(freqs)
 
-    # freqs = freqs[::-1]
-    # angular_freqs = 2 * np.pi * freqs
-    # periods = periodicity_functions.freq_to_period(freqs)
     vertical_indicators = [12, 24]
     vertical_ind_col = 'black'
 
     annotate_bbox = {"facecolor": "white", "edgecolor": "grey", "pad": 5.}
 
-
     # Different frequency channels
-    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'  # ,
-                          #'ipwr_100_650kHz'
-                          ])
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'])
     freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
     freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
 
     LS_fig = os.path.join(fig_dir, "three_interval_lomb_scargle.png")
 
-    # Number of bootstrap
+    # Number of bootstraps
     n_bootstrap = 100
 
     # FAP filenames
     FAP_peaks_dir = os.path.join(data_dir, "lomb_scargle", 'LS_peaks_for_FAP')
     synthetic_FAP_pkl = os.path.join(data_dir, "lomb_scargle", "synthetic_FAP_"
                                      + str(n_bootstrap) + "_BSs.pkl")
-    # FAP_fmt_dict = {'linewidth': 2.,
-    #                 'linestyle': 'dashed',
-    #                 'color': 'blueviolet'}
-
     # Read in interval data
     print('Reading AKR data over requested intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
@@ -308,12 +300,11 @@ def run_lomb_scargle():
         n_bootstrap, synthetic_BS, ftime_cl, f_min, f_max, FAP_peaks_dir,
         'synthetic', synthetic_FAP_pkl, n0=samples_per_peak)
 
-    # Plot the FAP
-    # ax[0].axhline(FAP, **FAP_fmt_dict, label='FAP')
     # Draw arrow for FAP
     trans = transforms.blended_transform_factory(ax[0].transData,
                                                  ax[0].transData)
-    ax[0].annotate("FAL\n" + "{:.3e}".format(FAP), xy=(9., FAP), xytext=(8., FAP),
+    ax[0].annotate("FAL\n" + "{:.3e}".format(FAP),
+                   xy=(9., FAP), xytext=(8., FAP),
                    xycoords=trans, arrowprops={'facecolor': freq_colors[0]},
                    fontsize=fontsize, va='center', ha='right',
                    color=freq_colors[0],
@@ -334,18 +325,15 @@ def run_lomb_scargle():
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
 
-    # breakpoint()
-
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running Lomb-Scargle for ', interval_tag)
 
         base_dir = pathlib.Path(data_dir) / 'lomb_scargle'
-        file_paths = [base_dir / f"LS_{interval_tag}_{f}.csv" for f in freq_tags]
+        file_paths = [
+            base_dir / f"LS_{interval_tag}_{f}.csv" for f in freq_tags]
         file_checks = [file_path.is_file() for file_path in file_paths]
 
         if all(file_checks) is False:
-            
-            print('banana')
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
 
         # Remove any rows where intensity == np.nan
@@ -355,17 +343,13 @@ def run_lomb_scargle():
             print('Frequency band: ', freq_column)
             ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_' +
                                   interval_tag + '_' + freq_column + '.csv')
-            print('apple')
             if pathlib.Path(ls_csv).is_file() is False:
-                print('pineapple')
                 freq_df = akr_df.dropna(subset=[freq_column])
                 t1 = pd.Timestamp.now()
                 print('starting LS at ', t1)
-                # ls_pgram = lomb_scargle.generic_lomb_scargle(freq_df.unix,
-                #                                              freq_df[freq_column],
-                #                                              angular_freqs)
                 ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
-                    freq_df.unix, freq_df[freq_column], f_min, f_max, n0=samples_per_peak)
+                    freq_df.unix, freq_df[freq_column], f_min, f_max,
+                    n0=samples_per_peak)
                 t2 = pd.Timestamp.now()
                 print('LS finished, time elapsed: ', t2-t1)
                 # Write to file
@@ -376,14 +360,10 @@ def run_lomb_scargle():
                 ls_df.to_csv(ls_csv, index=False)
                 t2 = pd.Timestamp.now()
                 print('LS finished, time elapsed: ', t2-t1)
-                # ls_df = pd.DataFrame({'period_hr': periods,
-                #                       'freq_Hz': freqs,
-                #                       'angular_freq': angular_freqs,
-                #                       'ls_pgram': ls_pgram})
+                # Write to file
                 ls_df.to_csv(ls_csv, index=False)
 
             else:
-                print('guava')
                 ls_df = pd.read_csv(ls_csv, delimiter=',',
                                     float_precision='round_trip')
 
@@ -391,106 +371,84 @@ def run_lomb_scargle():
                 periods = np.array(ls_df.period_hr)
 
             # Plot FAP here
-            FAP_pkl = os.path.join(data_dir, "lomb_scargle",
-                                   interval_tag + '_' + freq_column + "_FAP_" + str(n_bootstrap)
-                                   + "_BSs.pkl")
+            FAP_pkl = os.path.join(
+                data_dir, "lomb_scargle",
+                interval_tag + '_' + freq_column + "_FAP_" + str(n_bootstrap)
+                + "_BSs.pkl")
             # Read in bootstrap
             ftime_cl, BS = read_subset_bootstraps(interval_tag,
                                                   freq_ch=freq_column,
                                                   n_bootstrap=n_bootstrap)
             # Convert ftime_cl to unix
             ftime_unix = [pd.Timestamp(t).timestamp() for t in ftime_cl]
-            #breakpoint()
+
             # Read in/calc peak magnitudes for bootstraps and FAP
-            print('tomato')
-            # bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
-            #     n_bootstrap, BS, ftime_cl, angular_freqs, FAP_peaks_dir,
-            #     interval_tag + '_' + freq_column, FAP_pkl)
             bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
                 n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
                 interval_tag, FAP_pkl, n0=samples_per_peak)
-            # f, a = plt.subplots()
-            # a.hist(bootstrap_peak_magnitudes)
-            # Plot the FAP
-            #ax[i + 1].axhline(FAP, **FAP_fmt_dict, label='FAP')
+
             ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
             if j == 0:
-                #ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
-                
-                trans = transforms.blended_transform_factory(ax[i + 1].transAxes,
-                                                             ax[i + 1].transData)
-                ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP), xy=(0.2, FAP), xytext=(0.1, FAP),
-                               xycoords=trans, arrowprops={'facecolor': c},
-                               fontsize=fontsize, va='center', ha='right',
-                               color=c,
-                               bbox=annotate_bbox, fontweight="bold")
+                trans = transforms.blended_transform_factory(
+                    ax[i + 1].transAxes, ax[i + 1].transData)
+                ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP),
+                                   xy=(0.2, FAP), xytext=(0.1, FAP),
+                                   xycoords=trans, arrowprops={'facecolor': c},
+                                   fontsize=fontsize, va='center', ha='right',
+                                   color=c, bbox=annotate_bbox,
+                                   fontweight="bold")
             elif j == 1:
-                #twax = ax[i + 1].twinx()
-                #twax.plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
-                
-                trans = transforms.blended_transform_factory(ax[i + 1].transAxes,
-                                                             ax[i + 1].transData)
-                ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP), xy=(0.8, FAP), xytext=(0.9, FAP),
-                               xycoords=trans, arrowprops={'facecolor': c},
-                               fontsize=fontsize, va='center', ha='left',
-                               color=c,
-                               bbox=annotate_bbox, fontweight="bold")
-            
-            # ax[i + 1].axhline(np.percentile(bootstrap_peak_magnitudes, 99), **FAP_fmt_dict, label='FAPpc')
-
-            # ax[i + 1] = lomb_scargle.plot_LS_summary(periods, ls_pgram,
-            #                                          vertical_indicators=[12.,
-            #                                                               24.],
-            #                                          ax=ax[i+1])
-
-            # breakpoint()
-
+                trans = transforms.blended_transform_factory(
+                    ax[i + 1].transAxes, ax[i + 1].transData)
+                ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP),
+                                   xy=(0.8, FAP), xytext=(0.9, FAP),
+                                   xycoords=trans, arrowprops={'facecolor': c},
+                                   fontsize=fontsize, va='center', ha='left',
+                                   color=c, bbox=annotate_bbox, fontweight="bold")
         ax[i + 1].set_xscale('log')
 
-        
-
         # Formatting
-        ax[i + 1].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
+        ax[i + 1].set_ylabel('Lomb-Scargle\nNormalised Amplitude',
+                             fontsize=fontsize)
         ax[i + 1].set_xlabel('Period (hours)', fontsize=fontsize)
         ax[i + 1].tick_params(labelsize=fontsize)
         ax[i + 1].legend(fontsize=fontsize, loc='upper left')
-
-
-
 
         if vertical_indicators != []:
             for h in vertical_indicators:
                 trans = transforms.blended_transform_factory(
                     ax[i + 1].transData, ax[i + 1].transAxes)
                 ax[i + 1].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
-                            xycoords=trans, arrowprops={'facecolor': 'black'},
-                            fontsize=fontsize, va='top', ha='center',
-                            color=vertical_ind_col)
+                                   xycoords=trans,
+                                   arrowprops={'facecolor': 'black'},
+                                   fontsize=fontsize, va='top', ha='center',
+                                   color=vertical_ind_col)
 
     # Label panels
     titles = np.append('Synthetic', interval_options.label)
     for (i, a) in enumerate(ax):
-        
         t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
                    fontsize=fontsize, va='bottom', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-        
-        # tit = a.text(1.025, 0.5, titles[i], transform=a.transAxes,
-        #              fontsize=1.25 * fontsize, va='center', ha='center',
-        #              rotation=-90.)
+
         tit = a.text(1.0, 1.05, titles[i], transform=a.transAxes,
                      fontsize=1.25 * fontsize, va='center', ha='right')
-                
 
     # Adjust margins etc
     fig.tight_layout()
-
     # Save to file
     fig.savefig(LS_fig)
 
 
 def run_ACF():
+    """
+    Run the ACF analysis and create plots.
 
+    Returns
+    -------
+    None.
+
+    """
     # Plotting variables
     detrended_acf_col = 'blue'
     normalised_acf_col = 'black'
@@ -561,9 +519,7 @@ def run_ACF():
     # Calculate confidence interval
     synthetic_acf_fit.calc_confidence_interval()
 
-
     # Initialise table arrays
-    # table_title = np.full(5, ' ')
     table_title = [' ']
     table_subtitle = [' ']
     table_linear_trend = ['Linear Trend']
@@ -582,25 +538,14 @@ def run_ACF():
     table_detrend_mean.append(synthetic_acf_fit.text_normalisation_mean)
     table_detrend_std.append(synthetic_acf_fit.text_normalisation_std)
     table_shm_fit.append(synthetic_acf_fit.text_shm_trend)
-    table_smh_omega.append("{:.2f}".format(((2* np.pi) / synthetic_acf_fit.omega) / (60*60)))
+    table_smh_omega.append("{:.2f}".format(((2* np.pi) / synthetic_acf_fit.omega) / (60 * 60)))
     table_shm_chisq.append(synthetic_acf_fit.text_shm_chi_sq)
-    
-    # breakpoint()
-    
+
     # Add latex formatting
     temp = [t + ' & ' for t in table_title[:-1]]
     temp.append(table_title[-1])
     temp.append(' \\')
     table_title_fm = temp.copy()
-    print(table_title_fm)
-    
-
-
-    # breakpoint()
-
-#  & Synthetic & \multicolumn{2}{|c|}{Decadal} & \multicolumn{2}{|c|}{Cassini flyby} & \multicolumn{2}{|c|}{Nightside}  \\
-#  & & 100-400 kHz & 50-100 kHz & 100-400 kHz & 50-100 kHz & 100-400 kHz & 50-100 kHz \\
-
 
     # Plot line of best fit
     p2, = ax[0, 0].plot(synthetic_acf_fit.lags,
@@ -641,10 +586,6 @@ def run_ACF():
     ax[0, 1].legend(fontsize=fontsize)
     ax[0, 1].set_ylabel('Normalised ACF Amplitude', fontsize=fontsize)
 
-    #return synthetic_acf_fit
-    # Print fitting details into a table!!!!
-    # Including some overall parameter for SHM fit, the linear fit, the SHM fit
-
     # Loop over datasets, calculating and plotting
     for (i, interval_tag) in enumerate(interval_options['tag']):
         print('Running autocorrelation for ', interval_tag)
@@ -659,8 +600,6 @@ def run_ACF():
 
         # Latex table title
         table_title.append("\multicolumn{2}{|c|}{" + interval_options['label'].iloc[i] + "}")
-        
-
 
         # Looping over frequency bands
         for (j, (freq_column, c, n)) in enumerate(zip(freq_tags,
@@ -692,7 +631,8 @@ def run_ACF():
             if freq_column == 'ipwr_50_100kHz':
                 tax = ax[i + 1, 0].twinx()
                 tax.plot(lags, acf, color=c, linewidth=acf_lw, label=n)
-                tax.set_ylabel('ACF ($W^{2}$ $sr^{-2}$)\n(' + n + ')', color=c, fontsize=fontsize)
+                tax.set_ylabel('ACF ($W^{2}$ $sr^{-2}$)\n(' + n + ')',
+                               color=c, fontsize=fontsize)
                 tax.tick_params(axis='y', labelcolor=(c), labelsize=fontsize)
                 tax.spines['right'].set_color(c)
                 tax.yaxis.offsetText.set_fontsize(fontsize)
@@ -721,11 +661,13 @@ def run_ACF():
                                           alpha=ci_shade_alpha, color=c,
                                           label='95% CI')
                 table_linear_trend.append(LFE_acf_fit.text_linear_trend)
-                table_linear_Rsq.append(LFE_acf_fit.text_linear_trend_pearson_r)
+                table_linear_Rsq.append(
+                    LFE_acf_fit.text_linear_trend_pearson_r)
                 table_detrend_mean.append(LFE_acf_fit.text_normalisation_mean)
                 table_detrend_std.append(LFE_acf_fit.text_normalisation_std)
                 table_shm_fit.append(LFE_acf_fit.text_shm_trend)
-                table_smh_omega.append("{:.2f}".format(((2* np.pi) / LFE_acf_fit.omega) / (60*60)))
+                table_smh_omega.append(
+                    "{:.2f}".format(((2* np.pi) / LFE_acf_fit.omega) / (60*60)))
                 table_shm_chisq.append(LFE_acf_fit.text_shm_chi_sq)
 
             else:
@@ -755,13 +697,15 @@ def run_ACF():
                                           mAKR_acf_fit.y_ci[:, 1],
                                           alpha=ci_shade_alpha, color=c,
                                           label='95% CI')
-                    
+
                 table_linear_trend.append(mAKR_acf_fit.text_linear_trend)
-                table_linear_Rsq.append(mAKR_acf_fit.text_linear_trend_pearson_r)
+                table_linear_Rsq.append(
+                    mAKR_acf_fit.text_linear_trend_pearson_r)
                 table_detrend_mean.append(mAKR_acf_fit.text_normalisation_mean)
                 table_detrend_std.append(mAKR_acf_fit.text_normalisation_std)
                 table_shm_fit.append(mAKR_acf_fit.text_shm_trend)
-                table_smh_omega.append("{:.2f}".format(((2* np.pi) / mAKR_acf_fit.omega) / (60*60)))
+                table_smh_omega.append(
+                    "{:.2f}".format(((2* np.pi) / mAKR_acf_fit.omega) / (60*60)))
                 table_shm_chisq.append(mAKR_acf_fit.text_shm_chi_sq)
             table_subtitle.append(n)
 
@@ -783,8 +727,9 @@ def run_ACF():
             if j < 1:
                 a.set_ylabel('ACF ($W^{2}$ $sr^{-2}$)', fontsize=fontsize)
             elif (j >= 1) & (k == 0):
-                a.set_ylabel('ACF ($W^{2}$ $sr^{-2}$)\n(' + freq_labels[0] + ')',
-                             fontsize=fontsize)
+                a.set_ylabel(
+                    'ACF ($W^{2}$ $sr^{-2}$)\n(' + freq_labels[0] + ')',
+                    fontsize=fontsize)
                 from matplotlib.lines import Line2D
 
                 custom_lines = [Line2D([0], [0], color=freq_colors[0],
@@ -827,14 +772,13 @@ def run_ACF():
     # Save to file
     fig.savefig(ACF_fig)
 
-
     # Add latex formatting
     temp = [t + ' & ' for t in table_title[:-1]]
     temp.append(table_title[-1])
     temp.append(' \\')
     table_title_fm = temp.copy()
     print(''.join(table_title_fm))
-    
+
     # Print out latex table
     temp = [t + ' & ' for t in table_subtitle[:-1]]
     temp.append(table_subtitle[-1])
@@ -853,43 +797,54 @@ def run_ACF():
     temp.append(' \\')
     table_linear_Rsq_fm = temp.copy()
     print(''.join(table_linear_Rsq_fm))
-    
+
     temp = [t + ' & ' for t in table_detrend_mean[:-1]]
     temp.append(table_detrend_mean[-1])
     temp.append(' \\')
     table_detrend_mean_fm = temp.copy()
     print(''.join(table_detrend_mean_fm))
-    
+
     temp = [t + ' & ' for t in table_detrend_std[:-1]]
     temp.append(table_detrend_std[-1])
     temp.append(' \\')
     table_detrend_std_fm = temp.copy()
     print(''.join(table_detrend_std_fm))
-    
+
     temp = [t + ' & ' for t in table_shm_fit[:-1]]
     temp.append(table_shm_fit[-1])
     temp.append(' \\')
     table_shm_fit_fm = temp.copy()
     print(''.join(table_shm_fit_fm))
-    
+
     temp = [t + ' & ' for t in table_smh_omega[:-1]]
     temp.append(table_smh_omega[-1])
     temp.append(' \\')
     table_shm_fit_fm = temp.copy()
     print(''.join(table_shm_fit_fm))
-    
+
     temp = [t + ' & ' for t in table_shm_chisq[:-1]]
     temp.append(table_shm_chisq[-1])
     temp.append(' \\')
     table_shm_chisq_fm = temp.copy()
     print(''.join(table_shm_chisq_fm))
-    #''.join(table_shm_chisq_fm)
-    #breakpoint()
+
 
 def run_MLT_binning_overlayed(n_mlt_sectors='four'):
+    """
+    Run the MLT binning with plots overlayed.
 
+    Parameters
+    ----------
+    n_mlt_sectors : string, optional
+        How many MLT sectors to divide data into. The default is 'four'.
 
-    if n_mlt_sectors=='four':
+    Returns
+    -------
+    None.
+
+    """
+
+    if n_mlt_sectors == 'four':
         # Initialise variables
         region_centres = [0, 6, 12, 18]
         region_width = 6
@@ -897,7 +852,7 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
         region_mrkrs = ['o', '^', '*', 'x']
         region_flags = [0, 1, 2, 3]
         region_colors = ['grey', "#8d75ca", "#a39143", "#bb6c82"]
-    elif n_mlt_sectors=='eight':
+    elif n_mlt_sectors == 'eight':
         # Initialise variables
         region_centres = [0, 3, 6, 9, 12, 15, 18, 21]
         region_width = 3
@@ -905,18 +860,17 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
         region_mrkrs = ['o', '^', '*', 'x', '+', 'X', "2", "."]
         region_flags = [0, 1, 2, 3, 4, 5, 6, 7]
         region_colors = ['grey', "#c18b40", "#a361c7", "#7ca343", "#6587cd",
-                         "#cc5643", "#49ae8a", "#c65c8a"]       
+                         "#cc5643", "#49ae8a", "#c65c8a"]
 
     lon_bin_width = 30.
 
     # Different frequency channels
-    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'  # ,
-                          #'ipwr_100_650kHz'
-                          ])
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'])
     freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
     freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
 
-    MLT_fig = os.path.join(fig_dir, "three_interval_MLT_binned_"+n_mlt_sectors+"MLT.png")
+    MLT_fig = os.path.join(fig_dir,
+                           "three_interval_MLT_binned_" + n_mlt_sectors + "MLT.png")
 
     # Read in interval data
     print('Reading AKR data over requested intervals')
@@ -925,32 +879,6 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
     # Initialise plotting window
     fig, ax = plt.subplots(nrows=interval_options['tag'].size,
                            ncols=freq_tags.size, figsize=(21, 13))
-
-    # # Run ACF over the fake oscillator
-    # ftime, fsignal = read_synthetic_oscillator()
-    # # Remove NaN rows
-    # clean_ind, = np.where(~np.isnan(fsignal))
-    # ftime = ftime[clean_ind]
-    # fsignal = fsignal[clean_ind]
-
-
-    # acf_csv = os.path.join(data_dir, 'acf', 'ACF_synthetic.csv')
-
-    # if (pathlib.Path(acf_csv).is_file()) is False:
-    #     acf, lags = autocorrelation.autocorrelation(
-    #         fsignal, n_shifts, temporal_resolution=temporal_resolution,
-    #         starting_lag=7200)
-    #     acf_df = pd.DataFrame({'acf': acf, 'lags': lags})
-    #     acf_df.to_csv(acf_csv, index=False)
-    # else:
-    #     acf_df = pd.read_csv(acf_csv, float_precision='round_trip')
-    #     acf = acf_df['acf']
-    #     lags = acf_df['lags']
-
-    # ax[0].plot(lags, acf, color=freq_colors[0], linewidth=1.)
-
-    # # DO I NEED TO DROP NANS???
-
 
     abc_label_counter = 0
     for (i, interval_tag) in enumerate(interval_options['tag']):
@@ -971,46 +899,42 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
             akr_df['mlt_flag'] = mlt_flag
             akr_df['mlt_name'] = mlt_name
 
-
         # Remove any rows where intensity == np.nan
-        for (j, (freq_column, c, n)) in enumerate(zip(freq_tags, freq_colors, freq_labels)):
+        for (j, (freq_column, c, n)) in enumerate(zip(freq_tags,
+                                                      freq_colors,
+                                                      freq_labels)):
             print('Frequency band: ', freq_column)
-            MLT_csv = os.path.join(data_dir, 'MLT_binning', 'MLT_binned_' + n_mlt_sectors +'sector_' +
-                                  interval_tag + '_' + freq_column + '.csv')
+            MLT_csv = os.path.join(data_dir, 'MLT_binning',
+                                   'MLT_binned_' + n_mlt_sectors + 'sector_' +
+                                   interval_tag + '_' + freq_column + '.csv')
 
             if pathlib.Path(MLT_csv).is_file() is False:
-
                 freq_df = akr_df.dropna(subset=[freq_column])
                 t1 = pd.Timestamp.now()
-                print('starting MLT binning at ', t1)    
-                
-                UT_df =[]
-                # UT_df = binning_averaging.return_UT_trend(
-                #         akr_df, region_centres=region_centres,
-                #         region_width=region_width, region_names=region_names,
-                #         region_flags=region_flags, UT_bin_width=UT_bin_width,
-                #         ipower_tag=freq_column)
-                lon_df = binning_averaging.return_lon_trend(akr_df, region_centres=region_centres,
-                        region_width=region_width, region_names=region_names,
-                        region_flags=region_flags,
-                        lon_bin_width=30.,
-                                    ipower_tag=freq_column,
-                                    lon_sol_tag="lon_sol", lon_sc_tag="lon_gsm")
+                print('starting MLT binning at ', t1)
+
+                UT_df = []
+                lon_df = binning_averaging.return_lon_trend(
+                    akr_df, region_centres=region_centres,
+                    region_width=region_width, region_names=region_names,
+                    region_flags=region_flags, lon_bin_width=30.,
+                    ipower_tag=freq_column, lon_sol_tag="lon_sol",
+                    lon_sc_tag="lon_gsm")
                 breakpoint()
                 t2 = pd.Timestamp.now()
                 print('MLT binning finished, time elapsed: ', t2-t1)
-                #UT_df.to_csv(MLT_csv, index=False)                
+
             else:
 
                 UT_df = pd.read_csv(MLT_csv, delimiter=',',
                                     float_precision='round_trip')
-    
-
 
             if freq_column == 'ipwr_100_400kHz':
-                for k, (MLT_n, c, mrkr) in enumerate(zip(region_names, region_colors,
-                                                   region_mrkrs)):
-                    ax[i, 0].plot(UT_df.UT_bin_centre, UT_df[MLT_n + '_median_norm_no0'],
+                for k, (MLT_n, c, mrkr) in enumerate(zip(region_names,
+                                                         region_colors,
+                                                         region_mrkrs)):
+                    ax[i, 0].plot(UT_df.UT_bin_centre,
+                                  UT_df[MLT_n + '_median_norm_no0'],
                                   color=c, label=MLT_n, marker=mrkr,
                                   markersize=fontsize)
                     ax[i, 0].fill_between(UT_df.UT_bin_centre,
@@ -1020,11 +944,12 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
                                           UT_df[MLT_n + '_mad_norm_no0'],
                                           color=c, alpha=0.2)
 
-
             elif freq_column == 'ipwr_50_100kHz':
-                for k, (MLT_n, c, mrkr) in enumerate(zip(region_names, region_colors,
-                                                   region_mrkrs)):
-                    ax[i, 1].plot(UT_df.UT_bin_centre, UT_df[MLT_n + '_median_norm_no0'],
+                for k, (MLT_n, c, mrkr) in enumerate(zip(region_names,
+                                                         region_colors,
+                                                         region_mrkrs)):
+                    ax[i, 1].plot(UT_df.UT_bin_centre,
+                                  UT_df[MLT_n + '_median_norm_no0'],
                                   color=c, label=MLT_n, marker=mrkr,
                                   markersize=fontsize)
                     ax[i, 1].fill_between(UT_df.UT_bin_centre,
@@ -1039,7 +964,8 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
                           interval_options.label[i] + ' (' + n + ')',
                           transform=ax[i, j].transAxes,
                           fontsize=1.25 * fontsize, va='bottom', ha='center')
-            ax[i, j].set_ylabel('Normalised median integrated power', fontsize=fontsize)
+            ax[i, j].set_ylabel('Normalised median integrated power',
+                                fontsize=fontsize)
             ax[i, j].set_xlabel('UT (hours)', fontsize=fontsize)
             ax[i, j].set_xlim(left=0., right=24.)
             ax[i, j].tick_params(labelsize=fontsize)
@@ -1057,6 +983,19 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
 
 
 def run_MLT_binning_seperate(n_mlt_sectors='four'):
+    """
+    Run MLT binning with seperate plots.
+
+    Parameters
+    ----------
+    n_mlt_sectors : string, optional
+        How many MLT sectors to divide data into. The default is 'four'.
+
+    Returns
+    -------
+    None.
+
+    """
 
     fontsize = 20
     lon_sc_tag = 'lon_geo'
@@ -1253,11 +1192,16 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
 
 
 def lomb_scargle_cassini_sliding():
+    """
+    Run Lomb Scargle analysis over a sliding window, starting with the Cassini
+    flyby interval.
 
-    # Run the Lomb-scargle analysis over each year of AKR intensity
-    # with sunspot number as another panel
+    Returns
+    -------
+    None.
 
-    
+    """
+
     # Define Lomb-Scargle freqs etc
     f_min = 1 / (48. * 60. * 60.)
     f_max = 1 / (8. * 60. * 60.)
@@ -1273,7 +1217,8 @@ def lomb_scargle_cassini_sliding():
         interval_options.tag == "cassini_flyby"]
     interval_stime = interval_details.stime.iloc[0]
     interval_etime = interval_details.etime.iloc[0]
-    interval_midtime = ((interval_etime - interval_stime) / 2.) + interval_stime
+    interval_midtime = ((interval_etime - interval_stime) /
+                        2.) + interval_stime
     # Read in *all* AKR integrated power
     akr_df = read_and_tidy_data.select_akr_intervals("full_archive")
 
@@ -1282,36 +1227,22 @@ def lomb_scargle_cassini_sliding():
     slide_width = pd.Timedelta(days=10)
     slide_width_multiplier = np.linspace(0, slides, slides+1) - slides/2
 
-    #ut_s = np.full(slides + 1, np.nan)
-    #ut_e = np.full(slides + 1, np.nan)
-
     x_lim = [interval_stime - ((slides / 2) * slide_width),
              interval_etime + ((slides / 2) * slide_width)]
 
     ut_s, ut_e, ut_mid = [], [], []
     for i, factor in enumerate(slide_width_multiplier):
 
-        #breakpoint()
         ut_s.append(interval_stime + (factor * slide_width))
         ut_e.append(interval_etime + (factor * slide_width))
         ut_mid.append(((ut_e[i] - ut_s[i]) / 2.) + ut_s[i])
-        # breakpoint()
+
     ut_s = np.array(ut_s)
     ut_e = np.array(ut_e)
     ut_mid = np.array(ut_mid)
-    #print(ut_s, ut_e)
 
-
-    
-    # Do the first iteration here, so we know how many freqs
-    
-
-    
     # LS analysis here
-    #ls_pgram = np.full((periods.size, slides + 1), np.nan)
     for i in range(slides + 1):
-       # print('Running Lomb-Scargle analysis for ', yr)
-        
         # Subselect AKR df
         subset_df = akr_df.loc[(akr_df.datetime >= ut_s[i]) &
                                (akr_df.datetime <= ut_e[i]),
@@ -1323,12 +1254,12 @@ def lomb_scargle_cassini_sliding():
                 n0=samples_per_peak)
             ls_pgram = np.full((freqs.size, slides + 1), np.nan)
             ls_pgram[:, i] = ls_pgram_0
-            periods = periodicity_functions.freq_to_period(freqs)  
+            periods = periodicity_functions.freq_to_period(freqs)
         else:
             ls_object, freqs, ls_pgram[:, i] = lomb_scargle.generic_lomb_scargle(
                 subset_df.unix, subset_df[freq_column], f_min, f_max,
                 n0=samples_per_peak)            
-    # breakpoint()
+
     # Find edges of pixels on period axis
     period_edges = np.full(periods.size + 1, np.nan)
     for k in range(period_edges.size):
@@ -1338,22 +1269,15 @@ def lomb_scargle_cassini_sliding():
             period_edges[k] = periods[k-1] + ((periods[k-1]-periods[k-2])/2)
         else:
             period_edges[k] = periods[k] - ((periods[k+1]-periods[k])/2)
-    
-    # Perhaps a panel with discreet years and another with some smoothing?
-    # IF TIME
-    
-   # breakpoint()
-    
-    
+
     # Initialise plotting
-    fig, ax = plt.subplots(nrows=2, figsize=(16,8))
-   
+    fig, ax = plt.subplots(nrows=2, figsize=(16, 8))
+
     # Plot Lomb-Scargles
-    # X, Y = np.meshgrid(np.append(years-0.5, years[-1]+0.5), period_edges)
     X, Y = np.meshgrid(np.append(ut_mid - (slide_width/2.),
                                  ut_mid[-1] + (slide_width/2.)),
                        period_edges)
-    # breakpoint()
+
     pcm = ax[0].pcolormesh(X, Y, ls_pgram, cmap='binary_r')
     cbar = plt.colorbar(pcm, ax=ax[0],
                         label="Lomb-Scargle\nNormalised Amplitude")
@@ -1368,7 +1292,7 @@ def lomb_scargle_cassini_sliding():
         ax[0].text(0.025, h * 1.05, str(int(h)), color='orangered',
                    fontsize=fontsize, va='bottom', ha='left',
                    transform=trans)
-        # t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
     ax_pos = ax[0].get_position().bounds
 
     # Highlight Cassini period
@@ -1380,38 +1304,24 @@ def lomb_scargle_cassini_sliding():
     # Make width same as (a)
     pos = ax[1].get_position().bounds
     ax[1].set_position([ax_pos[0], pos[1], ax_pos[2], pos[3]])
-    
-    
-   #  # Formatting
-   #  for j, a in enumerate(ax):
-   #      a.set_xlim(stime, etime)
-   #      a.tick_params(labelsize=fontsize)
-
-   #      t = a.text(0.02, 0.92, axes_labels[j], transform=a.transAxes,
-   #                 fontsize=fontsize, va='top', ha='left')
-   #      t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-                
 
 
 def lomb_scargle_cassini_expanding():
+    """
+    Run the Lomb-Scargle analysis, gradually expanding the Cassini flyby
+    interval.
 
-    # Run the Lomb-scargle analysis over each year of AKR intensity
-    # with sunspot number as another panel
+    Returns
+    -------
+    None.
+
+    """
     fig_png = os.path.join(fig_dir, "expanding_cassini_lomb_scargle.png")
 
-    
     # Define Lomb-Scargle freqs etc
     f_min = 1 / (48. * 60. * 60.)
     f_max = 1 / (8. * 60. * 60.)
-    # T = (pd.Timestamp(2005, 1, 1, 0) -
-    #      pd.Timestamp(1995, 1, 1, 0)).total_seconds()
     samples_per_peak = 5
-    # f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(
-    #     T, f_min, f_max, n0=samples_per_peak)
-
-    # freqs = freqs[::-1]
-    # angular_freqs = 2 * np.pi * freqs
-    # periods = periodicity_functions.freq_to_period(freqs)
 
     freq_column = "ipwr_100_400kHz"
 
@@ -1421,7 +1331,8 @@ def lomb_scargle_cassini_expanding():
         interval_options.tag == "cassini_flyby"]
     interval_stime = interval_details.stime.iloc[0]
     interval_etime = interval_details.etime.iloc[0]
-    interval_midtime = ((interval_etime - interval_stime) / 2.) + interval_stime
+    interval_midtime = ((interval_etime - interval_stime) /
+                        2.) + interval_stime
     # Read in *all* AKR integrated power
     akr_df = read_and_tidy_data.select_akr_intervals("full_archive")
 
@@ -1433,174 +1344,78 @@ def lomb_scargle_cassini_expanding():
     x_lim = [interval_stime - ((slides / 2) * slide_width),
              interval_etime + ((slides / 2) * slide_width)]
 
-    # ut_s, ut_e, ut_mid = [], [], []
     ut_s, ut_e, length = [], [], []
     for i, factor in enumerate(slide_width_multiplier):
 
-        #breakpoint()
         ut_s.append(interval_stime - (factor * slide_width))
         ut_e.append(interval_etime + (factor * slide_width))
         length.append((ut_e[i] - ut_s[i]).total_seconds())
-        # breakpoint()
-        # ut_mid.append(((ut_e[i] - ut_s[i]) / 2.) + ut_s[i])
-        # breakpoint()
+
     ut_s = np.array(ut_s)
     ut_e = np.array(ut_e)
     length = np.array(length)
-    #print(ut_s, ut_e)
 
-
-    
-    # Do the first iteration here, so we know how many freqs
-    
-
-    
     # LS analysis here
-    #ls_pgram = np.full((periods.size, slides + 1), np.nan)
     variable_freqs = []
     variable_periods = []
     ls_pgram =[]
-    
+
     peak_freq = np.full(slides + 1, np.nan)
-    # peak_period = np.full(slides + 1, np.nan)
     peak_height = np.full(slides + 1, np.nan)
     for i in range(slides + 1):
-       # print('Running Lomb-Scargle analysis for ', yr)
-        
         # Subselect AKR df
         subset_df = akr_df.loc[(akr_df.datetime >= ut_s[i]) &
                                (akr_df.datetime <= ut_e[i]),
                                :].reset_index(drop=True)
-            
-        output = lomb_scargle.generic_lomb_scargle(
-               subset_df.unix, subset_df[freq_column], f_min, f_max, n0=samples_per_peak)   
-            # breakpoint()
+
+        output = lomb_scargle.generic_lomb_scargle(subset_df.unix,
+                                                   subset_df[freq_column],
+                                                   f_min, f_max,
+                                                   n0=samples_per_peak)
+
         variable_freqs.append(output[1])
         ls_pgram.append(output[2])
-        variable_periods.append(periodicity_functions.freq_to_period(output[1]))
+        variable_periods.append(
+            periodicity_functions.freq_to_period(output[1]))
 
         arg = output[2].argmax()
         peak_height[i] = output[2][arg]
         peak_freq[i] = output[1][arg]
-        #breakpoint()
-        # if i == 0:
-        #     # Run Lomb-Scargle
-        #     ls_object, freqs, ls_pgram_0 = lomb_scargle.generic_lomb_scargle(
-        #         subset_df.unix, subset_df[freq_column],
-        #         f_min, f_max, n0=samples_per_peak)
-        #     # ls_pgram = np.full((freqs.size, slides + 1), np.nan)
-        #     # ls_pgram[:, i] = ls_pgram_0
-        #     variable_freqs.append(freqs)
-        #     ls_pgram.append(ls_pgram_0)
-        #     # periods = periodicity_functions.freq_to_period(freqs)  
-        #     variable_periods.append(periodicity_functions.freq_to_period(freqs))
-            
-        # else:
-            
-        #     output = lomb_scargle.generic_lomb_scargle(
-        #        subset_df.unix, subset_df[freq_column], f_min, f_max, n0=samples_per_peak)   
-        #     # breakpoint()
-        #     variable_freqs.append(output[1])
-        #     ls_pgram.append(output[2])
-        #     variable_periods.append(periodicity_functions.freq_to_period(output[1]))
-        #     # ls_object, freqs, ls_pgram[:, i] = lomb_scargle.generic_lomb_scargle(
-        #     #     subset_df.unix, subset_df[freq_column],
-        #     #     f_min, f_max, n0=samples_per_peak)   
-        
-    
+
     peak_period = periodicity_functions.freq_to_period(peak_freq)
-    
+
     fig, ax = plt.subplots(figsize=(12, 6))
-    
-    length_days = length /(60. * 60 * 24)
-    
+
+    length_days = length / (60. * 60 * 24)
+
     ax.plot(length_days, peak_period, linewidth=0.,
             marker='o', markersize=fontsize, color='deeppink',
             alpha=0.65, markeredgecolor='black')
-    
+
     ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
     ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
     ax.set_ylim([20, 40])
-    ax.axhline(24., linestyle='dashed', linewidth=2., zorder=0.5, color='black')
+    ax.axhline(24., linestyle='dashed', linewidth=2.,
+               zorder=0.5, color='black')
     ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
             transform=ax.transData, fontsize=fontsize, color='black')
-    
-    # fal = 7.870e-4
-    # passing_fal = peak_period > fal
-    
+
     # Adjust margins etc
     fig.tight_layout()
 
     # Save to file
     fig.savefig(fig_png)
-    # periods = variable_periods
-   #  # Find edges of pixels on period axis
-   #  period_edges = np.full(periods.size + 1, np.nan)
-   #  for k in range(period_edges.size):
-   #      if k == period_edges.size-2:
-   #          period_edges[k] = periods[k-1] + ((periods[k]-periods[k-1])/2)
-   #      elif k == period_edges.size-1:
-   #          period_edges[k] = periods[k-1] + ((periods[k-1]-periods[k-2])/2)
-   #      else:
-   #          period_edges[k] = periods[k] - ((periods[k+1]-periods[k])/2)
-    
-   #  # Perhaps a panel with discreet years and another with some smoothing?
-   #  # IF TIME
-    
-   # # breakpoint()
-    
-    
-   #  # Initialise plotting
-   #  fig, ax = plt.subplots(nrows=2, figsize=(16,8))
-   
-   #  # Plot Lomb-Scargles
-   #  # X, Y = np.meshgrid(np.append(years-0.5, years[-1]+0.5), period_edges)
-   #  X, Y = np.meshgrid(np.append(length - (slide_width),
-   #                               length[-1] + (slide_width)),
-   #                     period_edges)
-   #  # breakpoint()
-   #  pcm = ax[0].pcolormesh(X, Y, ls_pgram, cmap='binary_r')
-   #  cbar = plt.colorbar(pcm, ax=ax[0],
-   #                      label="Lomb-Scargle\nNormalised Amplitude")
-   #  cbar.ax.tick_params(labelsize=fontsize)
-
-   #  ax[0].set_ylabel('Period (hours)', fontsize=fontsize)
-
-   #  for h in [12., 24., 36.]:
-   #      ax[0].axhline(h, linestyle='dashed', linewidth=2., color='orangered')
-   #      trans = transforms.blended_transform_factory(ax[0].transAxes,
-   #                                                   ax[0].transData)
-   #      ax[0].text(0.025, h * 1.05, str(int(h)), color='orangered',
-   #                 fontsize=fontsize, va='bottom', ha='left',
-   #                 transform=trans)
-   #      # t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-   #  ax_pos = ax[0].get_position().bounds
-
-   #  ax[0].set_xlabel("Interval Length (seconds)", fontsize=fontsize)
-   #  # # Highlight Cassini period
-   #  # ax[0].axvline(interval_midtime - (slide_width/2.), color='royalblue',
-   #  #               linewidth=2., linestyle='dashed')
-   #  # ax[0].axvline(interval_midtime + (slide_width/2.), color='royalblue',
-   #  #               linewidth=2., linestyle='dashed')
-
-   #  # Make width same as (a)
-   #  pos = ax[1].get_position().bounds
-   #  ax[1].set_position([ax_pos[0], pos[1], ax_pos[2], pos[3]])
-    
-    
-   # #  # Formatting
-   # #  for j, a in enumerate(ax):
-   # #      a.set_xlim(stime, etime)
-   # #      a.tick_params(labelsize=fontsize)
-
-   # #      t = a.text(0.02, 0.92, axes_labels[j], transform=a.transAxes,
-   # #                 fontsize=fontsize, va='top', ha='left')
-   # #      t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
 
 def plot_sliding_spectrogram():
+    """
+    Plot the LSSA modulation spectrograms.
 
-    
+    Returns
+    -------
+    None.
+
+    """
 
     ylim = [22., 26.]
     xlim = [pd.Timestamp(1995, 1, 1, 0), pd.Timestamp(2005, 1, 1, 0)]
@@ -1608,7 +1423,7 @@ def plot_sliding_spectrogram():
     # Read Wind position data
     years = np.arange(1995, 2004 + 1)
     wind_position_df = read_wind_position.concat_data_years(years)
-    
+
     # Read Sunspot data
     sunspot_df = read_sunspot_n.read_monthly_smoothed_sunspot()
 
@@ -1631,12 +1446,10 @@ def plot_sliding_spectrogram():
             time_axis = np.array(out_dict['timestamp'])  # 189
             period_axis = np.array(out_dict['period_hours'])  # 1201
             spectrogram = np.array(out_dict['spectrogram'])  # 1201, 189
-            
-            #breakpoint()
-            
+
             # Restrict spectrogram
             t_ind, = np.where(time_axis <= pd.Timestamp(2005, 1, 10))
-            ind, = np.where((period_axis >= ylim[0]) & 
+            ind, = np.where((period_axis >= ylim[0]) &
                             (period_axis <= ylim[1]))
             time_axis = time_axis[t_ind]
             period_axis = period_axis[ind]
@@ -1645,9 +1458,6 @@ def plot_sliding_spectrogram():
 
             norm = mpl.colors.Normalize(vmin=np.nanmin(spectrogram),
                                         vmax=0.9 * np.nanmax(spectrogram))
-            # norm = mpl.colors.LogNorm(vmin=np.nanmin(spectrogram),
-            #                           vmax=np.nanmax(spectrogram),
-            #                           clip=True)
 
             psm = axes[i].pcolormesh(time_axis, period_axis, spectrogram,
                                      norm=norm, cmap='plasma',
@@ -1667,18 +1477,16 @@ def plot_sliding_spectrogram():
         period_axis = np.array(sun_dict['period_hours'])  # 1201
         spectrogram = np.array(sun_dict['spectrogram']
                                - sc_dict['spectrogram'])
-        
+
         # Restrict axes
         t_ind, = np.where(time_axis <= pd.Timestamp(2005, 1, 10))
-        ind, = np.where((period_axis >= ylim[0]) & 
+        ind, = np.where((period_axis >= ylim[0]) &
                         (period_axis <= ylim[1]))
         time_axis = time_axis[t_ind]
         period_axis = period_axis[ind]
         spectrogram = spectrogram[ind, :]
         spectrogram = spectrogram[:, t_ind]
-        
-        # norm = mpl.colors.Normalize(vmin=np.nanmin(spectrogram),
-        #                             vmax=np.nanmax(spectrogram))
+
         norm = mpl.colors.CenteredNorm()
 
         psm = axes[2].pcolormesh(time_axis, period_axis, spectrogram,
@@ -1694,7 +1502,7 @@ def plot_sliding_spectrogram():
         axes[3].plot(wind_position_df.datetime,
                      wind_position_df.decimal_gseLT,
                      color='black', linewidth=1.)
-        
+
         # Plot a dot for every nightside observation
         nightside_lt_dtime = wind_position_df.loc[
             (wind_position_df.decimal_gseLT >= 18.) |
@@ -1708,9 +1516,9 @@ def plot_sliding_spectrogram():
                      color='darkmagenta', linewidth=2.)
         axes[4].set_ylim(top=215)
 
-
         # Formatting
-        axes[3].set_ylabel('Wind Spacecraft LT\n(GSE, hours)', fontsize=fontsize)
+        axes[3].set_ylabel('Wind Spacecraft LT\n(GSE, hours)',
+                           fontsize=fontsize)
         axes[4].set_ylabel('Sunspot Number', fontsize=fontsize)
         for (j, a) in enumerate(axes):
             a.tick_params(labelsize=fontsize)
@@ -1723,7 +1531,6 @@ def plot_sliding_spectrogram():
             a.set_xlim(xlim)
             if j < 3:
                 a.set_ylabel('Period [proxy, hours]', fontsize=fontsize)
-
 
         fig.tight_layout()
 
@@ -1740,66 +1547,68 @@ def plot_sliding_spectrogram():
         fig.savefig(fig_png)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
 def LS_solar_cyc(sunspot_n_fdict={'color': 'lightgrey',
                                   'label': 'Mean',
                                   'linewidth': 1.},
                  smoothsn_fdict={'color': 'black',
                                  'label': '13-month Smoothed'}):
-    
+    """
+    Run Lomb Scargle wrt Solar cycle.
+
+    Parameters
+    ----------
+    sunspot_n_fdict : dictionary, optional
+        Format details for sunspot number. The default is
+        {'color': 'lightgrey', 'label': 'Mean', 'linewidth': 1.}.
+    smoothsn_fdict : dictionary, optional
+        Format details for smoothed sunspot number. The default is
+        {'color': 'black', 'label': '13-month Smoothed'}.
+
+    Returns
+    -------
+    None.
+
+    """
     # Run the Lomb-scargle analysis over each year of AKR intensity
     # with sunspot number as another panel
-    
+
     # Define time periods
     years = np.arange(1995, 2004 + 1)
     # stime = pd.Timestamp(years[0], 1, 1, 0, 0, 0)
     # etime = pd.Timestamp(years[-1]+1, 1, 1, 0, 0, 0)
     stime = 1994.5
     etime = 2004.5
-    
+
     # Define Lomb-Scargle freqs etc
     f_min = 1 / (48. * 60. * 60.)
     f_max = 1 / (8. * 60. * 60.)
-    T = (pd.Timestamp(2005, 1, 1, 0) - pd.Timestamp(1995, 1, 1, 0)).total_seconds()
-    f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T, f_min, f_max, n0=5)
+    T = (pd.Timestamp(2005, 1, 1, 0) - pd.Timestamp(
+        1995, 1, 1, 0)).total_seconds()
+    f_min, f_max, N_f, freqs = lomb_scargle.define_frequency_bins(T,
+                                                                  f_min, f_max,
+                                                                  n0=5)
     freqs = freqs[::-1]
     angular_freqs = 2 * np.pi * freqs
-    periods = periodicity_functions.freq_to_period(freqs)    
-    
+    periods = periodicity_functions.freq_to_period(freqs)
+
     # Read in Sunspot Number
     sunspot_df = read_sunspot_n.read_monthly_sunspot()
     smoothed_sunspot_df = read_sunspot_n.read_monthly_smoothed_sunspot()
-    
+
     # Read in AKR integrated power
-        
+
     # LS analysis here
     ls_pgram = np.full((periods.size, years.size), np.nan)
     for i, yr in enumerate(years):
         print('Running Lomb-Scargle analysis for ', yr)
-        
+
         # Subselect AKR df
-    
+
         # Run Lomb-Scargle
-        
+
         # Current placeholder data
         ls_pgram[:, i] = np.repeat(i, periods.size)
-    
+
     # Find edges of pixels on period axis
     period_edges = np.full(periods.size + 1, np.nan)
     for k in range(period_edges.size):
@@ -1809,45 +1618,43 @@ def LS_solar_cyc(sunspot_n_fdict={'color': 'lightgrey',
             period_edges[k] = periods[k-1] + ((periods[k-1]-periods[k-2])/2)
         else:
             period_edges[k] = periods[k] - ((periods[k+1]-periods[k])/2)
-    
-    # Perhaps a panel with discreet years and another with some smoothing?
-    # IF TIME
-    
-   # breakpoint()
-    
-    
+
     # Initialise plotting
-    fig, ax = plt.subplots(nrows=2, figsize=(16,8))
-   
+    fig, ax = plt.subplots(nrows=2, figsize=(16, 8))
+
     # Plot Lomb-Scargles
-    X, Y = np.meshgrid(np.append(years-0.5, years[-1]+0.5), period_edges)
+    X, Y = np.meshgrid(np.append(years-0.5, years[-1] + 0.5), period_edges)
     pcm = ax[0].pcolormesh(X, Y, ls_pgram, cmap='plasma')
-    cbar = plt.colorbar(pcm, ax=ax[0], label="Lomb-Scargle\nNormalised Amplitude")
+    cbar = plt.colorbar(pcm, ax=ax[0],
+                        label="Lomb-Scargle\nNormalised Amplitude")
     cbar.ax.tick_params(labelsize=fontsize)
-   
+
     ax[0].set_ylabel('Period (hours)', fontsize=fontsize)
 
     ax_pos = ax[0].get_position().bounds
 
     # Plot Sunspot Number
     ax[1].plot(sunspot_df.year_frac, sunspot_df.mean_s_n, **sunspot_n_fdict)
-    ax[1].plot(smoothed_sunspot_df.year_frac, smoothed_sunspot_df.smooth_s_n, **smoothsn_fdict)
+    ax[1].plot(smoothed_sunspot_df.year_frac, smoothed_sunspot_df.smooth_s_n,
+               **smoothsn_fdict)
 
     # Set limits
     sunspot_ymax = np.max(
-        [sunspot_df.loc[(sunspot_df.year_frac >= stime) & (sunspot_df.year_frac <= etime), 'mean_s_n'].max(),
-        smoothed_sunspot_df.loc[(smoothed_sunspot_df.year_frac >= stime) & (smoothed_sunspot_df.year_frac <= etime), 'smooth_s_n'].max()])
+        [sunspot_df.loc[(sunspot_df.year_frac >= stime) &
+                        (sunspot_df.year_frac <= etime), 'mean_s_n'].max(),
+         smoothed_sunspot_df.loc[(smoothed_sunspot_df.year_frac >= stime) &
+                                 (smoothed_sunspot_df.year_frac <= etime),
+                                 'smooth_s_n'].max()])
     ax[1].set_ylim(0, 1.1 * sunspot_ymax)
     ax[1].set_xlim(stime, etime)
-    
+
     ax[1].set_ylabel('Sunspot Number', fontsize=fontsize)
     ax[1].set_xlabel('Year', fontsize=fontsize)
     ax[1].legend(fontsize=fontsize, loc='upper right')
     # Make width same as (a)
-    pos=ax[1].get_position().bounds
+    pos = ax[1].get_position().bounds
     ax[1].set_position([ax_pos[0], pos[1], ax_pos[2], pos[3]])
-    
-    
+
     # Formatting
     for j, a in enumerate(ax):
         a.set_xlim(stime, etime)
@@ -1856,559 +1663,3 @@ def LS_solar_cyc(sunspot_n_fdict={'color': 'lightgrey',
         t = a.text(0.02, 0.92, axes_labels[j], transform=a.transAxes,
                    fontsize=fontsize, va='top', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-                
-
-
-
-
-
-
-
-
-def TEMP_neat_fft_plot():
-    png_name = os.path.join(fig_dir, "neat_single_10_year_fft.png")
-
-    interval_options = read_and_tidy_data.return_test_intervals()
-    intervals = np.array(interval_options.tag)
-
-    fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 15, 0).timestamp(),
-                                   pd.Timestamp(1999, 8, 15, 0).timestamp(),
-                                   pd.Timestamp(2003, 10, 11,
-                                                22, 36).timestamp()])
-    fft_signal_x_width = np.repeat([5. * 24. * 60. * 60.], len(intervals))
-
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
-
-    print('Running analyses for ', intervals[0])
-    combined_rounded_df = read_and_tidy_data.\
-        combine_rounded_akr_omni(intervals[0])
-
-    # First 3 days of data
-    signal_xlims = [fft_signal_x_start[0],
-                    fft_signal_x_start[0] +
-                    fft_signal_x_width[0]]
-
-    freq, period, fft_amp, inverse_signal = periodicity_functions.\
-        generic_fft_function(combined_rounded_df.unix,
-                             combined_rounded_df['integrated_power'],
-                             pd.Timedelta(minutes=3))
-    # freq_sur, period_sur, fft_amp_sur, inverse_signal_sur = \
-    #         periodicity_functions.\
-    #         generic_fft_function(
-    #             combined_rounded_df.unix,
-    #             combined_rounded_df['surrogate_integrated_power'],
-    #             pd.Timedelta(minutes=3))
-
-    axes = periodicity_functions.plot_fft_summary(
-                combined_rounded_df.unix,
-                np.array(combined_rounded_df.integrated_power),
-                pd.Timedelta(minutes=3),
-                freq, period, fft_amp, inverse_signal,
-                # surrogate_period=period_sur,
-                # surrogate_fft_amp=fft_amp_sur,
-                fontsize=fontsize,
-                fft_xlims=[0, 36],
-                signal_xlims=signal_xlims,
-                signal_y_log=True,
-                vertical_indicators=[12, 24],
-                unix_to_dtime=True,
-                resolution_lim=True,
-                # input_ax=ax[i, :],
-                panel_label=False)
-    ax = axes[1]
-
-        # y_l_ax = ax[i, 2].twinx()
-        # y_l_ax.set_yticks([])
-        # y_l_ax.set_ylabel(interval_options.title.iloc[i], fontsize=fontsize,
-        #                   weight='heavy', rotation=-90, labelpad=35)
-
-    # # Panel labels
-    # for i, (lab, a) in enumerate(zip(axes_labels, ax.reshape(-1)[:-1])):
-    #     t = a.text(0.05, 0.95, lab, transform=a.transAxes,
-    #                fontsize=fontsize, va='top', ha='left')
-    #     t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-
-    fig.tight_layout()
-
-    # fig.savefig(png_name)
-    return
-
-
-
-def test_with_oscillator():
-    # Testing everything on the nice, fake oscillating signal
-    time, akr_osc = oscillating_signal(24)
-
-    freq, period, fft_amp, inverse_signal = periodicity_functions.\
-        generic_fft_function(time, akr_osc, pd.Timedelta(minutes=3))
-
-    return freq, period, fft_amp
-
-
-
-
-
-def generate_fft_plot():
-
-    png_name = os.path.join(fig_dir, "three_interval_fft.png")
-
-    interval_options = read_and_tidy_data.return_test_intervals()
-    intervals = np.array(interval_options.tag)
-
-    fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 15, 0).timestamp(),
-                                   pd.Timestamp(1999, 8, 15, 0).timestamp(),
-                                   pd.Timestamp(2003, 10, 11,
-                                                22, 36).timestamp()])
-    fft_signal_x_width = np.repeat([5. * 24. * 60. * 60.], len(intervals))
-
-    fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(18, 18))
-
-    for i in range(intervals.size):
-        print('Running analyses for ', intervals[i])
-        combined_rounded_df = read_and_tidy_data.\
-            combine_rounded_akr_omni(intervals[i])
-
-        # First 3 days of data
-        signal_xlims = [fft_signal_x_start[i],
-                        fft_signal_x_start[i] +
-                        fft_signal_x_width[i]]
-
-        freq, period, fft_amp, inverse_signal = periodicity_functions.\
-            generic_fft_function(combined_rounded_df.unix,
-                                 combined_rounded_df['integrated_power'],
-                                 pd.Timedelta(minutes=3))
-        freq_sur, period_sur, fft_amp_sur, inverse_signal_sur = \
-            periodicity_functions.\
-            generic_fft_function(
-                combined_rounded_df.unix,
-                combined_rounded_df['surrogate_integrated_power'],
-                pd.Timedelta(minutes=3))
-
-        ax[i, :] = periodicity_functions.plot_fft_summary(
-                combined_rounded_df.unix,
-                np.array(combined_rounded_df.integrated_power),
-                pd.Timedelta(minutes=3),
-                freq, period, fft_amp, inverse_signal,
-                surrogate_period=period_sur,
-                surrogate_fft_amp=fft_amp_sur,
-                fontsize=fontsize,
-                fft_xlims=[0, 36],
-                signal_xlims=signal_xlims,
-                signal_y_log=True,
-                vertical_indicators=[12, 24],
-                unix_to_dtime=True,
-                resolution_lim=True,
-                input_ax=ax[i, :], panel_label=False)
-
-        y_l_ax = ax[i, 2].twinx()
-        y_l_ax.set_yticks([])
-        y_l_ax.set_ylabel(interval_options.title.iloc[i], fontsize=fontsize,
-                          weight='heavy', rotation=-90, labelpad=35)
-
-    # Panel labels
-    for i, (lab, a) in enumerate(zip(axes_labels, ax.reshape(-1)[:-1])):
-        t = a.text(0.05, 0.95, lab, transform=a.transAxes,
-                   fontsize=fontsize, va='top', ha='left')
-        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-
-    fig.tight_layout()
-
-    fig.savefig(png_name)
-    return
-
-
-def generate_individual_plots():
-
-    interval_options = read_and_tidy_data.return_test_intervals()
-    # intervals = np.array(['full_archive', 'cassini_flyby'])
-    intervals = np.array(interval_options.tag)
-
-    fft_signal_x_start = np.array(interval_options.stime)
-    # fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 18, 0).timestamp()])
-    fft_signal_x_width = np.repeat([5. * 24. * 60. * 60.], len(intervals))
-
-    for i in range(intervals.size):
-        print('Running analyses for ', intervals[i])
-        combined_rounded_df = read_and_tidy_data.\
-            combine_rounded_akr_omni(intervals[i])
-
-        # -- FFT --
-        fft_png = os.path.join(fig_dir, intervals[i] + '_fft.png')
-        if (pathlib.Path(fft_png).is_file()) is False:
-            # First 3 days of data
-            signal_xlims = [pd.Timestamp(fft_signal_x_start[i]).timestamp(),
-                            pd.Timestamp(fft_signal_x_start[i]).timestamp() + fft_signal_x_width[i]]
-
-            freq, period, fft_amp, inverse_signal = periodicity_functions.\
-                generic_fft_function(combined_rounded_df.unix,
-                                     combined_rounded_df['integrated_power'],
-                                     pd.Timedelta(minutes=3))
-            freq_sur, period_sur, fft_amp_sur, inverse_signal_sur = \
-                periodicity_functions.\
-                generic_fft_function(
-                    combined_rounded_df.unix,
-                    combined_rounded_df['surrogate_integrated_power'],
-                    pd.Timedelta(minutes=3))
-            # Change zeros to nans for plotting intensity
-            r_ind = combined_rounded_df.loc[
-                combined_rounded_df.integrated_power == 0].index
-            pwr = np.array(combined_rounded_df.
-                           integrated_power.copy(deep=True))
-            pwr[r_ind] = np.nan
-
-            fft_fig, fft_ax = periodicity_functions.plot_fft_summary(
-                combined_rounded_df.unix, pwr, pd.Timedelta(minutes=3),
-                freq, period, fft_amp, inverse_signal,
-                surrogate_period=period_sur,
-                surrogate_fft_amp=fft_amp_sur,
-                fontsize=15,
-                fft_xlims=[0, 36],
-                signal_xlims=signal_xlims,
-                signal_y_log=True,
-                vertical_indicators=[12, 24],
-                unix_to_dtime=True,
-                resolution_lim=True)
-            fft_fig.savefig(fft_png)
-        # -- END FFT --
-
-        # -- ACF --
-        temporal_resolution = 3. * 60.  # in seconds
-        n_shifts = 5000
-        acf_png = os.path.join(fig_dir, intervals[i] + '_' + str(n_shifts)
-                               + '_acf.png')
-        acf_csv = os.path.join(data_dir, intervals[i] + '_' + str(n_shifts)
-                               + '_acf.csv')
-
-        if (pathlib.Path(acf_png).is_file()) is False:
-            #lags = np.array(range(n_shifts)) * temporal_resolution
-            if (pathlib.Path(acf_csv).is_file()) is False:
-                acf, lags = periodicity_functions.autocorrelation(
-                    combined_rounded_df['integrated_power'], n_shifts,
-                    temporal_resolution=temporal_resolution, starting_lag=7200)
-                acf_df = pd.DataFrame({'acf': acf,
-                            'lags': lags})
-                acf_df.to_csv(index=False)
-            else:
-                acf_df = pd.read_csv(acf_csv, float_precision='round trip')
-                acf = acf_df['acf']
-                lags = acf_df['lags']
-
-            acf_fig, acf_ax = periodicity_functions.\
-                plot_autocorrelogram(lags, acf, tick_sep_hrs=36.,
-                                         highlight_period=24.,)
-            
-            acf_fig.savefig(acf_png)
-
-        # -- END ACF --
-    return
-
-# def DEPRECATED_run_feature_importance():
-
-#     interval_options = read_and_tidy_data.return_test_intervals()
-#     # intervals = np.array(['full_archive', 'cassini_flyby'])
-#     intervals = np.array(interval_options.tag)
-
-#     fft_signal_x_start = np.array([pd.Timestamp(1999, 8, 18, 0).timestamp()])
-#     fft_signal_x_width = np.array([5. * 24. * 60. * 60.])
-
-#     for i in range(intervals.size):
-#         print('Running analyses for ', intervals[i])
-#         combined_rounded_df = read_and_tidy_data.\
-#             combine_rounded_akr_omni(intervals[i])
-
-#         # -- FEATURE IMPORTANCE --
-#         loc_fi_png = os.path.join(fig_dir, intervals[i] + '_loc_fi.png')
-#         geo_fi_png = os.path.join(fig_dir, intervals[i] + '_geo_fi.png')
-#         all_fi_png = os.path.join(fig_dir, intervals[i] + '_all_fi.png')
-#         combined_fi_png = os.path.join(fig_dir, intervals[i] +
-#                                        '_combined_fi.png')
-
-#         location_fi_csv = os.path.join(data_dir, intervals[i] +
-#                                        '_location_only_fidata.csv')
-#         geophysical_fi_csv = os.path.join(data_dir, intervals[i] +
-#                                           '_geophysical_only_fidata.csv')
-#         all_fi_csv = os.path.join(data_dir, intervals[i] +
-#                                   '_loc_geophysical_fidata.csv')
-
-#         if (pathlib.Path(loc_fi_png).is_file() is False) | (pathlib.Path(geo_fi_png).is_file() is False) | (pathlib.Path(all_fi_png).is_file() is False) | (pathlib.Path(combined_fi_png).is_file() is False):
-
-#             # Location Feature Importance
-#             loc_feature_name = np.array(['LT', 'Latitude', 'Radial Distance'])
-#             if pathlib.Path(location_fi_csv).is_file() is False:
-#                 loc_fig, loc_ax, loc_importance = feature_importance.\
-#                     plot_feature_importance(
-#                         np.array(combined_rounded_df.integrated_power),
-#                         np.array(combined_rounded_df[['decimal_gseLT',
-#                                                       'lat_gse', 'lon_gse']]),
-#                         feature_names=loc_feature_name,
-#                         seed=1993, fontsize=20, record_number=True)
-#                 location_fi_df = pd.DataFrame({
-#                     'feature_name': loc_feature_name,
-#                     'importance': loc_importance})
-#                 location_fi_df.to_csv(location_fi_csv, index=False)
-
-#             else:
-#                 location_fi_df = pd.read_csv(location_fi_csv, delimiter=',',
-#                                              float_precision='round_trip')
-#                 loc_fig, loc_ax, importance = feature_importance.\
-#                     plot_feature_importance(
-#                         np.array(combined_rounded_df.integrated_power),
-#                         np.array(combined_rounded_df[['decimal_gseLT',
-#                                                       'lat_gse', 'lon_gse']]),
-#                         importance=np.array(location_fi_df.importance),
-#                         feature_names=loc_feature_name,
-#                         seed=1993, fontsize=20, record_number=True)
-#             loc_fig.savefig(loc_fi_png, bbox_inches='tight')
-
-#             # Geophysical Feature Importance
-#             geo_feature_name = np.array(['Bx', 'By', 'Bz', 'Bt',
-#                                          'ClockAngle', 'Vsw', 'Nsw',
-#                                          'Psw', 'AE', 'AL', 'AU', 'SYM-H',
-#                                          'SME', 'SMU', 'SML', 'SMR'])
-#             geo_feature_tag = np.array(['bx', 'by_gsm', 'bz_gsm', 'b_total',
-#                                         'clock_angle', 'flow_speed',
-#                                         'proton_density', 'flow_pressure',
-#                                         'ae', 'al', 'au', 'symh',
-#                                         'SME', 'SMU', 'SML', 'SMR'])
-#             geo_df = combined_rounded_df.dropna(subset=geo_feature_tag
-#                                                 ).reset_index(drop=True)
-#             if pathlib.Path(geophysical_fi_csv).is_file() is False:
-#                 geo_fig, geo_ax, geo_importance = feature_importance.\
-#                     plot_feature_importance(np.array(geo_df.integrated_power),
-#                                             np.array(geo_df[geo_feature_tag]),
-#                                             feature_names=geo_feature_name,
-#                                             seed=1993, fontsize=20,
-#                                             record_number=True)
-#                 geophysical_fi_df = pd.DataFrame({
-#                     'feature_name': geo_feature_name,
-#                     'importance': geo_importance})
-#                 geophysical_fi_df.to_csv(geophysical_fi_csv, index=False)
-#             else:
-#                 geophysical_fi_df = pd.read_csv(geophysical_fi_csv,
-#                                                 delimiter=',',
-#                                                 float_precision='round_trip')
-#                 geo_fig, geo_ax, geo_importance = feature_importance.\
-#                     plot_feature_importance(
-#                         np.array(geo_df.integrated_power),
-#                         np.array(geo_df[geo_feature_tag]),
-#                         importance=np.array(geophysical_fi_df.importance),
-#                         feature_names=geo_feature_name,
-#                         seed=1993, fontsize=20, record_number=True)
-#             geo_fig.savefig(geo_fi_png, bbox_inches='tight')
-
-#             # All Features
-#             all_feature_name = np.array(['LT', 'Latitude', 'Radial Distance',
-#                                          'Bx', 'By', 'Bz', 'Bt',
-#                                          'ClockAngle', 'Vsw', 'Nsw',
-#                                          'Psw', 'AE', 'AL', 'AU', 'SYM-H',
-#                                          'SME', 'SMU', 'SML', 'SMR'])
-#             all_feature_tag = np.array(['decimal_gseLT', 'lat_gse', 'lon_gse',
-#                                         'bx', 'by_gsm', 'bz_gsm', 'b_total',
-#                                         'clock_angle', 'flow_speed',
-#                                         'proton_density', 'flow_pressure',
-#                                         'ae', 'al', 'au', 'symh',
-#                                         'SME', 'SMU', 'SML', 'SMR'])
-#             all_df = combined_rounded_df.dropna(subset=all_feature_tag
-#                                                 ).reset_index(drop=True)
-#             if pathlib.Path(all_fi_csv).is_file() is False:
-#                 all_fig, all_ax, all_importance = feature_importance.\
-#                     plot_feature_importance(np.array(all_df.integrated_power),
-#                                             np.array(all_df[all_feature_tag]),
-#                                             feature_names=all_feature_name,
-#                                             seed=1993, fontsize=20,
-#                                             record_number=True)
-#                 all_fi_df = pd.DataFrame({
-#                     'feature_name': all_feature_name,
-#                     'importance': all_importance})
-#                 all_fi_df.to_csv(all_fi_csv, index=False)
-#             else:
-#                 all_fi_df = pd.read_csv(all_fi_csv,
-#                                         delimiter=',',
-#                                         float_precision='round_trip')
-#                 all_fig, all_ax, geo_importance = feature_importance.\
-#                     plot_feature_importance(
-#                         np.array(all_df.integrated_power),
-#                         np.array(all_df[all_feature_tag]),
-#                         importance=np.array(all_fi_df.importance),
-#                         feature_names=all_feature_name,
-#                         seed=1993, fontsize=20, record_number=True)
-#             all_fig.savefig(all_fi_png, bbox_inches='tight')
-
-#             # Combined features panel
-#             combined_fig, combined_ax = feature_importance.\
-#                 feature_importance_3panel(
-#                     loc_feature_name, geo_feature_name, all_feature_name,
-#                     np.array(location_fi_df.importance),
-#                     np.array(geophysical_fi_df.importance),
-#                     np.array(all_fi_df.importance), titles=[
-#                         '(a) Visibility', '(b) Geophysical',
-#                         '(c) Visibility and Geophysical'])
-#             combined_fig.savefig(combined_fi_png, bbox_inches='tight')
-#         # -- END FEATURE IMPORTANCE --
-        
-#         # -- BINNING / AVERAGING --
-#         binned_median_png = os.path.join(fig_dir, intervals[i] + '_MLT_UT_binning_median.png')
-#         binned_boxplot_png = os.path.join(fig_dir, intervals[i] + '_MLT_UT_binning_boxplot.png')
-
-#         if (pathlib.Path(binned_median_png).is_file() is False) | (pathlib.Path(binned_boxplot_png).is_file() is False):
-#             fig_m, fig_b = binning_averaging.plot_UT_trend(combined_rounded_df)
-        
-#             fig_m.savefig(binned_median_png, bbox_inches='tight')
-#             fig_b.savefig(binned_boxplot_png, bbox_inches='tight')
-        
-#     return
-
-
-def oscillating_signal(osc_freq, plot=False):
-    """
-    Function to create a timeseries of oscillating
-    signal using neurodsp package.
-
-    Parameters
-    ----------
-    osc_freq : float
-        Period of the desired oscillation in hours.
-    plot : bool, optional
-        If plot == True, a diagnostic plot of the
-        generated signal is presented. The default
-        is False.
-
-    Returns
-    -------
-    time : np.array
-        Time axis in seconds.
-    akr_osc : np.array
-        Signal.
-
-    """
-    # Create fake time axis
-    yr_secs = 365*24*60*60    # One year in seconds
-    res_secs = 3*60   # Temporal resolution of 3 minutes
-
-    time = np.arange(0, yr_secs, res_secs)
-
-    akr_osc = sim_oscillation(yr_secs, 1/res_secs, 1/(osc_freq*60*60),
-                              cycle='sine')
-    akr_osc = (akr_osc+2.0) * 1e6
-    # ^ make positive and put to the order of AKR power
-
-    if plot:
-        fig, ax = plt.subplots()
-        ax.plot(time, akr_osc)
-        ax.set_xlim(0, 4*osc_freq*60*60)
-
-    return time, akr_osc
-
-
-def generic_fft_function(time, y, temporal_resolution, plot=True,
-                         xlims=[np.nan, np.nan]):
-    """
-    
-
-    Parameters
-    ----------
-    time : np.array
-        Time axis for y in seconds.
-    y : np.array
-        Signal.
-    temporal_resolution : pd.Timedelta
-        Seperation of consecutive points in time.
-    plot : BOOL, optional
-        If plot==True, a diagnostic plot for the FFT is 
-        presented. The default is True.
-    xlims : list, optional
-        If provided, the xaxis of the signal and IFFT
-        plots are limits to these values. This can allow 
-        nicer plots of a few oscillations. The default
-        is [np.nan, np.nan].
-
-    Returns
-    -------
-    freq : np.array
-        Frequency of FFT calculation in Hz.
-    period : np.array
-        Period of FFT calculation in hours.
-    fft_amp : np.array
-        Amplitude of FFT calculation.  
-
-    """
-    # temporal_resolution is a pd.Timedelta
-    
-    # Calculate sampling rate in Hz
-    sampling_rate = 1 / (temporal_resolution.total_seconds())
-    
-    X = fft(y)  # y axis for FFT plot
-    N = len(X)  # number of FFT points
-    n = np.arange(N)    # 0 - N array. integers
-    T = N/sampling_rate    # number of FFT points / number of obs per sec
-    freq = n/T  # freqs fft is evaluated at
-    
-    # Functions to convert between period in hours
-    #   and frequency in Hz
-    def period_to_freq(x):
-        ticks=[]
-        for tick in x:
-            if tick != 0:
-                ticks.append(1. / (tick * (60.*60.)))
-            else:
-                ticks.append(0)
-        #print('pf2', x, ticks)
-        return ticks
-    def freq_to_period(x):
-        ticks=[]
-        for tick in x:
-            if tick != 0:
-                ticks.append((1. / tick) / (60.*60.))
-            else:
-                ticks.append(0)
-        #print('f2p', x, ticks)
-        return ticks
-    
-    
-    
-    
-    # period = 1 / freq
-    # period = period / (60*60)   # period in hours
-    period = freq_to_period(freq)
-    #fig,ax=plt.subplots(ncols=2, figsize = (12, 6))
-
-    fft_amp=np.abs(X)
-
-    if plot :
-        
-        fig,ax=plt.subplots(ncols=3, figsize = (18, 6))
-        
-        # Plot original signal
-        ax[0].plot(time, y, 'orange')
-        ax[0].set_ylabel('Amplitude')
-        ax[0].set_xlabel('Time (s)')
-        ax[0].set_title('Observations')
-        
-        # Plot FFT periodogram
-        ax[1].stem(period, fft_amp, 'c', \
-                  markerfmt=" ", basefmt="-c") 
-        ax[1].set_xlabel('Period (hours)')
-        ax[1].set_ylabel('FFT Amplitude |X(freq)|')
-        ax[1].set_title('FFT of observations')
-        ax[1].set_xlim([-5,36])
-        # # Top axis with freq - doesn't work yet
-        # top_ax=ax[1].twiny()
-        # top_ax.set_xticks(period_to_freq(ax[1].get_xticks()))
-        
-        
-        # Plot inverse FFT signal
-        ax[2].plot(time, ifft(X), 'blueviolet')
-        ax[2].set_xlabel('Time (s)')
-        ax[2].set_ylabel('Amplitude')
-        ax[2].set_title('Inverse FFT')
-        
-        if (~np.isnan(xlims[0])) & (~np.isnan(xlims[1])):
-            ax[0].set_xlim(xlims)
-            ax[2].set_xlim(xlims)
-        
-        fig.tight_layout()
-    
-    return freq, period, fft_amp
-    
-    
-    
