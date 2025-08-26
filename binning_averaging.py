@@ -92,25 +92,42 @@ def return_UT_trend(data_df, region_centres=[0, 6, 12, 18],
                     region_names=['midn', 'dawn', 'noon', 'dusk'],
                     region_flags=[0, 1, 2, 3], UT_bin_width=2,
                     ipower_tag='integrated_power'):
+    """
+    Function to sort data by MLT and UT
 
-        # data_df includes mlt_flag and mlt_name
+    Parameters
+    ----------
+    data_df : pd.DataFrame
+        Pandas DataFrame containing 'datetime', ipower_tag, 'mlt_flag'.
+    region_centres : list, optional
+        Centres for the MLT bins. The default is [0, 6, 12, 18].
+    region_width : int, optional
+        Width of the MLT bins. The default is 6.
+    region_names : list, optional
+        Names for the MLT bins. The default is ['midn', 'dawn', 'noon',
+                                                'dusk'].
+    region_flags : list, optional
+        Int flags for the MLT bins. The default is [0, 1, 2, 3].
+    UT_bin_width : int, optional
+        Width of the UT bins in hours. The default is 2.
+    ipower_tag : string, optional
+        String which selects integrated power from data_df. The default
+        is 'integrated_power'.
 
-    # # For now, just remove all rows where intensity is zero.
-    # # This needs to be investigated later!
-    # zero_ind, = np.where(data_df.integrated_power == 0.)
-    # data_df.drop(index=zero_ind, inplace=True)
-    # data_df.reset_index(drop=True, inplace=True)
+    Returns
+    -------
+    UT_df : pd.DataFrame
+        Returns sorted and averaged results.
+
+    """
 
     UT_bins = np.linspace(0, 24-UT_bin_width, int(24/UT_bin_width)) +\
         (UT_bin_width/2)
-    # data_df['decimal_hr'] = (data_df.datetime -
-    #                          data_df.datetime.values.astype('datetime64[D]')).\
-    #     astype('timedelta64[m]') / 60.
+
     # Calculate the decimal hour of the observation in UT
     data_df['decimal_hr'] = ((data_df['datetime'] -
-                              data_df['datetime'].dt.normalize()) 
+                              data_df['datetime'].dt.normalize())
                              / pd.Timedelta(hours=1))
-
 
     UT_df = pd.DataFrame({'UT_bin_centre': UT_bins})
 
@@ -122,17 +139,14 @@ def return_UT_trend(data_df, region_centres=[0, 6, 12, 18],
 
         UT_median = np.full(UT_bins.size, np.nan)
         UT_mad = np.full(UT_bins.size, np.nan)
-        
+
         UT_median_no0 = np.full(UT_bins.size, np.nan)
         UT_mad_no0 = np.full(UT_bins.size, np.nan)
-        # UT_dist = []
 
         UT_n = np.full(UT_bins.size, np.nan)
         UT_n_no0 = np.full(UT_bins.size, np.nan)
 
         for j in range(UT_bins.size):
-            print(i, c, n, f)
-            print(j, UT_bins[j], UT_bin_width)
             UT_ind, = np.where((LT_data_df.decimal_hr >=
                                 (UT_bins[j]-UT_bin_width/2))
                                & (LT_data_df.decimal_hr <
@@ -142,15 +156,10 @@ def return_UT_trend(data_df, region_centres=[0, 6, 12, 18],
             UT_mad[j], UT_median[j] = statistical_metrics.\
                 median_absolute_deviation(dist_)
             UT_mad_no0[j], UT_median_no0[j] = statistical_metrics.\
-                median_absolute_deviation(dist_[dist_>0.])
+                median_absolute_deviation(dist_[dist_ > 0.])
 
             UT_n[j] = dist_.size
-            UT_n_no0[j] = dist_[dist_>0.].size
-
-
-            # UT_dist.append(dist_)
-            # if n== 'dawn':
-            #     breakpoint()
+            UT_n_no0[j] = dist_[dist_ > 0.].size
 
         UT_df[n + '_median'] = UT_median
         UT_df[n + '_median_norm'] = UT_median / np.nanmax(UT_median)
@@ -158,9 +167,10 @@ def return_UT_trend(data_df, region_centres=[0, 6, 12, 18],
         UT_df[n + '_mad_norm'] = UT_mad / np.nanmax(UT_median)
 
         UT_df[n + '_median_no0'] = UT_median_no0
-        UT_df[n + '_median_norm_no0'] = UT_median_no0 / np.nanmax(UT_median_no0)
+        UT_df[n + '_median_norm_no0'] = UT_median_no0 / np.nanmax(
+            UT_median_no0)
         UT_df[n + '_mad_no0'] = UT_mad_no0
-        UT_df[n + '_mad_norm_no0'] = UT_mad_no0 / np.nanmax(UT_median_no0)    
+        UT_df[n + '_mad_norm_no0'] = UT_mad_no0 / np.nanmax(UT_median_no0)
 
         UT_df[n + 'n'] = UT_n
         UT_df[n + 'n_no0'] = UT_n_no0
@@ -168,27 +178,49 @@ def return_UT_trend(data_df, region_centres=[0, 6, 12, 18],
     return UT_df
 
 
-
-
-
-
-
 def plot_UT_trend(data_df, region_centres=[0, 6, 12, 18],
                   region_width=6,
                   region_names=['midn', 'dawn', 'noon', 'dusk'],
                   region_flags=[0, 1, 2, 3], UT_bin_width=2,
                   region_titles=['Midnight (21-3 LT)', 'Dawn (3-9 LT)',
-                                   'Noon (9-15 LT)', 'Dusk (15-21 LT)'],
+                                 'Noon (9-15 LT)', 'Dusk (15-21 LT)'],
                   fontsize=15):
+    """
+    Plot the UT/MLT trend
 
-    # data_df needs columns
-    #   datetime, decimal_gseLT, integrated_power
-    # UT_bin_width is bin width in hours
-    
+    Parameters
+    ----------
+    data_df : pd.DataFrame
+        Pandas DataFrame containing 'datetime', 'integrated_power'.
+    region_centres : list, optional
+        Centres for the MLT bins. The default is [0, 6, 12, 18].
+    region_width : int, optional
+        Width of the MLT bins. The default is 6.
+    region_names : list, optional
+        Names for the MLT bins. The default is ['midn', 'dawn', 'noon',
+                                                'dusk'].
+    region_flags : list, optional
+        Int flags for the MLT bins. The default is [0, 1, 2, 3].
+    UT_bin_width : int, optional
+        Width of the UT bins in hours. The default is 2.
+    region_titles : list, optional
+        String titles for MLT panels. The default is ['Midnight (21-3 LT)',
+                                                      'Dawn (3-9 LT)',
+                                                      'Noon (9-15 LT)',
+                                                      'Dusk (15-21 LT)'].
+    fontsize : float, optional
+        Fontsize applied to labels/text. The default is 15.
 
+    Returns
+    -------
+    fig_med : matplotlib figure
+        Output figure.
+    fig_bp : matplotlib figure
+        Output figure.
 
-    # For now, just remove all rows where intensity is zero.
-    # This needs to be investigated later!
+    """
+
+    # Remove all rows where intensity is zero.
     zero_ind, = np.where(data_df.integrated_power == 0.)
     data_df.drop(index=zero_ind, inplace=True)
     data_df.reset_index(drop=True, inplace=True)
@@ -206,8 +238,6 @@ def plot_UT_trend(data_df, region_centres=[0, 6, 12, 18],
                              data_df.datetime.values.astype('datetime64[D]')).\
         astype('timedelta64[m]') / 60.
 
-    # violin_quantiles = [[0.25, 0.75] for w in range(UT_bins.size)]
-
     # Initialise plotting window
     fig_bp, axes_bp = plt.subplots(nrows=len(region_names),
                                    figsize=(10, 3*len(region_names)))
@@ -221,7 +251,6 @@ def plot_UT_trend(data_df, region_centres=[0, 6, 12, 18],
                                                        region_flags,
                                                        region_titles,
                                                        axes_bp, axes_med)):
-        # print(i, c, n, f)
 
         LT_data_df = data_df.loc[data_df.mlt_flag == f].reset_index()
 
@@ -237,30 +266,20 @@ def plot_UT_trend(data_df, region_centres=[0, 6, 12, 18],
                                 (UT_bins[j]-UT_bin_width/2))
                                & (LT_data_df.decimal_hr <
                                   (UT_bins[j]+UT_bin_width/2)))
-            dist_ = np.array(LT_data_df['integrated_power'].iloc[UT_ind].values)
+            dist_ = np.array(
+                LT_data_df['integrated_power'].iloc[UT_ind].values)
             UT_mad[j], UT_median[j] = statistical_metrics.\
                 median_absolute_deviation(dist_)
-            # UT_median[j] = np.nanmedian(LT_data_df['integrated_power'].
-            #                             iloc[UT_ind].values)
+
             UT_n[j] = dist_.size
 
             UT_dist.append(dist_)
-
-            # if i == 1:
-            #     breakpoint()
-            # print(UT_bins[j], UT_median[j])
-            # THERE'S A TONNE OF ZEROS IN INTEGRATED INTENSITY, WHAT DO WE
-            # WANT TO DO WITH THEM?
-            # BUT ZERO INTENSITY =/= NO AKR? OR IS IT ==?
-            # throw out zeros/low data
 
         UT_cmap = matplotlib.colormaps['cool_r']
         UT_norm = matplotlib.colors.Normalize(vmin=np.nanmin(UT_n),
                                               vmax=np.nanmax(UT_n))
         UT_color = UT_cmap(UT_norm(UT_n))
         # PLOT MEDIAN
-        # ax_md.plot(UT_bins, UT_median, marker='^', fillstyle='none',
-        #            linewidth=0., color='black')
         ax_md.errorbar(UT_bins, UT_median, UT_mad,
                        marker='x', fillstyle='none', markersize=0.75*fontsize,
                        capsize=0.5*fontsize,
@@ -277,14 +296,8 @@ def plot_UT_trend(data_df, region_centres=[0, 6, 12, 18],
                          transform=ax_md.transAxes, fontsize=fontsize,
                          va='top', ha='left')
         txt.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-        # # VIOLIN PLOT
-        # ax.violinplot(UT_dist, positions=UT_bins,
-        #               #quantiles=violin_quantiles,
-        #               showmeans=False, showmedians=True)
 
         # BOXPLOT
-        # ax_bp.plot(UT_bins, UT_median, marker='o', fillstyle='none',
-        #            linewidth=0.)
         box = ax_bp.boxplot(UT_dist, positions=UT_bins,
                             whis=(15, 85), showfliers=False,
                             patch_artist=True,
@@ -312,8 +325,6 @@ def plot_UT_trend(data_df, region_centres=[0, 6, 12, 18],
                          va='top', ha='left')
         txt.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
-        # colour points by number going into average?!
-
     fig_med.tight_layout()
     fig_bp.tight_layout()
 
@@ -327,7 +338,41 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
                      lon_bin_width=30.,
                      ipower_tag='integrated_power',
                      lon_sol_tag="lon_sol", lon_sc_tag="lon_gse"):
+    """
+    Bin and average data by longitude.
 
+    Parameters
+    ----------
+    data_df : pd.DataFrame
+        Pandas dataframe containing 'datetime', 'mlt_flag', lon_sol_tag,
+        lon_sc_tag, ipower_tag.
+    region_centres : list, optional
+        Centres for the MLT bins. The default is [0, 6, 12, 18].
+    region_width : int, optional
+        Width of the MLT bins. The default is 6.
+    region_names : list, optional
+        Names for the MLT bins. The default is ['midn', 'dawn', 'noon',
+                                                'dusk'].
+    region_flags : list, optional
+        Int flags for the MLT bins. The default is [0, 1, 2, 3].
+    lon_bin_width : float, optional
+        Width of longitude bins. The default is 30..
+    ipower_tag : string, optional
+        Column header for data_df containing AKR integrated power. The
+        default is 'integrated_power'.
+    lon_sol_tag : string, optional
+        Column header for data_df containing longitude of the Sun. The
+        default is "lon_sol".
+    lon_sc_tag : string, optional
+        Column header for data_df containing spacecraft longitude. The
+        default is "lon_gse".
+
+    Returns
+    -------
+    lon_df : pd.DataFrame
+        Dataframe containing binned and averaged data.
+
+    """
     data_df[lon_sc_tag] = data_df[lon_sc_tag] % 360.
     data_df[lon_sol_tag] = data_df[lon_sol_tag] % 360.
 
@@ -376,14 +421,17 @@ def return_lon_trend(data_df, region_centres=[0, 6, 12, 18],
 
         for [l, tg] in enumerate(['sol', 'sc']):
             lon_df[n + '_median_' + tg] = median_lon[:, l]
-            lon_df[n + '_median_norm_' + tg] = median_lon[:, l] / np.nanmax(median_lon[:, l])
+            lon_df[n + '_median_norm_' + tg] = median_lon[:, l] / np.nanmax(
+                median_lon[:, l])
             lon_df[n + '_mad_' + tg] = mad_lon[:, l]
-            lon_df[n + '_mad_norm_' + tg] = mad_lon[:, l] / np.nanmax(mad_lon[:, l])
+            lon_df[n + '_mad_norm_' + tg] = mad_lon[:, l] / np.nanmax(
+                mad_lon[:, l])
 
             lon_df[n + '_median_no0_' + tg] = median_no0_lon[:, l]
             lon_df[n + '_median_norm_no0_' + tg] = median_no0_lon[:, l] / np.nanmax(median_no0_lon[:, l])
             lon_df[n + '_mad_no0_' + tg] = mad_no0_lon[:, l]
-            lon_df[n + '_mad_norm_no0_' + tg] = mad_no0_lon[:, l] / np.nanmax(mad_no0_lon[:, l])    
+            lon_df[n + '_mad_norm_no0_' + tg] = mad_no0_lon[:, l] / np.nanmax(
+                mad_no0_lon[:, l])
 
             lon_df[n + '_n_' + tg] = n_lon[:, l]
             lon_df[n + '_n_no0_' + tg] = n_no0_lon[:, l]
