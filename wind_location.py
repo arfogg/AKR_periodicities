@@ -11,22 +11,13 @@ import pathlib
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\wind_utility')
 import read_wind_position
 
-sys.path.append(r'C:\Users\admin\Documents\wind_waves_akr_code\misc_utility')
-import draw_emoji
-
-
 fig_dir = os.path.join("C:" + os.sep,
                        r"Users\admin\Documents\figures\akr_periodicities")
 data_dir = os.path.join(fig_dir, "data_quickloads")
-
-
-# find period where Wind on the nightside
-# plot orbits for the different periods
 
 
 def find_nigthside_period():
@@ -159,8 +150,40 @@ def lt_hist(sdtime, edtime, wind_position_df, ax,
             fontsize=15, bar_fmt={'color': 'grey', 'edgecolor': 'black',
                                   'alpha': 0.5},
             draw_ticks=True):
-    # first bin is the one going over midnight
-    
+    """
+    Create a histogram of LT observations.
+
+    Parameters
+    ----------
+    sdtime : pd.Timestamp
+        Start of window to bin over.
+    edtime : pd.Timestamp
+        End of window to bin over.
+    wind_position_df : pd.DataFrame
+        Pandas DataFrame containing position data.
+    ax : matplotlib axis
+        Axis to drawn histogram onto.
+    lt_bin_centres : np.array, optional
+        Centres of LT bins, first bin goes over midnight. The default is
+        np.linspace(0, 23, 24).
+    lt_bin_width : float, optional
+        Width of LT bin. The default is 1..
+    fontsize : float, optional
+        Fontsize applied to text labels on figure. The default is 15.
+    bar_fmt : dict, optional
+        Formatting options for bars. The default is {'color': 'grey',
+                                                     'edgecolor': 'black',
+                                                     'alpha': 0.5}.
+    draw_ticks : BOOL, optional
+        If True, ticks are drawn. The default is True.
+
+    Returns
+    -------
+    ax : matplotlib axis
+        Axis with new histogram on it.
+
+    """
+
     # Limit Trajectory DataFrame to desired time window
     position_df = wind_position_df.loc[
         (wind_position_df.datetime >= sdtime) &
