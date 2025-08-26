@@ -8,6 +8,7 @@
 [![License: CC0-1.0](https://img.shields.io/badge/License-CC0_1.0-lightgrey.svg)](http://creativecommons.org/publicdomain/zero/1.0/)
 [![Issues](https://img.shields.io/github/issues/arfogg/AKR_periodicities.svg)](https://github.com/arfogg/AKR_periodicities/issues)
 ![Contributions welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)
+[![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
 This package is used to examine periodicities in Auroral Kilometric Radiation data detected by [NASA Wind/WAVES](https://wind.nasa.gov/).
 
