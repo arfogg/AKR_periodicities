@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 
 from numpy.fft import fft, ifft
-import scipy.signal as signal
+# import scipy.signal as signal
 
 
 def generic_fft_function(time, y, temporal_resolution):
@@ -54,14 +54,12 @@ def generic_fft_function(time, y, temporal_resolution):
     T = N/sampling_rate    # number of FFT points / number of obs per sec
     freq = n/T  # freqs fft is evaluated at
 
-
-
     period = freq_to_period(freq)
 
     fft_amp = np.abs(X)
 
     inverse_signal = ifft(X)
-    
+
     return freq, period, fft_amp, inverse_signal
 
 
@@ -158,11 +156,7 @@ def plot_fft_summary(time, y, temporal_resolution,
     # Remove data below signal_ymin
     i_ind, = np.where(y <= signal_ymin)
     y[i_ind] = np.nan
-    # combined_rounded_df.loc[
-    #             combined_rounded_df.integrated_power == 0].index
-        # pwr = np.array(combined_rounded_df.
-        #                integrated_power.copy(deep=True))
-        # pwr[r_ind] = np.nan
+
     o_ind, = np.where(inverse_signal <= signal_ymin)
     inverse_signal[o_ind] = np.nan
 
@@ -255,7 +249,8 @@ def plot_fft_summary(time, y, temporal_resolution,
         return ax
 
 
-def DEP_autocorrelation(y, n_shifts, temporal_resolution=180, starting_lag=7200):
+def DEP_autocorrelation(y, n_shifts, temporal_resolution=180,
+                        starting_lag=7200):
     """
     Calculate the autocorrelation (ACF) for a signal y
     across various lags.
@@ -306,12 +301,12 @@ def DEP_autocorrelation(y, n_shifts, temporal_resolution=180, starting_lag=7200)
 
 
 def DEP_plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
-                         highlight_period=24.,
-                         highlight_fmt={'color': 'grey',
-                                        'linestyle': 'dashed',
-                                        'linewidth': 1.},
-                         acf_fmt={'color': 'forestgreen',
-                                  'linewidth': 1.}):
+                             highlight_period=24.,
+                             highlight_fmt={'color': 'grey',
+                                            'linestyle': 'dashed',
+                                            'linewidth': 1.},
+                             acf_fmt={'color': 'forestgreen',
+                                      'linewidth': 1.}):
     """
     Plot the ACF as a function of lags.
 
@@ -370,96 +365,14 @@ def DEP_plot_autocorrelogram(lags, acf, fontsize=15, tick_sep_hrs=12.,
 
     return fig, ax
 
-# def test_LS():
-        
-#     rng = np.random.default_rng()
-
-#     A = 2.
-#     w0 = 1.  # rad/sec
-#     nin = 150
-#     nout = 100000
-
-#     time = rng.uniform(0, 10*np.pi, nin)
-
-#     y = A * np.cos(w0*time)
-
-#     freqs = np.linspace(0.01, 10, nout)
-#     periods = freq_to_period(freqs)
-    
-#     ls_pgram = generic_lomb_scargle(time, y, freqs)
-    
-    
-#     plot_LS_summary(time, y, freqs, periods, ls_pgram,
-#                     vertical_indicators=[])
-
-
-# def generic_lomb_scargle(time, y, freqs):
-    
-#     # time in seconds
-#     # NaN rows removed
-    
-
-
-#     ls_pgram = signal.lombscargle(time, y, freqs, normalize=True)
-
-#     return ls_pgram
-
-# def plot_LS_summary(time, y, freqs, periods, ls_pgram,
-#                     fontsize=15,
-#                     vertical_indicators=[],
-#                     pgram_fmt={'color': 'dimgrey', 'linewidth': 1.5},
-#                     vertical_ind_col='royalblue'):
-#                      # surrogate_period=None, surrogate_fft_amp=None,
-#                      # fft_xlims=[0, 36],
-#                      # signal_xlims=[np.nan, np.nan], signal_ymin=1.,
-#                      # fontsize=15,
-#                      # vertical_indicators=[],
-#                      # unix_to_dtime=False,
-#                      # resolution_lim=True,
-#                      # signal_y_log=False,
-#                      # input_fmt={'color': 'royalblue', 'linewidth': 1.},
-#                      # ifft_fmt={'color': 'royalblue', 'linewidth': 1.},
-#                      # input_ax=None, panel_label=True
-    
-#     # fig, (ax_t, ax_w) = plt.subplots(2, 1, constrained_layout=True)
-#     # ax_t.plot(time, y, 'b+')
-#     # ax_t.set_xlabel('Time [s]')
-
-#     # ax_w.plot(freqs, ls_pgram)
-#     # ax_w.set_xlabel('Angular frequency [rad/s]')
-#     # ax_w.set_ylabel('Normalized amplitude')
-#     # plt.show()
-    
-
-    
-#     fig, ax = plt.subplots(figsize=(12, 6))
-    
-#     ax.plot(freqs, ls_pgram, **pgram_fmt)
-#     ax.set_xscale('log')
-    
-#     # Formatting
-#     ax.set_ylabel('Lomb-Scargle Normalised Amplitude', fontsize=fontsize)
-#     ax.set_xlabel('Period (hours)', fontsize=fontsize)
-#     ax.tick_params(labelsize=fontsize)
-    
-    
-#     if vertical_indicators != []:
-#         for h in vertical_indicators:
-#             ax.axvline(h, color=vertical_ind_col, linestyle='dashed',
-#                           linewidth=1.5)
-#             trans = transforms.blended_transform_factory(ax.transData,
-#                                                          ax.transAxes)
-#             ax.text(h, 1.05, str(h), transform=trans,
-#                        fontsize=fontsize, va='top', ha='center',
-#                        color=vertical_ind_col)
-            
-
 # Functions to convert between period in hours
 #   and frequency in Hz
 # period = 1 / freq
 # period = period / (60*60)   # period in hours
+
+
 def period_to_freq(period):
-    
+
     if len(period[period == 0]) > 0:
         print('ERROR periodicity_functions.period_to_freq')
         print('Input periods contains period == 0')
@@ -472,8 +385,9 @@ def period_to_freq(period):
     #     freq.append(1. / (p * (60.*60.)))
     return np.array(freq)
 
+
 def freq_to_period(freq):
-    
+
     if len(freq[freq == 0]) > 0:
         print('ERROR periodicity_functions.freq_to_period')
         print('Input periods contains freq == 0')
@@ -482,18 +396,4 @@ def freq_to_period(freq):
 
     period = [(1/f) / (60. * 60.) for f in freq]
 
-    # period = []
-    # for f in freq:
-    #     period.append((1. / f) / (60.*60.))
-
-    return np.array(period)    
-
-
-# def DEPRECATED_test_acf():
-#     y = np.sin(np.linspace(0, 11, 51))
-#     temporal_resolution = pd.Timedelta(minutes=3)
-#     n_shifts = 5
-#     lags = np.array(range(n_shifts)) * temporal_resolution
-#     shifted_y, acf = autocorrelation(y, n_shifts)
-
-#     fig, ax = plot_autocorrelogram(lags, acf)
+    return np.array(period)
