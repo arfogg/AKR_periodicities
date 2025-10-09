@@ -271,8 +271,9 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
                 time, BS_signal[:, i], f_min, f_max, i, FAP_peak_directory,
                 FAP_peak_keyword, n0=n0)
 
-        # Compute FAP
-        FAP = np.nanmean(bootstrap_peak_magnitudes)
+        # Compute FAP, 97.7th percentile / 2 sigma
+        # FAP = np.nanmean(bootstrap_peak_magnitudes)
+        FAP = np.percentile(bootstrap_peak_magnitudes, 97.7)
         # Save FAP to file
         with open(FAP_fname, 'wb') as f:
             pickle.dump(bootstrap_peak_magnitudes, f,

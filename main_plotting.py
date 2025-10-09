@@ -33,7 +33,7 @@ import utility
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
 import read_wind_position
-import read_sunspot_n
+#import read_sunspot_n
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
 import read_omni
@@ -385,7 +385,7 @@ def run_lomb_scargle():
             # Read in/calc peak magnitudes for bootstraps and FAP
             bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
                 n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
-                interval_tag, FAP_pkl, n0=samples_per_peak)
+                interval_tag + '_' + freq_column, FAP_pkl, n0=samples_per_peak)
 
             ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
             if j == 0:
