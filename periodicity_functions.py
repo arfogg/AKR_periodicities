@@ -50,7 +50,7 @@ def generic_fft_function(time, y, temporal_resolution):
 
     X = fft(y)  # y axis for FFT plot
     N = len(X)  # number of FFT points
-    n = np.arange(N)    # 0 - N array. integers
+    n = np.arange(N) + 1   # 0 - N array. integers
     T = N/sampling_rate    # number of FFT points / number of obs per sec
     freq = n/T  # freqs fft is evaluated at
 

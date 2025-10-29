@@ -75,7 +75,7 @@ def repeat_waters2021_FFT():
     c = 'dimgrey'
     interval_tag = 'cassini_flyby'
 
-    LS_fig = os.path.join(fig_dir, "recreate_waters_FFT.png")
+    fft_png = os.path.join(fig_dir, "recreate_waters_FFT.png")
 
     # Read in interval data
     interval_options = read_and_tidy_data.return_test_intervals()
@@ -93,8 +93,49 @@ def repeat_waters2021_FFT():
     # if all(file_checks) is False:
     akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
 
-    breakpoint()
 
+    hf_df = akr_df.copy()
+    hf_df.drop(columns=['ipwr_20_50kHz', 'ipwr_50_100kHz', 'ipwr_100_300kHz',
+           'ipwr_300_500kHz', 'ipwr_500_700kHz', 'ipwr_700_850kHz',
+           'ipwr_100_400kHz','ipwr_150_400kHz',
+    'ipwr_150_650kHz', 'ipwr_650_800kHz'], inplace=True)
+    
+    # aparently there are no NaNs
+    
+    # "averaged over a 3-hr window" but "input at a 3-min resolution"
+    averaging_df = hf_df.copy(deep=True)
+    averaging_df.set_index('datetime', inplace=True)
+    smoothed = averaging_df['ipwr_100_650kHz'].rolling('3h').mean()
+    smoothed_df = pd.DataFrame({'datetime': smoothed.index,
+                                'ipwr_100_650kHz': smoothed.values})
+
+    # "log-transforming the data"
+    # natural log is the default
+    smoothed_df['log_pwr'] = np.log(smoothed_df.ipwr_100_650kHz)
+
+    # well, anything with zero power is inf when logged.
+    # not clear what the previous paper did to deal with these.
+    # for now, we will put a zero in each place so zero stays zero
+    zero_i, = np.where(smoothed_df.ipwr_100_650kHz==0)
+    smoothed_df.log_pwr.iloc[zero_i] = 0
+    
+
+    freq, period, fft_amp, inverse_signal = \
+        periodicity_functions.generic_fft_function(smoothed_df.datetime,
+                                                   smoothed_df.log_pwr,
+                                                   pd.Timedelta(minutes=3))
+
+    # "normalized the FFT output by the maximum spectral power"
+    fft_norm = fft_amp / np.max(fft_amp)
+
+    ax.plot(period, fft_norm)
+    ax.set_xscale('log')
+    ax.set_xlabel('Period (hours)', fontsize=fontsize)
+    ax.set_ylabel('Relative Spectral Power', fontsize=fontsize)
+    ax.axvline(24., linestyle='dotted', color='grey')
+    ax.axvline(12., linestyle='dashed', color='grey')
+
+    #breakpoint()
     
 
     # print('Frequency band: ', freq_column)
