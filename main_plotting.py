@@ -123,13 +123,19 @@ def trajectory_plots():
 
         # LT histogram
         draw_ticks = True if i == 2 else False
+        if i == 2:
+            half_magnitude = True
+            leg_lab = interval_options.label.iloc[i] + " * 0.5"
+        else:
+            half_magnitude = False
+            leg_lab = interval_options.label.iloc[i]
         axes.reshape(-1)[-1] = wind_location.lt_hist(
             interval_options.stime.iloc[i], interval_options.etime.iloc[i],
             wind_position_df, axes.reshape(-1)[-1],
             bar_fmt={'color': interval_options.color.iloc[i],
                      'edgecolor': 'black', 'alpha': 0.4,
-                     'label': interval_options.label.iloc[i]},
-            draw_ticks=draw_ticks)
+                     'label': leg_lab},
+            draw_ticks=draw_ticks, half_magnitude=half_magnitude)
 
     t = axes.reshape(-1)[-1].text(0.05, 0.95, axes_labels[3],
                                   transform=axes.reshape(-1)[-1].transAxes,

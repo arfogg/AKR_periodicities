@@ -149,7 +149,7 @@ def lt_hist(sdtime, edtime, wind_position_df, ax,
             lt_bin_centres=np.linspace(0, 23, 24), lt_bin_width=1.,
             fontsize=15, bar_fmt={'color': 'grey', 'edgecolor': 'black',
                                   'alpha': 0.5},
-            draw_ticks=True):
+            draw_ticks=True, half_magnitude=False):
     """
     Create a histogram of LT observations.
 
@@ -213,6 +213,8 @@ def lt_hist(sdtime, edtime, wind_position_df, ax,
                 'decimal_gseLT'])
 
     n_pc = (n_obs / n_total) * 100.
+    if half_magnitude is True:
+        n_pc = n_pc / 2. 
 
     # Calculate bin centres in degrees
     theta = 2 * np.pi * (lt_bin_centres/24.)
