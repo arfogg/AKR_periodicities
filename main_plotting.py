@@ -40,7 +40,7 @@ import read_omni
 import read_supermag
 import read_sunspot_n
 
-fontsize = 15
+fontsize = 18
 alphabet = list(string.ascii_lowercase)
 axes_labels = []
 for a in alphabet:
@@ -117,7 +117,7 @@ def trajectory_plots():
 
         # Formatting
         ax.set_title(interval_options.title.iloc[i], fontsize=fontsize)
-        t = ax.text(0.05, 0.95, axes_labels[i], transform=ax.transAxes,
+        t = ax.text(0.07, 0.93, axes_labels[i], transform=ax.transAxes,
                     fontsize=fontsize, va='top', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
@@ -125,17 +125,21 @@ def trajectory_plots():
         draw_ticks = True if i == 2 else False
         if i == 2:
             half_magnitude = True
-            leg_lab = interval_options.label.iloc[i] + " * 0.5"
+            # leg_lab = interval_options.label.iloc[i] + "\n(* 50%)"
+            
+            leg_lab = interval_options.label.iloc[i].split()[0] + "\n" + interval_options.label.iloc[i].split()[1] + "\n(* 50%)"
         else:
             half_magnitude = False
-            leg_lab = interval_options.label.iloc[i]
+            # leg_lab = interval_options.label.iloc[i]
+            leg_lab = interval_options.label.iloc[i].split()[0] + "\n" + interval_options.label.iloc[i].split()[1]
         axes.reshape(-1)[-1] = wind_location.lt_hist(
             interval_options.stime.iloc[i], interval_options.etime.iloc[i],
             wind_position_df, axes.reshape(-1)[-1],
             bar_fmt={'color': interval_options.color.iloc[i],
                      'edgecolor': 'black', 'alpha': 0.4,
                      'label': leg_lab},
-            draw_ticks=draw_ticks, half_magnitude=half_magnitude)
+            draw_ticks=draw_ticks, half_magnitude=half_magnitude,
+            fontsize=fontsize)
 
     t = axes.reshape(-1)[-1].text(0.05, 0.95, axes_labels[3],
                                   transform=axes.reshape(-1)[-1].transAxes,

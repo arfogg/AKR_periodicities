@@ -238,6 +238,6 @@ def lt_hist(sdtime, edtime, wind_position_df, ax,
                 '% observing time', rotation=label_position-83,
                 ha='center', va='center', fontsize=fontsize)
         ax.tick_params(labelsize=fontsize)
-        ax.legend(fontsize=fontsize)
+        ax.legend(fontsize=fontsize, loc="center left")
 
     return ax
