@@ -433,6 +433,11 @@ def run_lomb_scargle():
                                    arrowprops={'facecolor': 'black'},
                                    fontsize=fontsize, va='top', ha='center',
                                    color=vertical_ind_col)
+                
+    # Add in more ticks
+    majticks = [10, 15, 20, 25, 30, 35, 40, 45, 50]
+    majlabels = [str(t) for t in majticks]
+    #ax[0].set_xticks(majticks, labels=majlabels)
 
     # Label panels
     titles = np.append('Synthetic', interval_options.label)
@@ -443,6 +448,7 @@ def run_lomb_scargle():
 
         tit = a.text(1.0, 1.05, titles[i], transform=a.transAxes,
                      fontsize=1.25 * fontsize, va='center', ha='right')
+        a.set_xticks(majticks, labels=majlabels)
 
     # Adjust margins etc
     fig.tight_layout()
