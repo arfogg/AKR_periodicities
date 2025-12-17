@@ -9,6 +9,7 @@
 [![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
 This package is used to examine periodicities in Auroral Kilometric Radiation data detected by [NASA Wind/WAVES](https://wind.nasa.gov/). Manuscript submitted to Journal of Geophysical Research: Space Physics entitled "Statistical Scale Analyses of a Diurnal Periodicity in Auroral Kilometric Radiation, observed by Wind/WAVES".
+Code v1.0.1 [![DOI](https://zenodo.org/badge/782039453.svg)](https://doi.org/10.5281/zenodo.17966378)
 
 **License:** CC0-1.0
 
