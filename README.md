@@ -18,10 +18,15 @@ This package is used to examine periodicities in Auroral Kilometric Radiation da
 
 ## Required Packages
 
-TBC
+* aaft v0.1 [github](https://github.com/lneisenman/aaft)
+* matplotlib v3.10.0
+* neurodsp v2.3.0 [github](https://github.com/neurodsp-tools/neurodsp), [article](https://doi.org/10.21105/joss.01272)
+* numpy v2.2.5
+* pandas v2.2.3 
+* scipy v1.15.3 [github](https://github.com/spacepy/spacepy), [article](https://doi.org/10.3389/fspas.2022.1023612)
+* spacepy v0.7.0
 
-Developed using Python 3.8.8. 
-
+Developed using Python 3.12.9. 
 
 ## Acknowledgements
 
