@@ -1,7 +1,5 @@
 <h1 align="center">:satellite: :earth_africa: AKR_periodicities :radio: :rocket: </h1> 
 
-**Please note this is a work in progress as of Sept 2024!**
-
 [![GitHub last commit](https://img.shields.io/github/last-commit/arfogg/AKR_periodicities)](#)
 [![Stars](https://img.shields.io/github/stars/arfogg/AKR_periodicities?style=social&color=%23FFB31A)](#)
 [![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](https://www.python.org/)
@@ -10,7 +8,7 @@
 ![Contributions welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)
 [![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
-This package is used to examine periodicities in Auroral Kilometric Radiation data detected by [NASA Wind/WAVES](https://wind.nasa.gov/).
+This package is used to examine periodicities in Auroral Kilometric Radiation data detected by [NASA Wind/WAVES](https://wind.nasa.gov/). Manuscript submitted to Journal of Geophysical Research: Space Physics entitled "Statistical Scale Analyses of a Diurnal Periodicity in Auroral Kilometric Radiation, observed by Wind/WAVES"
 
 **License:** CC0-1.0
 
@@ -23,8 +21,8 @@ This package is used to examine periodicities in Auroral Kilometric Radiation da
 * neurodsp v2.3.0 [github](https://github.com/neurodsp-tools/neurodsp), [article](https://doi.org/10.21105/joss.01272)
 * numpy v2.2.5
 * pandas v2.2.3 
-* scipy v1.15.3 [github](https://github.com/spacepy/spacepy), [article](https://doi.org/10.3389/fspas.2022.1023612)
-* spacepy v0.7.0
+* scipy v1.15.3
+* spacepy v0.7.0 [github](https://github.com/spacepy/spacepy), [article](https://doi.org/10.3389/fspas.2022.1023612)
 
 Developed using Python 3.12.9. 
 
