@@ -15,6 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from numpy.fft import fft, ifft
 import matplotlib.transforms as transforms
+from scipy.stats import linregress
 
 import periodicity_functions
 import read_and_tidy_data
@@ -36,7 +37,7 @@ import read_omni
 import read_supermag
 import read_sunspot_n
 
-fontsize = 15
+#fontsize = 15
 alphabet = list(string.ascii_lowercase)
 axes_labels = []
 for a in alphabet:
@@ -45,6 +46,130 @@ for a in alphabet:
 fig_dir = os.path.join("C:" + os.sep,
                        r"Users\Alexandra\Documents\figures\akr_periodicities")
 data_dir = os.path.join(fig_dir, "data_quickloads")
+
+
+# Set up fontsizes
+fontsize = 15
+plt.rcParams['font.size'] = fontsize
+plt.rcParams['axes.titlesize'] = fontsize
+plt.rcParams['axes.labelsize'] = fontsize
+plt.rcParams['xtick.labelsize'] = fontsize
+plt.rcParams['ytick.labelsize'] = fontsize
+plt.rcParams['legend.fontsize'] = fontsize
+
+
+def run_analyses():
+
+    # correlate james power with current power
+    # try 100-650 band
+    # log intensity
+    # 3 hr smoothing
+    # constant gap fill (see james email)
+    # do FFT
+    print('hello')
+
+    # (1) basic correlation mine vs James ipower
+    # (2) comparison of mine vs James (correlation, timeseries) at each process stage (power, smoothed, logged)
+    # (3) FFT on both
+    # (4) LS on both
+
+
+def compare_two_timeseries(
+        n1 = 'Name1', n2 = 'Name2', c1='black', c2='palevioletred'):#x1, y1, x2, y2, n1='1', n2='2'):
+    x1 = np.linspace(0, 100, 1000)
+    x2 = np.linspace(0, 100, 1000)
+    y1 = np.sin(x1)
+    y2 = np.sin(x2) + np.random.normal(0., 200.*np.mean(y1), len(x2))
+
+    
+    
+    fig = plt.figure(figsize=(12.5, 10))
+    ax = [plt.subplot(221), plt.subplot(222), plt.subplot(212)]
+
+    # Correlate
+    ax[0].set_facecolor('lightgrey')
+    h, xedges, yedges, im = ax[0].hist2d(y1, y2, bins=40, cmin=1, cmap='RdPu')
+    # ax[0].plot(y1, y2, linewidth=0., marker='x', color='black')
+    fig.colorbar(im, ax=ax[0], label='Counts')
+    linear_fit = linregress(y1, y2)
+    
+    x_mod = np.linspace(np.min([y1, y2]), np.max([y1, y2]), 100)
+    y_mod = (linear_fit.slope * x_mod) + linear_fit.intercept
+    ax[0].plot(x_mod, y_mod, color='black', linewidth=1.5,
+               label='y = %3.7sx + %3.7s\nr = %3.7s'%(
+                   linear_fit.slope, linear_fit.intercept, linear_fit.rvalue))
+    # ax[0].text(0.05, 0.95,
+    #            'y = %3.7sx + %3.7s'%(linear_fit.slope, linear_fit.intercept),
+    #            transform=ax[0].transAxes, ha='left', va='top')
+    #breakpoint()
+    ax[0].set_xlabel(n1)
+    ax[0].set_ylabel(n2)
+    ax[0].legend(loc='upper left')
+    
+    #breakpoint()
+
+    # Timeseries
+    ax[2].plot(x2, y2, label=n2, color=c2, linewidth=2., linestyle='dashed')
+    ax[2].plot(x1, y1, label=n1, color=c1)
+
+    ax[2].legend(loc='upper right')
+    ax[2].set_xlabel('UT')
+    ax[2].set_ylabel('Intensity')
+    fig.tight_layout()
+    #breakpoint()
+    
+
+def analog_waters_data():
+    """
+    Here we create an analog of the data from Waters+ 2021 paper for the
+    Wind-Cassini conjunction.
+
+    Returns
+    -------
+    smoothed_df : pd.DataFrame
+        Contains data preprocessed as per Waters 2021.
+
+    """
+
+    interval_tag = 'cassini_flyby'
+    # freq_column = 'ipwr_100_650kHz'
+
+    # Read in interval data
+    # interval_options = read_and_tidy_data.return_test_intervals()
+    akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+
+    akr_df.drop(columns=['ipwr_20_50kHz', 'ipwr_50_100kHz', 'ipwr_100_300kHz',
+                         'ipwr_300_500kHz', 'ipwr_500_700kHz',
+                         'ipwr_700_850kHz', 'ipwr_100_400kHz',
+                         'ipwr_150_400kHz', 'ipwr_150_650kHz',
+                         'ipwr_650_800kHz'], inplace=True)
+
+    # We have no NaNs - needs investigating
+    # Could be ok, since we are using a more up to date version of Waters data
+
+    # Waters fig. 9 caption:
+    # "Analysis is performed on the integrated powers after applying a 3-hr
+    # rolling window and log-transforming the data"
+
+    # 3 hour smoothing
+    averaging_df = akr_df.copy(deep=True)
+    averaging_df.set_index('datetime', inplace=True)
+    smoothed = averaging_df['ipwr_100_650kHz'].rolling('3h').mean()
+    smoothed_df = pd.DataFrame({'datetime': smoothed.index,
+                                'ipwr_100_650kHz': smoothed.values})
+
+    # Log power
+    smoothed_df['log_pwr'] = np.log(smoothed_df.ipwr_100_650kHz)
+
+    # well, anything with zero power is inf when logged.
+    # not clear what the previous paper did to deal with these.
+    # for now, we will put a zero in each place so zero stays zero
+    zero_i, = np.where(smoothed_df.ipwr_100_650kHz == 0)
+    smoothed_df.loc[zero_i, "log_pwr"] = 0
+
+    return smoothed_df
+
+
 
 
 def repeat_waters2021_FFT():
@@ -135,103 +260,3 @@ def repeat_waters2021_FFT():
     ax.axvline(24., linestyle='dotted', color='grey')
     ax.axvline(12., linestyle='dashed', color='grey')
 
-    #breakpoint()
-    
-
-    # print('Frequency band: ', freq_column)
-    # fft_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_' +
-    #                       interval_tag + '_' + freq_column + '.csv')
-    # if pathlib.Path(fft_csv).is_file() is False:
-    #     freq_df = akr_df.dropna(subset=[freq_column])
-    #     t1 = pd.Timestamp.now()
-    #     print('starting LS at ', t1)
-    #     ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
-    #         freq_df.unix, freq_df[freq_column], f_min, f_max,
-    #         n0=samples_per_peak)
-    #     t2 = pd.Timestamp.now()
-    #     print('LS finished, time elapsed: ', t2-t1)
-    #     # Write to file
-    #     periods = periodicity_functions.freq_to_period(freqs)
-    #     ls_df = pd.DataFrame({'period_hr': periods,
-    #                           'angular_freq': freqs,
-    #                           'ls_pgram': ls_pgram})
-    #     t2 = pd.Timestamp.now()
-    #     print('LS finished, time elapsed: ', t2-t1)
-    #     # Write to file
-    #     ls_df.to_csv(fft_csv, index=False)
-
-    # else:
-    #     ls_df = pd.read_csv(ls_csv, delimiter=',',
-    #                         float_precision='round_trip')
-
-    #     ls_pgram = np.array(ls_df.ls_pgram)
-    #     periods = np.array(ls_df.period_hr)
-
-    # # Plot FAP here
-    # FAP_pkl = os.path.join(
-    #     data_dir, "lomb_scargle",
-    #     interval_tag + '_' + freq_column + "_FAP_" + str(n_bootstrap)
-    #     + "_BSs.pkl")
-    # # Read in bootstrap
-    # ftime_cl, BS = main_plotting.read_subset_bootstraps(interval_tag,
-    #                                       freq_ch=freq_column,
-    #                                       n_bootstrap=n_bootstrap)
-    # # Convert ftime_cl to unix
-    # ftime_unix = [pd.Timestamp(t).timestamp() for t in ftime_cl]
-
-    # # Read in/calc peak magnitudes for bootstraps and FAP
-    # bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
-    #     n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
-    #     interval_tag + '_' + freq_column, FAP_pkl, n0=samples_per_peak)
-
-    # ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
-    # if j == 0:
-    #     trans = transforms.blended_transform_factory(
-    #         ax[i + 1].transAxes, ax[i + 1].transData)
-    #     ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP),
-    #                        xy=(0.2, FAP), xytext=(0.1, FAP),
-    #                        xycoords=trans, arrowprops={'facecolor': c},
-    #                        fontsize=fontsize, va='center', ha='right',
-    #                        color=c, bbox=annotate_bbox,
-    #                        fontweight="bold")
-    # elif j == 1:
-    #     trans = transforms.blended_transform_factory(
-    #         ax[i + 1].transAxes, ax[i + 1].transData)
-    #     ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP),
-    #                        xy=(0.8, FAP), xytext=(0.9, FAP),
-    #                        xycoords=trans, arrowprops={'facecolor': c},
-    #                        fontsize=fontsize, va='center', ha='left',
-    #                        color=c, bbox=annotate_bbox, fontweight="bold")
-
-    # ax[i + 1].set_xscale('log')
-
-    # # Formatting
-    # ax[i + 1].set_ylabel('Lomb-Scargle\nNormalised Amplitude',
-    #                      fontsize=fontsize)
-    # ax[i + 1].set_xlabel('Period (hours)', fontsize=fontsize)
-    # ax[i + 1].tick_params(labelsize=fontsize)
-    # ax[i + 1].legend(fontsize=fontsize, loc='upper left')
-    # if vertical_indicators != []:
-    #     for h in vertical_indicators:
-    #         trans = transforms.blended_transform_factory(
-    #             ax[i + 1].transData, ax[i + 1].transAxes)
-    #         ax[i + 1].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
-    #                            xycoords=trans,
-    #                            arrowprops={'facecolor': 'black'},
-    #                            fontsize=fontsize, va='top', ha='center',
-    #                            color=vertical_ind_col)
-
-    # # Label panels
-    # titles = np.append('Synthetic', interval_options.label)
-    # for (i, a) in enumerate(ax):
-    #     t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
-    #                fontsize=fontsize, va='bottom', ha='left')
-    #     t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
-
-    #     tit = a.text(1.0, 1.05, titles[i], transform=a.transAxes,
-    #                  fontsize=1.25 * fontsize, va='center', ha='right')
-
-    # # Adjust margins etc
-    # fig.tight_layout()
-    # # Save to file
-    # # fig.savefig(LS_fig)
