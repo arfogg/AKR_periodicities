@@ -37,6 +37,9 @@ import read_omni
 import read_supermag
 import read_sunspot_n
 
+sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\qq_plot')
+import qq_plot
+
 #fontsize = 15
 alphabet = list(string.ascii_lowercase)
 axes_labels = []
@@ -75,14 +78,13 @@ def run_analyses():
 
 
 def compare_two_timeseries(
-        n1 = 'Name1', n2 = 'Name2', c1='black', c2='palevioletred'):#x1, y1, x2, y2, n1='1', n2='2'):
+        n1='Name1', n2='Name2', c1='black', c2='palevioletred'):
+    # x1, y1, x2, y2, n1='1', n2='2'):
     x1 = np.linspace(0, 100, 1000)
     x2 = np.linspace(0, 100, 1000)
     y1 = np.sin(x1)
     y2 = np.sin(x2) + np.random.normal(0., 200.*np.mean(y1), len(x2))
 
-    
-    
     fig = plt.figure(figsize=(12.5, 10))
     ax = [plt.subplot(221), plt.subplot(222), plt.subplot(212)]
 
@@ -92,21 +94,25 @@ def compare_two_timeseries(
     # ax[0].plot(y1, y2, linewidth=0., marker='x', color='black')
     fig.colorbar(im, ax=ax[0], label='Counts')
     linear_fit = linregress(y1, y2)
-    
+
     x_mod = np.linspace(np.min([y1, y2]), np.max([y1, y2]), 100)
     y_mod = (linear_fit.slope * x_mod) + linear_fit.intercept
     ax[0].plot(x_mod, y_mod, color='black', linewidth=1.5,
-               label='y = %3.7sx + %3.7s\nr = %3.7s'%(
+               label='y = %3.7sx + %3.7s\nr = %3.7s' % (
                    linear_fit.slope, linear_fit.intercept, linear_fit.rvalue))
     # ax[0].text(0.05, 0.95,
     #            'y = %3.7sx + %3.7s'%(linear_fit.slope, linear_fit.intercept),
     #            transform=ax[0].transAxes, ha='left', va='top')
-    #breakpoint()
+    # breakpoint()
     ax[0].set_xlabel(n1)
     ax[0].set_ylabel(n2)
-    ax[0].legend(loc='upper left')
-    
-    #breakpoint()
+    ax[0].legend(loc='lower right')
+
+    # breakpoint()
+    # QQ Plot
+    ax[1] = qq_plot.qq_plot(y1, y2, ax[1])
+    ax[1].set_xlabel(n1)
+    ax[1].set_ylabel(n2)
 
     # Timeseries
     ax[2].plot(x2, y2, label=n2, color=c2, linewidth=2., linestyle='dashed')
@@ -115,9 +121,15 @@ def compare_two_timeseries(
     ax[2].legend(loc='upper right')
     ax[2].set_xlabel('UT')
     ax[2].set_ylabel('Intensity')
+
+    for (i, a) in enumerate(ax):
+        t = a.text(0.05, 0.95, axes_labels[i], transform=a.transAxes,
+                   fontsize=fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
     fig.tight_layout()
-    #breakpoint()
-    
+    # breakpoint()
+
 
 def analog_waters_data():
     """
