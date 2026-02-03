@@ -1423,6 +1423,129 @@ def lomb_scargle_cassini_expanding():
     fig.savefig(fig_png)
 
 
+def lomb_scargle_expanding(n_rand=100):
+    """
+    Run the Lomb-Scargle analysis, gradually expanding n_rand random intervals.
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    fig_png = os.path.join(fig_dir, "expanding_lomb_scargle_random_.png")
+
+    # Define Lomb-Scargle freqs etc
+    f_min = 1 / (48. * 60. * 60.)
+    f_max = 1 / (8. * 60. * 60.)
+    samples_per_peak = 5
+
+    freq_column = "ipwr_100_400kHz"
+
+    # # Read in interval data
+    # interval_options = read_and_tidy_data.return_test_intervals()
+    # interval_details = interval_options.loc[
+    #     interval_options.tag == "cassini_flyby"]
+    # interval_stime = interval_details.stime.iloc[0]
+    # interval_etime = interval_details.etime.iloc[0]
+    # interval_midtime = ((interval_etime - interval_stime) /
+    #                     2.) + interval_stime
+
+    # Read in *all* AKR integrated power
+    akr_df = read_and_tidy_data.select_akr_intervals("full_archive")
+
+
+    # Choose random start points
+    np.random.seed(0)
+    random_starts = np.random.choice(np.array(range(len(akr_df))), n_rand,
+                                     replace=False)
+
+    starts = akr_df.datetime.iloc[random_starts].to_numpy()
+
+    # Sliding parameters
+    slides = 50
+    slide_width = pd.Timedelta(days=5)
+    slide_width_multiplier = np.linspace(0, slides, slides+1)
+   
+
+    t_length = np.full((n_rand, slides + 1), pd.NaT)
+    period_of_peak = np.full((n_rand, slides + 1), np.nan)
+    for j in range(n_rand):
+    
+ 
+        x_lim = [starts[j],
+                 starts[j] + pd.Timedelta(days=30) + (slides * slide_width)]
+    
+        ut_s, ut_e, length = [], [], []
+        for i, factor in enumerate(slide_width_multiplier):
+    
+            ut_s.append(starts[j])
+            ut_e.append(starts[j] + pd.Timedelta(days=30) + (factor * slide_width))
+            length.append((ut_e[i] - ut_s[i]).total_seconds())
+    
+        ut_s = np.array(ut_s)
+        ut_e = np.array(ut_e)
+        # breakpoint()
+        # length = np.array(length)
+        # breakpoint()
+        t_length[j, :] = length
+        # t_length = np.append(t_length, length)
+    
+        # LS analysis here
+        variable_freqs = []
+        variable_periods = []
+        ls_pgram =[]
+    
+        peak_freq = np.full(slides + 1, np.nan)
+        peak_height = np.full(slides + 1, np.nan)
+        for i in range(slides + 1):
+            # Subselect AKR df
+            subset_df = akr_df.loc[(akr_df.datetime >= ut_s[i]) &
+                                   (akr_df.datetime <= ut_e[i]),
+                                   :].reset_index(drop=True)
+    
+            output = lomb_scargle.generic_lomb_scargle(subset_df.unix,
+                                                       subset_df[freq_column],
+                                                       f_min, f_max,
+                                                       n0=samples_per_peak)
+    
+            variable_freqs.append(output[1])
+            ls_pgram.append(output[2])
+            variable_periods.append(
+                periodicity_functions.freq_to_period(output[1]))
+    
+            arg = output[2].argmax()
+            peak_height[i] = output[2][arg]
+            peak_freq[i] = output[1][arg]
+
+        period_of_peak[j, :] = periodicity_functions.freq_to_period(peak_freq)
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    length_days = length / (60. * 60 * 24)
+
+    for j in range(n_rand):
+        ax.plot(length_days[j, :], period_of_peak[j, :], linewidth=0.,
+                marker='o', markersize=fontsize, color='deeppink',
+                alpha=0.65, markeredgecolor='black',label=j)
+
+    ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
+    ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
+    ax.set_ylim([20, 40])
+    ax.axhline(24., linestyle='dashed', linewidth=2.,
+               zorder=0.5, color='black')
+    ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
+            transform=ax.transData, fontsize=fontsize, color='black')
+    ax.legend()
+
+    # Adjust margins etc
+    fig.tight_layout()
+
+    # Save to file
+    # fig.savefig(fig_png)
+
+
+
 def plot_sliding_spectrogram():
     """
     Plot the LSSA modulation spectrograms.
