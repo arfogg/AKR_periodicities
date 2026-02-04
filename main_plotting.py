@@ -18,7 +18,7 @@ import pandas as pd
 import matplotlib.transforms as transforms
 
 from numpy.fft import fft, ifft
-
+from matplotlib.gridspec import GridSpec
 from neurodsp.sim import sim_oscillation
 
 import periodicity_functions
@@ -1442,6 +1442,8 @@ def lomb_scargle_expanding(n_rand=100):
 
     freq_column = "ipwr_100_400kHz"
 
+    annotation_colour = 'purple'
+
     # # Read in interval data
     # interval_options = read_and_tidy_data.return_test_intervals()
     # interval_details = interval_options.loc[
@@ -1466,21 +1468,22 @@ def lomb_scargle_expanding(n_rand=100):
     slides = 50
     slide_width = pd.Timedelta(days=5)
     slide_width_multiplier = np.linspace(0, slides, slides+1)
-   
+    first_window_width = pd.Timedelta(days=30) 
 
     t_length = np.full((n_rand, slides + 1), pd.NaT)
     period_of_peak = np.full((n_rand, slides + 1), np.nan)
+
     for j in range(n_rand):
-    
+        print('Analysing random window ', j)
  
         x_lim = [starts[j],
-                 starts[j] + pd.Timedelta(days=30) + (slides * slide_width)]
+                 starts[j] + first_window_width + (slides * slide_width)]
     
         ut_s, ut_e, length = [], [], []
         for i, factor in enumerate(slide_width_multiplier):
     
             ut_s.append(starts[j])
-            ut_e.append(starts[j] + pd.Timedelta(days=30) + (factor * slide_width))
+            ut_e.append(starts[j] + first_window_width + (factor * slide_width))
             length.append((ut_e[i] - ut_s[i]).total_seconds())
     
         ut_s = np.array(ut_s)
@@ -1495,7 +1498,7 @@ def lomb_scargle_expanding(n_rand=100):
         variable_freqs = []
         variable_periods = []
         ls_pgram =[]
-    
+
         peak_freq = np.full(slides + 1, np.nan)
         peak_height = np.full(slides + 1, np.nan)
         for i in range(slides + 1):
@@ -1520,30 +1523,169 @@ def lomb_scargle_expanding(n_rand=100):
 
         period_of_peak[j, :] = periodicity_functions.freq_to_period(peak_freq)
 
+
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    length_days = length / (60. * 60 * 24)
+    length_days = t_length / (60. * 60 * 24)
+    
+    mean_peak = np.mean(period_of_peak, axis=0)
+    median_peak = np.median(period_of_peak, axis=0)
+    std = np.std(period_of_peak, axis=0)
 
-    for j in range(n_rand):
-        ax.plot(length_days[j, :], period_of_peak[j, :], linewidth=0.,
-                marker='o', markersize=fontsize, color='deeppink',
-                alpha=0.65, markeredgecolor='black',label=j)
+    
+    # return length_days, period_of_peak, mean_peak, median_peak, std
+    # print('apple')
+    # for j in range(n_rand):
+    #     ax.plot(length_days[j, :], period_of_peak[j, :], linewidth=0.,
+    #             marker='o', markersize=fontsize,# color='deeppink',
+    #             alpha=0.65, markeredgecolor='black', label=str(j))
+    # print('banana')
+    # ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
+    # ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
+    # # ax.set_ylim([20, 40])
+    # ax.axhline(24., linestyle='dashed', linewidth=2.,
+    #            zorder=0.5, color='black')
+    # ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
+    #         transform=ax.transData, fontsize=fontsize, color='black')
+    # # ax.legend()
 
-    ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
-    ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
-    ax.set_ylim([20, 40])
-    ax.axhline(24., linestyle='dashed', linewidth=2.,
-               zorder=0.5, color='black')
-    ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
-            transform=ax.transData, fontsize=fontsize, color='black')
-    ax.legend()
-
-    # Adjust margins etc
-    fig.tight_layout()
+    # # Adjust margins etc
+    # fig.tight_layout()
 
     # Save to file
     # fig.savefig(fig_png)
 
+
+    
+    # x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
+    # x_bin_edges = x_bin_centres - (slide_width.days / 2.)
+    # x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
+    # y_bin_edges = np.linspace(5, 50, 91)
+    
+    # fig, ax = plt.subplots(figsize=(12, 6))
+    # ax.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='grey')
+
+    # x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
+    # x_bin_edges = x_bin_centres - (slide_width.days / 2.)
+    # x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
+    # y_bin_edges = np.linspace(5, 50, 46) + 0.5
+    
+    # fig, ax = plt.subplots(figsize=(12, 6))
+    # ax.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='copper', norm='log')
+    # ax.set_facecolor('gainsboro')
+
+    # x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
+    # x_bin_edges = x_bin_centres - (slide_width.days / 2.)
+    # x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
+    # y_bin_edges = np.linspace(5, 50, 46) + 0.5
+    
+    # fig, ax = plt.subplots(figsize=(12, 6))
+    # h, x, y, im = ax.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='copper', norm='log')
+    # ax.set_facecolor('gainsboro')
+    
+    # ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
+    # ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
+
+    # ax.axhline(24., linestyle='dashed', linewidth=2., color='black')
+    # ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
+    #         transform=ax.transData, fontsize=fontsize, color='black')
+
+    
+    # cbar = fig.colorbar(im, ax=ax)
+    # cbar.ax.tick_params(labelsize=fontsize)
+    # cbar.set_label('Occurrence (counts)', fontsize=fontsize)
+    
+    # x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
+    # x_bin_edges = x_bin_centres - (slide_width.days / 2.)
+    # x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
+    # y_bin_edges = np.linspace(5, 50, 46) + 0.5
+
+    # fig, ax = plt.subplots(figsize=(12, 6))
+    # h, x, y, im = ax.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='magma', norm='log')
+    # ax.set_facecolor('gainsboro')
+
+    # ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
+    # ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
+
+    # for l in [12, 24, 36, 48]:
+    #     ax.annotate(str(l), (ax.get_xlim()[1], l), xytext=(ax.get_xlim()[1]*1.025, l), xycoords='data', color=annotation_colour, fontsize=fontsize, va='center', ha='left',
+    #         arrowprops=dict(facecolor=annotation_colour, shrink=0.05))
+        
+
+    # cbar = fig.colorbar(im, ax=ax)
+    # cbar.ax.tick_params(labelsize=fontsize)
+    # cbar.set_label('Occurrence (counts)', fontsize=fontsize)
+    
+    
+        
+    x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
+    x_bin_edges = x_bin_centres - (slide_width.days / 2.)
+    x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
+    y_bin_edges = np.linspace(5, 50, 46) + 0.5
+    
+    #fig, ax = plt.subplots(figsize=(12, 14))
+    fig = plt.figure(figsize=(14, 14))
+    gs = GridSpec(3, 1, height_ratios=[2, 1, 1])
+    
+    ax1 = fig.add_subplot(gs[0])
+    ax2 = fig.add_subplot(gs[1])
+    ax3 = fig.add_subplot(gs[2])
+    
+    h, x, y, im = ax1.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='magma', norm='log')
+    ax1.set_facecolor('gainsboro')
+    
+    ax1.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
+    ax1.set_xlabel("Length of archive (days)", fontsize=fontsize)
+    
+    for l in [12, 24, 36, 48]:
+        # ax.axhline(24., linestyle='dashed', linewidth=2., color='purple')
+        # ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
+        #        transform=ax.transData, fontsize=fontsize, color='black')
+        ax1.annotate(str(l), (ax1.get_xlim()[1], l),
+                     xytext=(ax1.get_xlim()[1]*1.025, l),
+                     xycoords='data',
+                     color=annotation_colour, fontsize=fontsize,
+                     va='center', ha='left',
+                     arrowprops=dict(facecolor=annotation_colour, shrink=0.05))
+        
+    
+    cbar = fig.colorbar(im, ax=ax1)
+    cbar.ax.tick_params(labelsize=fontsize)
+    cbar.set_label('Occurrence (counts)', fontsize=fontsize)
+    
+    
+    ax_cbar_pos = ax1.get_position().bounds
+    # Average
+    ax2.plot(length_days[0, :], mean_peak, color='crimson', linewidth=2., label='APPROXMean')
+    ax2.plot(length_days[0, :], median_peak, color='grey', linewidth=2., label='APPROXMedian')
+    
+    ax2.set_ylabel('Average period of\nLS peak (hours)\nAPPROX ATM', fontsize=fontsize)
+    ax2.set_xlabel('Length of archive (days)', fontsize=fontsize)
+    ax2.legend(fontsize=fontsize)
+    
+    # Standard dev
+    ax3.plot(length_days[0, :], std, color='crimson', linewidth=2., label='Standard\nDeviation')
+    
+    ax3.set_ylabel('Standard deviation of\nperiods of LS peak (hours)', fontsize=fontsize)
+    ax3.set_xlabel('Length of archive (days)', fontsize=fontsize)
+    
+    # Make width same as (a)
+    pos = ax2.get_position().bounds
+    ax2.set_position([ax_cbar_pos[0], pos[1], ax_cbar_pos[2], pos[3]])
+    pos = ax3.get_position().bounds
+    ax3.set_position([ax_cbar_pos[0], pos[1], ax_cbar_pos[2], pos[3]])
+        
+    
+    for i, a in enumerate([ax1, ax2, ax3]):
+        # increase tick fontsize
+        a.tick_params(labelsize=fontsize)
+        t = a.text(0.02, 0.95, axes_labels[i], transform=a.transAxes,
+                       fontsize=1.5 * fontsize, va='top', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+    # Save to file
+    fig.savefig(fig_png)
+    print('NEED TO MAKE AXES LIMITS OF B AND C ALIGN WITH A')
 
 
 def plot_sliding_spectrogram():
