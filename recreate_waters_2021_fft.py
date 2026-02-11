@@ -88,11 +88,11 @@ def run_analyses():
     # Hence, round all datetimes to nearest second
     waters_df['datetime_rounded'] = waters_df.datetime_ut.dt.round('s')
     fogg_df['datetime_rounded'] = fogg_df.datetime.dt.round('s')
-    
+
     # Tidy up for merging
-    waters_df['waters_ipwr_100_650kHz'] = waters_df['P_Wsr-1_100_650_kHz']
+    #waters_df['waters_ipwr_100_650kHz'] = waters_df['P_Wsr-1_100_650_kHz']
     waters_df.drop(columns=['daily_min_index', 'GSE_LAT', 'GSE_LCT_T',
-                            'P_Wsr-1_100_650_kHz',
+                            #'P_Wsr-1_100_650_kHz',
                             'P_Wsr-1_30_100_kHz', 'P_Wsr-1_30_650_kHz',
                             'RADIUS', 'SM_LAT', 'datetime_ut',
                             'unix', 'date_i'], inplace=True)
@@ -100,16 +100,16 @@ def run_analyses():
 
 
 
-
+    breakpoint()
     # Merge DataFrames
     merged_ipwr_df = pd.merge(fogg_df, waters_df,
                               on='datetime_rounded', how='inner')
-
+    breakpoint()
     # Record where zeros exist in both datasets
     waters_zero_ind = np.array(merged_ipwr_df.loc[
-        merged_ipwr_df.waters_ipwr_100_650kHz == 0.0].index)
+        merged_ipwr_df.waters_ipwr_100_650kHz_with_zeros == 0.0].index)
     fogg_zero_ind = np.array(merged_ipwr_df.loc[
-        merged_ipwr_df.ipwr_100_650kHz == 0.0].index)
+        merged_ipwr_df.fogg_ipwr_100_650kHz_with_zeros == 0.0].index)
     waters_zero_dt = merged_ipwr_df.datetime_rounded.iloc[waters_zero_ind]
     fogg_zero_dt = merged_ipwr_df.datetime_rounded.iloc[fogg_zero_ind]
 
@@ -118,24 +118,15 @@ def run_analyses():
         merged_ipwr_df['waters_ipwr_100_650kHz'] == 0.0,
         "waters_ipwr_100_650kHz"] = np.nan
     merged_ipwr_df.loc[
-        merged_ipwr_df['ipwr_100_650kHz'] == 0.0,
-        "ipwr_100_650kHz"] = np.nan
+        merged_ipwr_df['fogg_ipwr_100_650kHz'] == 0.0,
+        "fogg_ipwr_100_650kHz"] = np.nan
     
-
-
     ipwr_max = np.nanmax([np.array(merged_ipwr_df.waters_ipwr_100_650kHz),
                           np.array(merged_ipwr_df.ipwr_100_650kHz)])
     ipwr_min = np.nanmin([np.array(merged_ipwr_df.waters_ipwr_100_650kHz),
                           np.array(merged_ipwr_df.ipwr_100_650kHz)])
 
-
-
-
     hist_bins = np.logspace(np.log10(ipwr_min), np.log10(ipwr_max), 50)
-    #breakpoint()
-
-
-
 
     # (1) basic correlation mine vs James ipower
     compare_two_timeseries(merged_ipwr_df.datetime_rounded,
@@ -145,7 +136,7 @@ def run_analyses():
                            n1='Fogg', n2='Waters',
                            title='Wind-Cassini Conjunction, comparing Waters/Fogg data\nAll data (excluding zeros)',
                            hist_bins=hist_bins)
-    # breakpoint()
+    breakpoint()
     
     # Where are the zeros?
     where_are_the_zeros(fogg_zero_dt, waters_zero_dt, n1='Fogg', n2='Waters')
@@ -366,16 +357,24 @@ def analog_waters_data():
     averaging_df.set_index('datetime', inplace=True)
     smoothed = averaging_df['ipwr_100_650kHz'].rolling('3h').mean()
     smoothed_df = pd.DataFrame({'datetime': smoothed.index,
-                                'ipwr_100_650kHz': smoothed.values})
-
+                                'fogg_smoothed_ipwr_100_650kHz': smoothed.values,
+                                'fogg_ipwr_100_650kHz': averaging_df.ipwr_100_650kHz})
+    smoothed_df.reset_index(drop=True, inplace=True)
+    
+    # Any power == 0 is replace with 10^-8
+    smoothed_df['fogg_ipwr_100_650kHz_with_zeros'] = smoothed_df['fogg_ipwr_100_650kHz']
+    #breakpoint()
+    zero_i, = np.where(smoothed_df['fogg_smoothed_ipwr_100_650kHz'] == 0)
+    smoothed_df.loc[zero_i, "fogg_smoothed_ipwr_100_650kHz"] = 10E-8
+ 
     # Log power
-    smoothed_df['log_pwr'] = np.log(smoothed_df.ipwr_100_650kHz)
+    smoothed_df['log_pwr'] = np.log(smoothed_df.fogg_smoothed_ipwr_100_650kHz)
 
-    # well, anything with zero power is inf when logged.
-    # not clear what the previous paper did to deal with these.
-    # for now, we will put a zero in each place so zero stays zero
-    zero_i, = np.where(smoothed_df.ipwr_100_650kHz == 0)
-    smoothed_df.loc[zero_i, "log_pwr"] = 0
+    # # well, anything with zero power is inf when logged.
+    # # not clear what the previous paper did to deal with these.
+    # # for now, we will put a zero in each place so zero stays zero
+    # zero_i, = np.where(smoothed_df.ipwr_100_650kHz == 0)
+    # smoothed_df.loc[zero_i, "log_pwr"] = 0
 
     return smoothed_df
 
@@ -482,5 +481,20 @@ def read_waters_data():
                                  'P_Wsr-1_30_650_kHz', 'RADIUS', 'SM_LAT',
                                  'datetime_ut', 'unix', 'date_i'],
                           parse_dates=['datetime_ut'])
+
+    data_df.rename(columns={"P_Wsr-1_100_650_kHz": "waters_ipwr_100_650kHz"}, inplace=True)
+    # Smoothing 
+    averaging_df = data_df.copy(deep=True)
+    averaging_df.set_index('datetime_ut', inplace=True)
+    smoothed = averaging_df['waters_ipwr_100_650kHz'].rolling('3h').mean()
+    data_df['waters_smoothed_ipwr_100_650kHz'] = smoothed.values
     
+    # Any power == 0 is replace with 10^-8
+    data_df['waters_ipwr_100_650kHz_with_zeros'] = data_df['waters_ipwr_100_650kHz']
+    zero_i, = np.where(data_df['waters_smoothed_ipwr_100_650kHz'] == 0)
+    data_df.loc[zero_i, "waters_smoothed_ipwr_100_650kHz"] = 10E-8
+    
+    # Log the power
+    data_df['waters_log_ipwr'] = np.log(data_df['waters_smoothed_ipwr_100_650kHz'])
+        
     return data_df
