@@ -95,16 +95,16 @@ def run_analyses():
                             #'P_Wsr-1_100_650_kHz',
                             'P_Wsr-1_30_100_kHz', 'P_Wsr-1_30_650_kHz',
                             'RADIUS', 'SM_LAT', 'datetime_ut',
-                            'unix', 'date_i'], inplace=True)
+                            'date_i'], inplace=True)
 
 
 
 
-    breakpoint()
     # Merge DataFrames
     merged_ipwr_df = pd.merge(fogg_df, waters_df,
                               on='datetime_rounded', how='inner')
-    breakpoint()
+    return merged_ipwr_df
+    # INVESTIGATE ZEROS
     # Record where zeros exist in both datasets
     waters_zero_ind = np.array(merged_ipwr_df.loc[
         merged_ipwr_df.waters_ipwr_100_650kHz_with_zeros == 0.0].index)
@@ -113,7 +113,10 @@ def run_analyses():
     waters_zero_dt = merged_ipwr_df.datetime_rounded.iloc[waters_zero_ind]
     fogg_zero_dt = merged_ipwr_df.datetime_rounded.iloc[fogg_zero_ind]
 
-    # Replace zeros with NaN
+    # Where are the zeros?
+    where_are_the_zeros(fogg_zero_dt, waters_zero_dt, n1='Fogg', n2='Waters')
+
+    # Replace zeros with NaN fot future analyses
     merged_ipwr_df.loc[
         merged_ipwr_df['waters_ipwr_100_650kHz'] == 0.0,
         "waters_ipwr_100_650kHz"] = np.nan
@@ -122,52 +125,269 @@ def run_analyses():
         "fogg_ipwr_100_650kHz"] = np.nan
     
     ipwr_max = np.nanmax([np.array(merged_ipwr_df.waters_ipwr_100_650kHz),
-                          np.array(merged_ipwr_df.ipwr_100_650kHz)])
+                          np.array(merged_ipwr_df.fogg_ipwr_100_650kHz)])
     ipwr_min = np.nanmin([np.array(merged_ipwr_df.waters_ipwr_100_650kHz),
-                          np.array(merged_ipwr_df.ipwr_100_650kHz)])
+                          np.array(merged_ipwr_df.fogg_ipwr_100_650kHz)])
 
     hist_bins = np.logspace(np.log10(ipwr_min), np.log10(ipwr_max), 50)
 
     # (1) basic correlation mine vs James ipower
+    # base intensity
     compare_two_timeseries(merged_ipwr_df.datetime_rounded,
-                           merged_ipwr_df.ipwr_100_650kHz,
+                           merged_ipwr_df.fogg_ipwr_100_650kHz,
                            merged_ipwr_df.datetime_rounded,
                            merged_ipwr_df.waters_ipwr_100_650kHz,
                            n1='Fogg', n2='Waters',
-                           title='Wind-Cassini Conjunction, comparing Waters/Fogg data\nAll data (excluding zeros)',
+                           title='Wind-Cassini Conjunction, comparing Waters/Fogg data\nAll data, not smoothed, zeros=NaN',
                            hist_bins=hist_bins)
-    breakpoint()
-    
-    # Where are the zeros?
-    where_are_the_zeros(fogg_zero_dt, waters_zero_dt, n1='Fogg', n2='Waters')
+    # smoothed
+    compare_two_timeseries(merged_ipwr_df.datetime_rounded,
+                           merged_ipwr_df.fogg_smoothed_ipwr_100_650kHz,
+                           merged_ipwr_df.datetime_rounded,
+                           merged_ipwr_df.waters_smoothed_ipwr_100_650kHz,
+                           n1='Fogg', n2='Waters',
+                           title='Wind-Cassini Conjunction, comparing Waters/Fogg data\nAll data, smoothed, zeros=10E-8',
+                           hist_bins=hist_bins)
+    # logged
+    compare_two_timeseries(merged_ipwr_df.datetime_rounded,
+                           merged_ipwr_df.fogg_log_ipwr,
+                           merged_ipwr_df.datetime_rounded,
+                           merged_ipwr_df.waters_log_ipwr,
+                           n1='Fogg', n2='Waters',
+                           title='Wind-Cassini Conjunction, comparing Waters/Fogg data\nAll data, smoothed, logged, zeros=10E-8',
+                           hist_bins=50, log=False)
+    #breakpoint()
+    #return
 
     # Check the spectrogram over some zoom ins
-    detailed_dive_spectrogram(pd.Timestamp(1999, 8, 17, 00),
-                              pd.Timestamp(1999, 8, 20, 0),
-                              merged_ipwr_df, 8,
-                              vlines=[pd.Timestamp(1999, 8, 18, 00),
-                                      pd.Timestamp(1999, 8, 19, 00)])
+    # detailed_dive_spectrogram(pd.Timestamp(1999, 8, 17, 00),
+    #                           pd.Timestamp(1999, 8, 20, 0),
+    #                           merged_ipwr_df, 8,
+    #                           vlines=[pd.Timestamp(1999, 8, 18, 00),
+    #                                   pd.Timestamp(1999, 8, 19, 00)])
 
-    detailed_dive_spectrogram(pd.Timestamp(1999, 8, 24, 00),
-                              pd.Timestamp(1999, 8, 29, 0),
-                              merged_ipwr_df, 8,
-                              vlines=[pd.Timestamp(1999, 8, 25, 00),
-                                      pd.Timestamp(1999, 8, 26, 00),
-                                      pd.Timestamp(1999, 8, 27, 00),
-                                      pd.Timestamp(1999, 8, 28, 00)])
+    # detailed_dive_spectrogram(pd.Timestamp(1999, 8, 24, 00),
+    #                           pd.Timestamp(1999, 8, 29, 0),
+    #                           merged_ipwr_df, 8,
+    #                           vlines=[pd.Timestamp(1999, 8, 25, 00),
+    #                                   pd.Timestamp(1999, 8, 26, 00),
+    #                                   pd.Timestamp(1999, 8, 27, 00),
+    #                                   pd.Timestamp(1999, 8, 28, 00)])
 
-    detailed_dive_spectrogram(pd.Timestamp(1999, 9, 7, 00),
-                              pd.Timestamp(1999, 9, 10, 0),
-                              merged_ipwr_df, 9,
-                              vlines=[pd.Timestamp(1999, 9, 8, 00),
-                                      pd.Timestamp(1999, 9, 9, 00)])
+    # detailed_dive_spectrogram(pd.Timestamp(1999, 9, 7, 00),
+    #                           pd.Timestamp(1999, 9, 10, 0),
+    #                           merged_ipwr_df, 9,
+    #                           vlines=[pd.Timestamp(1999, 9, 8, 00),
+    #                                   pd.Timestamp(1999, 9, 9, 00)])
 
 
-    # return waters_zero_dt, fogg_zero_dt
-    
-    # (2) comparison of mine vs James (correlation, timeseries) at each process stage (power, smoothed, logged)
     # (3) FFT on both
+
     # (4) LS on both
+    merged_ipwr_df['new_unix'] = [pd.Timestamp(t).timestamp() for t in merged_ipwr_df.datetime_rounded]
+    
+    imitate_lomb_scargle(merged_ipwr_df['new_unix'],
+                         merged_ipwr_df['new_unix'],
+                         merged_ipwr_df.fogg_log_ipwr,
+                         merged_ipwr_df.waters_log_ipwr,
+                         title="Lomb-Scargle: Wind-Cassini Conjunction\n Power smoothed, logged, zeros=10E-8")
+
+    fogg_nonan_df = merged_ipwr_df.dropna(subset=['fogg_ipwr_100_650kHz'])
+    waters_nonan_df = merged_ipwr_df.dropna(subset=['waters_ipwr_100_650kHz'])
+    imitate_lomb_scargle(fogg_nonan_df.new_unix,
+                         waters_nonan_df.new_unix,
+                         fogg_nonan_df.fogg_ipwr_100_650kHz,
+                         waters_nonan_df.waters_ipwr_100_650kHz,
+                         title="Lomb-Scargle:\nWind-Cassini Conjunction, plain data, NaNs removed, not smoothed")
+
+    imitate_lomb_scargle(merged_ipwr_df['new_unix'],
+                         merged_ipwr_df['new_unix'],
+                         merged_ipwr_df.fogg_smoothed_ipwr_100_650kHz,
+                         merged_ipwr_df.waters_smoothed_ipwr_100_650kHz,
+                         title="Lomb-Scargle: Wind-Cassini Conjunction\n Power smoothed")
+
+    fogg_nonan_nogap_df = merged_ipwr_df.dropna(subset=['fogg_log_ipwr_nogapfill'])
+    waters_nonan_nogap_df = merged_ipwr_df.dropna(subset=['waters_log_ipwr_nogapfill'])
+    imitate_lomb_scargle(fogg_nonan_nogap_df.new_unix,
+                         waters_nonan_nogap_df['new_unix'],
+                         fogg_nonan_nogap_df.fogg_log_ipwr_nogapfill,
+                         waters_nonan_nogap_df.waters_log_ipwr_nogapfill,
+                         title="Lomb-Scargle: Wind-Cassini Conjunction\n Power smoothed, logged, gaps -> NaN")
+
+    imitate_lomb_scargle(merged_ipwr_df['new_unix'],
+                         merged_ipwr_df['new_unix'],
+                         merged_ipwr_df.fogg_log_ipwr,
+                         merged_ipwr_df.waters_log_ipwr,
+                         title="Lomb-Scargle: Wind-Cassini Conjunction\n Power smoothed, logged, gaps=10E-8")
+
+
+
+
+def imitate_lomb_scargle(ftime1, ftime2, fsignal1, fsignal2,
+                         labels=['Fogg', 'Waters'], title='',
+                         colors=['grey','palevioletred']):
+    
+    # Initialising variables
+    f_min = 1 / (48. * 60. * 60.)
+    f_max = 1 / (8. * 60. * 60.)
+    samples_per_peak = 5
+
+    vertical_indicators = [12, 24]
+    vertical_ind_col = 'black'
+
+    annotate_bbox = {"facecolor": "white", "edgecolor": "grey", "pad": 5.}
+
+    # # Different frequency channels
+    # freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'])
+    # freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
+    # freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
+
+    # LS_fig = os.path.join(fig_dir, "three_interval_lomb_scargle.png")
+
+    # # Number of bootstraps
+    # n_bootstrap = 100
+
+    # # FAP filenames
+    # FAP_peaks_dir = os.path.join(data_dir, "lomb_scargle", 'LS_peaks_for_FAP')
+    # synthetic_FAP_pkl = os.path.join(data_dir, "lomb_scargle", "synthetic_FAP_"
+    #                                  + str(n_bootstrap) + "_BSs.pkl")
+
+    # Initialise plotting window
+    fig, ax = plt.subplots(nrows=2, figsize=(12.5, 8))
+
+    for i, (ftime, fsignal, c) in enumerate(zip([ftime1, ftime2], [fsignal1, fsignal2], colors)):
+
+        print('Running Lomb-Scargle ', i)
+
+        # base_dir = pathlib.Path(data_dir) / 'lomb_scargle'
+        # file_paths = [
+        #     base_dir / f"LS_{interval_tag}_{f}.csv" for f in freq_tags]
+        # file_checks = [file_path.is_file() for file_path in file_paths]
+
+        # if all(file_checks) is False:
+        #     akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+
+        # # Remove any rows where intensity == np.nan
+        # for (j, (freq_column, c, n)) in enumerate(zip(freq_tags,
+        #                                               freq_colors,
+        #                                               freq_labels)):
+            # print('Frequency band: ', freq_column)
+            # ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_' +
+            #                       interval_tag + '_' + freq_column + '.csv')
+            # if pathlib.Path(ls_csv).is_file() is False:
+        #freq_df = akr_df.dropna(subset=[freq_column])
+        t1 = pd.Timestamp.now()
+        print('starting LS at ', t1)
+        ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
+            ftime, fsignal, f_min, f_max,
+            n0=samples_per_peak)
+        t2 = pd.Timestamp.now()
+        print('LS finished, time elapsed: ', t2-t1)
+        # Write to file
+        periods = periodicity_functions.freq_to_period(freqs)
+        ls_df = pd.DataFrame({'period_hr': periods,
+                              'angular_freq': freqs,
+                              'ls_pgram': ls_pgram})
+        # ls_df.to_csv(ls_csv, index=False)
+        t2 = pd.Timestamp.now()
+        print('LS finished, time elapsed: ', t2-t1)
+        # # Write to file
+        # ls_df.to_csv(ls_csv, index=False)
+
+            # else:
+            #     ls_df = pd.read_csv(ls_csv, delimiter=',',
+            #                         float_precision='round_trip')
+
+            #     ls_pgram = np.array(ls_df.ls_pgram)
+            #     periods = np.array(ls_df.period_hr)
+
+            # # Plot FAP here
+            # FAP_pkl = os.path.join(
+            #     data_dir, "lomb_scargle",
+            #     interval_tag + '_' + freq_column + "_FAP_" + str(n_bootstrap)
+            #     + "_BSs.pkl")
+            # # Read in bootstrap
+            # ftime_cl, BS = read_subset_bootstraps(interval_tag,
+            #                                       freq_ch=freq_column,
+            #                                       n_bootstrap=n_bootstrap)
+            # # Convert ftime_cl to unix
+            # ftime_unix = [pd.Timestamp(t).timestamp() for t in ftime_cl]
+
+            # # Read in/calc peak magnitudes for bootstraps and FAP
+            # bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
+            #     n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
+            #     interval_tag + '_' + freq_column, FAP_pkl, n0=samples_per_peak)
+
+        ax[i].plot(periods, ls_pgram, linewidth=1.5, color=c)
+            # if j == 0:
+            #     trans = transforms.blended_transform_factory(
+            #         ax[i + 1].transAxes, ax[i + 1].transData)
+            #     ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP),
+            #                        xy=(0.2, FAP), xytext=(0.1, FAP),
+            #                        xycoords=trans, arrowprops={'facecolor': c},
+            #                        fontsize=fontsize, va='center', ha='right',
+            #                        color=c, bbox=annotate_bbox,
+            #                        fontweight="bold")
+            # elif j == 1:
+            #     trans = transforms.blended_transform_factory(
+            #         ax[i + 1].transAxes, ax[i + 1].transData)
+            #     ax[i + 1].annotate("FAL\n" + "{:.3e}".format(FAP),
+            #                        xy=(0.8, FAP), xytext=(0.9, FAP),
+            #                        xycoords=trans, arrowprops={'facecolor': c},
+            #                        fontsize=fontsize, va='center', ha='left',
+            #                        color=c, bbox=annotate_bbox, fontweight="bold")
+        # ax[i].set_xscale('log')
+
+        # # Formatting
+        # ax[i].set_ylabel('Lomb-Scargle\nNormalised Amplitude',
+        #                      fontsize=fontsize)
+        # ax[i].set_xlabel('Period (hours)', fontsize=fontsize)
+        # ax[i].tick_params(labelsize=fontsize)
+        # ax[i].legend(fontsize=fontsize, loc='upper left')
+
+        if vertical_indicators != []:
+            for h in vertical_indicators:
+                trans = transforms.blended_transform_factory(
+                    ax[i].transData, ax[i].transAxes)
+                ax[i].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
+                                   xycoords=trans,
+                                   arrowprops={'facecolor': 'black'},
+                                   fontsize=fontsize, va='top', ha='center',
+                                   color=vertical_ind_col)
+                
+    # Add in more ticks
+    majticks = [10, 15, 20, 25, 30, 35, 40, 45, 50]
+    majlabels = [str(t) for t in majticks]
+    #ax[0].set_xticks(majticks, labels=majlabels)
+
+    # Label panels
+    for (i, a) in enumerate(ax):
+        t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
+                   fontsize=fontsize, va='bottom', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+        tit = a.text(1.0, 1.05, labels[i], transform=a.transAxes,
+                     fontsize=1.25 * fontsize, va='center', ha='right')
+        a.set_xticks(majticks, labels=majlabels)
+        
+        a.set_xscale('log')
+
+        # Formatting
+        a.set_ylabel('Lomb-Scargle\nNormalised Amplitude',
+                             fontsize=fontsize)
+        a.set_xlabel('Period (hours)', fontsize=fontsize)
+        a.tick_params(labelsize=fontsize)
+
+    # Adjust margins etc
+    fig.tight_layout()
+    
+    fig.suptitle(title, fontsize=fontsize*1.25)
+    # # Save to file
+    # fig.savefig(LS_fig)    
+
+
+
+
 
 def detailed_dive_spectrogram(stime, etime, merged_ipwr_df, month, vlines=[],
                               n1='Fogg', n2='Waters'):
@@ -251,7 +471,7 @@ def where_are_the_zeros(dt1, dt2, n1='Name1', n2='Name2'):
 def compare_two_timeseries(x1, y1, x2, y2,
                            n1='Name1', n2='Name2',
                            c1='black', c2='palevioletred', title='',
-                           hist_bins=40):
+                           hist_bins=40, log=True):
     # x1, y1, x2, y2, n1='1', n2='2'):
     # x1 = np.linspace(0, 100, 1000)
     # x2 = np.linspace(0, 100, 1000)
@@ -287,24 +507,19 @@ def compare_two_timeseries(x1, y1, x2, y2,
     ax[0].set_ylabel(n2)
     ax[0].legend(loc='lower right')
 
-
-    ax[0].set_xscale('log')
-    ax[0].set_yscale('log')
-
     # breakpoint()
     # QQ Plot
     ax[1] = qq_plot.qq_plot(y1, y2, ax[1])
     ax[1].set_xlabel(n1)
     ax[1].set_ylabel(n2)
     
-    ax[1].set_xscale('log')
-    ax[1].set_yscale('log')
+
 
     # Timeseries
     ax[2].plot(x2, y2, label=n2, color=c2, linewidth=2., linestyle='dashed')
     ax[2].plot(x1, y1, label=n1, color=c1)
 
-    ax[2].set_yscale('log')
+
     ax[2].legend(loc='upper right')
     ax[2].set_xlabel('UT')
     ax[2].set_ylabel('Intensity')
@@ -313,6 +528,15 @@ def compare_two_timeseries(x1, y1, x2, y2,
         t = a.text(0.05, 0.95, axes_labels[i], transform=a.transAxes,
                    fontsize=fontsize, va='top', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+
+    if log:
+        ax[0].set_xscale('log')
+        ax[0].set_yscale('log')
+        ax[1].set_xscale('log')
+        ax[1].set_yscale('log')
+        ax[2].set_yscale('log')
+
 
     fig.suptitle(title, x=0.5, y=0.95, fontsize=fontsize*1.75)
 
@@ -363,12 +587,25 @@ def analog_waters_data():
     
     # Any power == 0 is replace with 10^-8
     smoothed_df['fogg_ipwr_100_650kHz_with_zeros'] = smoothed_df['fogg_ipwr_100_650kHz']
+    
+    smoothed_df['fogg_smoothed_ipwr_100_650kHz_no_gap_fill'] = smoothed_df['fogg_smoothed_ipwr_100_650kHz']
     #breakpoint()
     zero_i, = np.where(smoothed_df['fogg_smoothed_ipwr_100_650kHz'] == 0)
     smoothed_df.loc[zero_i, "fogg_smoothed_ipwr_100_650kHz"] = 10E-8
  
     # Log power
-    smoothed_df['log_pwr'] = np.log(smoothed_df.fogg_smoothed_ipwr_100_650kHz)
+    smoothed_df['fogg_log_ipwr'] = np.log(smoothed_df.fogg_smoothed_ipwr_100_650kHz)
+
+
+
+
+
+    # Smoothed, logged, but zero -> zero
+    smoothed_df['fogg_log_ipwr_nogapfill'] = np.log(smoothed_df['fogg_smoothed_ipwr_100_650kHz_no_gap_fill'])
+    zero_i, = np.where(smoothed_df['fogg_smoothed_ipwr_100_650kHz_no_gap_fill'] == 0)
+    smoothed_df.loc[zero_i, "fogg_log_ipwr_nogapfill"] = np.nan
+
+
 
     # # well, anything with zero power is inf when logged.
     # # not clear what the previous paper did to deal with these.
@@ -491,10 +728,23 @@ def read_waters_data():
     
     # Any power == 0 is replace with 10^-8
     data_df['waters_ipwr_100_650kHz_with_zeros'] = data_df['waters_ipwr_100_650kHz']
+    data_df['waters_smoothed_ipwr_100_650kHz_no_gap_fill'] = data_df['waters_smoothed_ipwr_100_650kHz']
     zero_i, = np.where(data_df['waters_smoothed_ipwr_100_650kHz'] == 0)
     data_df.loc[zero_i, "waters_smoothed_ipwr_100_650kHz"] = 10E-8
     
     # Log the power
     data_df['waters_log_ipwr'] = np.log(data_df['waters_smoothed_ipwr_100_650kHz'])
+
+    # Smoothed, logged, but zero -> zero
+    data_df['waters_log_ipwr_nogapfill'] = np.log(data_df['waters_smoothed_ipwr_100_650kHz_no_gap_fill'])
+    zero_i, = np.where(data_df['waters_smoothed_ipwr_100_650kHz_no_gap_fill'] == 0)
+    data_df.loc[zero_i, "waters_log_ipwr_nogapfill"] = np.nan
+    
         
     return data_df
+
+def calc_snr(data):
+    
+    SNR = np.nanmean(data) / np.nanstd(data)
+    
+    return SNR

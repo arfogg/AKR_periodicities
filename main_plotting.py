@@ -456,6 +456,264 @@ def run_lomb_scargle():
     fig.savefig(LS_fig)
 
 
+
+def wind_cassini_lomb_scargle():
+    
+    print(0)
+    
+    
+    # Initialising variables
+    f_min = 1 / (48. * 60. * 60.)
+    f_max = 1 / (8. * 60. * 60.)
+    samples_per_peak = 5
+
+    vertical_indicators = [12, 24]
+    vertical_ind_col = 'black'
+
+    annotate_bbox = {"facecolor": "white", "edgecolor": "grey", "pad": 5.}
+
+    # Different frequency channels
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'])
+    freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
+    freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
+
+    LS_fig = os.path.join(fig_dir, "LS_wind_cassini_smoothed.png")
+
+    # Number of bootstraps
+    n_bootstrap = 100
+
+    # FAP filenames
+    FAP_peaks_dir = os.path.join(data_dir, "lomb_scargle", 'LS_peaks_for_FAP')
+    # synthetic_FAP_pkl = os.path.join(data_dir, "lomb_scargle", "synthetic_FAP_"
+    #                                  + str(n_bootstrap) + "_BSs.pkl")
+    # Read in interval data
+    print('Reading AKR data over requested intervals')
+    interval_options = read_and_tidy_data.return_test_intervals()
+    interval_options = interval_options.loc[interval_options['tag'] == 'cassini_flyby']
+
+
+    # Initialise plotting window
+    fig, ax = plt.subplots(nrows=2, figsize=(12.5, 8))
+
+
+    
+
+    # # Run Lomb-Scargle over the fake oscillator
+    # ftime, fsignal = read_synthetic_oscillator()
+
+    # # Remove NaN rows
+    # clean_ind, = np.where(~np.isnan(fsignal))
+    # ftime = ftime[clean_ind]
+    # fsignal = fsignal[clean_ind]
+
+    # ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_synthetic.csv')
+    # if pathlib.Path(ls_csv).is_file():
+    #     ls_df = pd.read_csv(ls_csv, delimiter=',',
+    #                         float_precision='round_trip')
+
+    #     ls_pgram = np.array(ls_df.ls_pgram)
+    #     periods = np.array(ls_df.period_hr)
+
+    # else:
+    #     print('Running LS analysis on synthetic oscillator')
+    #     t1 = pd.Timestamp.now()
+    #     print('starting LS at ', t1)
+    #     ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
+    #         ftime, fsignal, f_min, f_max, n0=samples_per_peak)
+    #     t2 = pd.Timestamp.now()
+    #     print('LS finished, time elapsed: ', t2-t1)
+    #     # Write to file
+    #     periods = periodicity_functions.freq_to_period(freqs)
+    #     ls_df = pd.DataFrame({'period_hr': periods,
+    #                           'angular_freq': freqs,
+    #                           'ls_pgram': ls_pgram})
+    #     ls_df.to_csv(ls_csv, index=False)
+
+    # ax[0].plot(periods, ls_pgram, linewidth=1.5,
+    #            color=freq_colors[0], label='Synthetic')
+    # ax[0].set_xscale('log')
+
+    # # Read in bootstrap
+    # ftime_cl, synthetic_BS = read_subset_bootstraps("synthetic",
+    #                                                 n_bootstrap=n_bootstrap)
+    # # Read in peaks for bootstraps and FAP
+    # bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
+    #     n_bootstrap, synthetic_BS, ftime_cl, f_min, f_max, FAP_peaks_dir,
+    #     'synthetic', synthetic_FAP_pkl, n0=samples_per_peak)
+
+    # # Draw arrow for FAP
+    # trans = transforms.blended_transform_factory(ax[0].transData,
+    #                                              ax[0].transData)
+    # ax[0].annotate("FAL\n" + "{:.3e}".format(FAP),
+    #                xy=(9., FAP), xytext=(8., FAP),
+    #                xycoords=trans, arrowprops={'facecolor': freq_colors[0]},
+    #                fontsize=fontsize, va='center', ha='right',
+    #                color=freq_colors[0],
+    #                bbox=annotate_bbox, fontweight="bold")
+
+    # # Formatting
+    # ax[0].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
+    # ax[0].set_xlabel('Period (hours)', fontsize=fontsize)
+    # ax[0].tick_params(labelsize=fontsize)
+    # ax[0].legend(fontsize=fontsize, loc='upper left')
+
+    if vertical_indicators != []:
+        for h in vertical_indicators:
+            trans = transforms.blended_transform_factory(ax[0].transData,
+                                                         ax[0].transAxes)
+            ax[0].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
+                           xycoords=trans, arrowprops={'facecolor': 'black'},
+                           fontsize=fontsize, va='top', ha='center',
+                           color=vertical_ind_col)
+
+    for (i, tag) in enumerate(['cassini_flyby', 'cassini_flyby_processed']):
+        print('Running Lomb-Scargle for ', tag)
+
+        base_dir = pathlib.Path(data_dir) / 'lomb_scargle'
+        file_paths = [
+            base_dir / f"LS_{tag}_{f}.csv" for f in freq_tags]
+        file_checks = [file_path.is_file() for file_path in file_paths]
+
+        if all(file_checks) is False:
+            akr_df = read_and_tidy_data.select_akr_intervals('cassini_flyby')
+
+        # Remove any rows where intensity == np.nan
+        for (j, (freq_column, c, n)) in enumerate(zip(freq_tags,
+                                                      freq_colors,
+                                                      freq_labels)):
+            print('Frequency band: ', freq_column, ' tag: ', tag)
+            ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_' +
+                                  tag + '_' + freq_column + '.csv')
+            if pathlib.Path(ls_csv).is_file() is False:
+
+                freq_df = akr_df.copy(deep=True)
+                if tag == 'cassini_flyby_processed':
+                    # Smoothing 
+                    averaging_df = freq_df.copy(deep=True)
+                    averaging_df.set_index('datetime', inplace=True)
+                    smoothed = averaging_df[freq_column].rolling('3h').mean()
+                    freq_df["smoothed_" + freq_column] = smoothed.values
+                    
+                    # Log the power
+                    freq_df['log_smoothed_' + freq_column] = np.log(freq_df["smoothed_" + freq_column])
+
+                    # Smoothed, logged, but zero -> zero
+                    zero_i, = np.where(freq_df["smoothed_" + freq_column] == 0)
+                    freq_df.loc[zero_i, 'log_smoothed_' + freq_column] = np.nan
+    
+                    intensity_col = 'log_smoothed_' + freq_column
+                else:
+                    intensity_col = freq_column
+                    
+                freq_df = freq_df.dropna(subset=[intensity_col])
+
+                
+                t1 = pd.Timestamp.now()
+                print('starting LS at ', t1)
+                ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
+                    freq_df.unix, freq_df[intensity_col], f_min, f_max,
+                    n0=samples_per_peak)
+                t2 = pd.Timestamp.now()
+                print('LS finished, time elapsed: ', t2-t1)
+                # Write to file
+                periods = periodicity_functions.freq_to_period(freqs)
+                ls_df = pd.DataFrame({'period_hr': periods,
+                                      'angular_freq': freqs,
+                                      'ls_pgram': ls_pgram})
+                ls_df.to_csv(ls_csv, index=False)
+                t2 = pd.Timestamp.now()
+                print('LS finished, time elapsed: ', t2-t1)
+                # Write to file
+                ls_df.to_csv(ls_csv, index=False)
+
+            else:
+                ls_df = pd.read_csv(ls_csv, delimiter=',',
+                                    float_precision='round_trip')
+
+                ls_pgram = np.array(ls_df.ls_pgram)
+                periods = np.array(ls_df.period_hr)
+
+
+            # NEED TO PUT SMOOTHING INTO READ AND TIDY DATA
+
+            # # Plot FAP here
+            # FAP_pkl = os.path.join(
+            #     data_dir, "lomb_scargle",
+            #     tag + '_' + intensity_col + "_FAP_" + str(n_bootstrap)
+            #     + "_BSs.pkl")
+            # # Read in bootstrap
+            # ftime_cl, BS = read_subset_bootstraps(tag,
+            #                                       freq_ch=freq_column,
+            #                                       n_bootstrap=n_bootstrap)
+            # # Convert ftime_cl to unix
+            # ftime_unix = [pd.Timestamp(t).timestamp() for t in ftime_cl]
+
+            # # Read in/calc peak magnitudes for bootstraps and FAP
+            # bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
+            #     n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
+            #     tag + '_' + freq_column, FAP_pkl, n0=samples_per_peak)
+
+            ax[i].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+            # if j == 0:
+            #     trans = transforms.blended_transform_factory(
+            #         ax[i].transAxes, ax[i].transData)
+            #     ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
+            #                        xy=(0.2, FAP), xytext=(0.1, FAP),
+            #                        xycoords=trans, arrowprops={'facecolor': c},
+            #                        fontsize=fontsize, va='center', ha='right',
+            #                        color=c, bbox=annotate_bbox,
+            #                        fontweight="bold")
+            # elif j == 1:
+            #     trans = transforms.blended_transform_factory(
+            #         ax[i].transAxes, ax[i].transData)
+            #     ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
+            #                        xy=(0.8, FAP), xytext=(0.9, FAP),
+            #                        xycoords=trans, arrowprops={'facecolor': c},
+            #                        fontsize=fontsize, va='center', ha='left',
+            #                        color=c, bbox=annotate_bbox, fontweight="bold")
+        ax[i].set_xscale('log')
+
+        # Formatting
+        ax[i].set_ylabel('Lomb-Scargle\nNormalised Amplitude',
+                             fontsize=fontsize)
+        ax[i].set_xlabel('Period (hours)', fontsize=fontsize)
+        ax[i].tick_params(labelsize=fontsize)
+        ax[i].legend(fontsize=fontsize, loc='upper left')
+
+        if vertical_indicators != []:
+            for h in vertical_indicators:
+                trans = transforms.blended_transform_factory(
+                    ax[i].transData, ax[i].transAxes)
+                ax[i].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
+                                   xycoords=trans,
+                                   arrowprops={'facecolor': 'black'},
+                                   fontsize=fontsize, va='top', ha='center',
+                                   color=vertical_ind_col)
+                
+    # Add in more ticks
+    majticks = [10, 15, 20, 25, 30, 35, 40, 45, 50]
+    majlabels = [str(t) for t in majticks]
+    #ax[0].set_xticks(majticks, labels=majlabels)
+
+    # NEED TO CHANGE TITLES ETC
+
+    # Label panels
+    titles = np.append('Synthetic', interval_options.label)
+    for (i, a) in enumerate(ax):
+        t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
+                   fontsize=fontsize, va='bottom', ha='left')
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+        tit = a.text(1.0, 1.05, titles[i], transform=a.transAxes,
+                     fontsize=1.25 * fontsize, va='center', ha='right')
+        a.set_xticks(majticks, labels=majlabels)
+
+    # Adjust margins etc
+    fig.tight_layout()
+    # Save to file
+    # fig.savefig(LS_fig)
+
+
 def run_ACF():
     """
     Run the ACF analysis and create plots.
