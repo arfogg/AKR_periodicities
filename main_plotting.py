@@ -251,7 +251,7 @@ def run_lomb_scargle():
     freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
     freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
 
-    LS_fig = os.path.join(fig_dir, "three_interval_lomb_scargle.png")
+    LS_fig = os.path.join(fig_dir, "two_interval_lomb_scargle.png")
 
     # Number of bootstraps
     n_bootstrap = 100
@@ -264,8 +264,13 @@ def run_lomb_scargle():
     print('Reading AKR data over requested intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
 
+    # Select only desired intervals
+    desired_intervals = ['full_archive', 'long_nightside_period']
+    desired_i, = np.where(interval_options.tag.isin(desired_intervals) == True)
+    labels = interval_options.label[desired_i].values
+
     # Initialise plotting window
-    fig, ax = plt.subplots(nrows=4, figsize=(12.5, 17))
+    fig, ax = plt.subplots(nrows=3, figsize=(12.5, 13))
 
     # Run Lomb-Scargle over the fake oscillator
     ftime, fsignal = read_synthetic_oscillator()
@@ -335,7 +340,7 @@ def run_lomb_scargle():
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
 
-    for (i, interval_tag) in enumerate(interval_options['tag']):
+    for (i, interval_tag) in enumerate(desired_intervals):
         print('Running Lomb-Scargle for ', interval_tag)
 
         base_dir = pathlib.Path(data_dir) / 'lomb_scargle'
@@ -440,7 +445,7 @@ def run_lomb_scargle():
     #ax[0].set_xticks(majticks, labels=majlabels)
 
     # Label panels
-    titles = np.append('Synthetic', interval_options.label)
+    titles = np.append('Synthetic', labels)
     for (i, a) in enumerate(ax):
         t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
                    fontsize=fontsize, va='bottom', ha='left')
