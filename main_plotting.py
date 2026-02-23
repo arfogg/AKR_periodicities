@@ -521,13 +521,16 @@ def wind_cassini_lomb_scargle():
             print('Frequency band: ', freq_column, ' tag: ', tag)
             ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_' +
                                   tag + '_' + freq_column + '.csv')
+            
+            if tag == 'cassini_flyby_logged':   
+                intensity_col = 'log_smoothed_' + freq_column
+            else:
+                intensity_col = freq_column
+        
             if pathlib.Path(ls_csv).is_file() is False:
 
                 freq_df = akr_df.copy(deep=True)
-                if tag == 'cassini_flyby_logged':   
-                    intensity_col = 'log_smoothed_' + freq_column
-                else:
-                    intensity_col = freq_column
+
                     
                 freq_df = freq_df.dropna(subset=[intensity_col])
                 print(intensity_col)
@@ -558,41 +561,41 @@ def wind_cassini_lomb_scargle():
                 periods = np.array(ls_df.period_hr)
 
 
-            # # Plot FAP here
-            # FAP_pkl = os.path.join(
-            #     data_dir, "lomb_scargle",
-            #     tag + '_' + intensity_col + "_FAP_" + str(n_bootstrap)
-            #     + "_BSs.pkl")
-            # # Read in bootstrap
-            # ftime_cl, BS = read_subset_bootstraps(tag,
-            #                                       freq_ch=freq_column,
-            #                                       n_bootstrap=n_bootstrap)
-            # # Convert ftime_cl to unix
-            # ftime_unix = [pd.Timestamp(t).timestamp() for t in ftime_cl]
+            # Plot FAP here
+            FAP_pkl = os.path.join(
+                data_dir, "lomb_scargle",
+                tag + '_' + intensity_col + "_FAP_" + str(n_bootstrap)
+                + "_BSs.pkl")
+            # Read in bootstrap
+            ftime_cl, BS = read_subset_bootstraps(tag,
+                                                  freq_ch=intensity_col,
+                                                  n_bootstrap=n_bootstrap)
+            # Convert ftime_cl to unix
+            ftime_unix = [pd.Timestamp(t).timestamp() for t in ftime_cl]
 
-            # # Read in/calc peak magnitudes for bootstraps and FAP
-            # bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
-            #     n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
-            #     tag + '_' + freq_column, FAP_pkl, n0=samples_per_peak)
+            # Read in/calc peak magnitudes for bootstraps and FAP
+            bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
+                n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
+                tag + '_' + freq_column, FAP_pkl, n0=samples_per_peak)
 
             ax[i].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
-            # if j == 0:
-            #     trans = transforms.blended_transform_factory(
-            #         ax[i].transAxes, ax[i].transData)
-            #     ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
-            #                        xy=(0.2, FAP), xytext=(0.1, FAP),
-            #                        xycoords=trans, arrowprops={'facecolor': c},
-            #                        fontsize=fontsize, va='center', ha='right',
-            #                        color=c, bbox=annotate_bbox,
-            #                        fontweight="bold")
-            # elif j == 1:
-            #     trans = transforms.blended_transform_factory(
-            #         ax[i].transAxes, ax[i].transData)
-            #     ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
-            #                        xy=(0.8, FAP), xytext=(0.9, FAP),
-            #                        xycoords=trans, arrowprops={'facecolor': c},
-            #                        fontsize=fontsize, va='center', ha='left',
-            #                        color=c, bbox=annotate_bbox, fontweight="bold")
+            if j == 0:
+                trans = transforms.blended_transform_factory(
+                    ax[i].transAxes, ax[i].transData)
+                ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
+                                   xy=(0.2, FAP), xytext=(0.1, FAP),
+                                   xycoords=trans, arrowprops={'facecolor': c},
+                                   fontsize=fontsize, va='center', ha='right',
+                                   color=c, bbox=annotate_bbox,
+                                   fontweight="bold")
+            elif j == 1:
+                trans = transforms.blended_transform_factory(
+                    ax[i].transAxes, ax[i].transData)
+                ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
+                                   xy=(0.8, FAP), xytext=(0.9, FAP),
+                                   xycoords=trans, arrowprops={'facecolor': c},
+                                   fontsize=fontsize, va='center', ha='left',
+                                   color=c, bbox=annotate_bbox, fontweight="bold")
         ax[i].set_xscale('log')
 
         # Formatting
@@ -617,11 +620,6 @@ def wind_cassini_lomb_scargle():
     majlabels = [str(t) for t in majticks]
     #ax[0].set_xticks(majticks, labels=majlabels)
 
-    # NEED TO CHANGE TITLES ETC
-
-    # Label panels
-    
-    #titles = np.append(interval_options.label)
     for (i, a) in enumerate(ax):
         t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
                    fontsize=fontsize, va='bottom', ha='left')
@@ -634,7 +632,7 @@ def wind_cassini_lomb_scargle():
     # Adjust margins etc
     fig.tight_layout()
     # Save to file
-    # fig.savefig(LS_fig)
+    fig.savefig(LS_fig)
 
 
 def run_ACF():
