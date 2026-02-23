@@ -458,10 +458,7 @@ def run_lomb_scargle():
 
 
 def wind_cassini_lomb_scargle():
-    
-    print(0)
-    
-    
+
     # Initialising variables
     f_min = 1 / (48. * 60. * 60.)
     f_max = 1 / (8. * 60. * 60.)
@@ -489,73 +486,13 @@ def wind_cassini_lomb_scargle():
     # Read in interval data
     print('Reading AKR data over requested intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
-    interval_options = interval_options.loc[interval_options['tag'] == 'cassini_flyby']
-
-
+    # interval_options = interval_options.loc[interval_options['tag'] == 'cassini_flyby']
+    desired_intervals = ['cassini_flyby', 'cassini_flyby_logged']
+    desired_i, = np.where(interval_options.tag.isin(desired_intervals) == True)
+    labels = interval_options.label[desired_i].values
+    
     # Initialise plotting window
     fig, ax = plt.subplots(nrows=2, figsize=(12.5, 8))
-
-
-    
-
-    # # Run Lomb-Scargle over the fake oscillator
-    # ftime, fsignal = read_synthetic_oscillator()
-
-    # # Remove NaN rows
-    # clean_ind, = np.where(~np.isnan(fsignal))
-    # ftime = ftime[clean_ind]
-    # fsignal = fsignal[clean_ind]
-
-    # ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_synthetic.csv')
-    # if pathlib.Path(ls_csv).is_file():
-    #     ls_df = pd.read_csv(ls_csv, delimiter=',',
-    #                         float_precision='round_trip')
-
-    #     ls_pgram = np.array(ls_df.ls_pgram)
-    #     periods = np.array(ls_df.period_hr)
-
-    # else:
-    #     print('Running LS analysis on synthetic oscillator')
-    #     t1 = pd.Timestamp.now()
-    #     print('starting LS at ', t1)
-    #     ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
-    #         ftime, fsignal, f_min, f_max, n0=samples_per_peak)
-    #     t2 = pd.Timestamp.now()
-    #     print('LS finished, time elapsed: ', t2-t1)
-    #     # Write to file
-    #     periods = periodicity_functions.freq_to_period(freqs)
-    #     ls_df = pd.DataFrame({'period_hr': periods,
-    #                           'angular_freq': freqs,
-    #                           'ls_pgram': ls_pgram})
-    #     ls_df.to_csv(ls_csv, index=False)
-
-    # ax[0].plot(periods, ls_pgram, linewidth=1.5,
-    #            color=freq_colors[0], label='Synthetic')
-    # ax[0].set_xscale('log')
-
-    # # Read in bootstrap
-    # ftime_cl, synthetic_BS = read_subset_bootstraps("synthetic",
-    #                                                 n_bootstrap=n_bootstrap)
-    # # Read in peaks for bootstraps and FAP
-    # bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
-    #     n_bootstrap, synthetic_BS, ftime_cl, f_min, f_max, FAP_peaks_dir,
-    #     'synthetic', synthetic_FAP_pkl, n0=samples_per_peak)
-
-    # # Draw arrow for FAP
-    # trans = transforms.blended_transform_factory(ax[0].transData,
-    #                                              ax[0].transData)
-    # ax[0].annotate("FAL\n" + "{:.3e}".format(FAP),
-    #                xy=(9., FAP), xytext=(8., FAP),
-    #                xycoords=trans, arrowprops={'facecolor': freq_colors[0]},
-    #                fontsize=fontsize, va='center', ha='right',
-    #                color=freq_colors[0],
-    #                bbox=annotate_bbox, fontweight="bold")
-
-    # # Formatting
-    # ax[0].set_ylabel('Lomb-Scargle\nNormalised Amplitude', fontsize=fontsize)
-    # ax[0].set_xlabel('Period (hours)', fontsize=fontsize)
-    # ax[0].tick_params(labelsize=fontsize)
-    # ax[0].legend(fontsize=fontsize, loc='upper left')
 
     if vertical_indicators != []:
         for h in vertical_indicators:
@@ -566,7 +503,7 @@ def wind_cassini_lomb_scargle():
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
 
-    for (i, tag) in enumerate(['cassini_flyby', 'cassini_flyby_processed']):
+    for (i, tag) in enumerate(desired_intervals):
         print('Running Lomb-Scargle for ', tag)
 
         base_dir = pathlib.Path(data_dir) / 'lomb_scargle'
@@ -575,7 +512,7 @@ def wind_cassini_lomb_scargle():
         file_checks = [file_path.is_file() for file_path in file_paths]
 
         if all(file_checks) is False:
-            akr_df = read_and_tidy_data.select_akr_intervals('cassini_flyby')
+            akr_df = read_and_tidy_data.select_akr_intervals(tag)
 
         # Remove any rows where intensity == np.nan
         for (j, (freq_column, c, n)) in enumerate(zip(freq_tags,
@@ -587,26 +524,13 @@ def wind_cassini_lomb_scargle():
             if pathlib.Path(ls_csv).is_file() is False:
 
                 freq_df = akr_df.copy(deep=True)
-                if tag == 'cassini_flyby_processed':
-                    # Smoothing 
-                    averaging_df = freq_df.copy(deep=True)
-                    averaging_df.set_index('datetime', inplace=True)
-                    smoothed = averaging_df[freq_column].rolling('3h').mean()
-                    freq_df["smoothed_" + freq_column] = smoothed.values
-                    
-                    # Log the power
-                    freq_df['log_smoothed_' + freq_column] = np.log(freq_df["smoothed_" + freq_column])
-
-                    # Smoothed, logged, but zero -> zero
-                    zero_i, = np.where(freq_df["smoothed_" + freq_column] == 0)
-                    freq_df.loc[zero_i, 'log_smoothed_' + freq_column] = np.nan
-    
+                if tag == 'cassini_flyby_logged':   
                     intensity_col = 'log_smoothed_' + freq_column
                 else:
                     intensity_col = freq_column
                     
                 freq_df = freq_df.dropna(subset=[intensity_col])
-
+                print(intensity_col)
                 
                 t1 = pd.Timestamp.now()
                 print('starting LS at ', t1)
@@ -633,8 +557,6 @@ def wind_cassini_lomb_scargle():
                 ls_pgram = np.array(ls_df.ls_pgram)
                 periods = np.array(ls_df.period_hr)
 
-
-            # NEED TO PUT SMOOTHING INTO READ AND TIDY DATA
 
             # # Plot FAP here
             # FAP_pkl = os.path.join(
@@ -698,14 +620,15 @@ def wind_cassini_lomb_scargle():
     # NEED TO CHANGE TITLES ETC
 
     # Label panels
-    titles = np.append('Synthetic', interval_options.label)
+    
+    #titles = np.append(interval_options.label)
     for (i, a) in enumerate(ax):
         t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
                    fontsize=fontsize, va='bottom', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
-        tit = a.text(1.0, 1.05, titles[i], transform=a.transAxes,
-                     fontsize=1.25 * fontsize, va='center', ha='right')
+        tit = a.text(1.0, 1.025, labels[i], transform=a.transAxes,
+                     fontsize=1.25 * fontsize, va='bottom', ha='right')
         a.set_xticks(majticks, labels=majlabels)
 
     # Adjust margins etc
