@@ -20,6 +20,9 @@ import matplotlib.transforms as transforms
 from numpy.fft import fft, ifft
 from matplotlib.gridspec import GridSpec
 from neurodsp.sim import sim_oscillation
+from matplotlib.collections import PolyCollection
+from matplotlib.colors import LogNorm
+
 
 import periodicity_functions
 import read_and_tidy_data
@@ -150,6 +153,21 @@ def trajectory_plots():
 
     traj_fig = os.path.join(fig_dir, "three_interval_traj.png")
     fig.savefig(traj_fig)
+
+def geomag_ac_plots():
+    
+    interval_options = read_and_tidy_data.return_test_intervals()
+
+    supermag_df = read_supermag.concat_indices_years(
+        np.array(range(1995, 2005)))    
+
+
+    for (i, interval_tag) in enumerate(['full_archive', 'cassini_flyby',
+                              'long_nightside_period']):
+        print(interval_tag)
+        
+        for (j, index) in enumerate('SML', 'SME'):
+            print(index)
 
 
 def read_subset_bootstraps(subset_n, freq_ch='ipwr_100_400kHz',
@@ -1506,7 +1524,7 @@ def lomb_scargle_cassini_sliding():
     ax[1].set_position([ax_pos[0], pos[1], ax_pos[2], pos[3]])
 
 
-def lomb_scargle_cassini_expanding():
+def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     """
     Run the Lomb-Scargle analysis, gradually expanding the Cassini flyby
     interval.
@@ -1537,8 +1555,8 @@ def lomb_scargle_cassini_expanding():
     akr_df = read_and_tidy_data.select_akr_intervals("full_archive")
 
     # Sliding parameters
-    slides = 50
-    slide_width = pd.Timedelta(days=5)
+    slides = 250
+    slide_width = pd.Timedelta(days=1)
     slide_width_multiplier = np.linspace(0, slides, slides+1)
 
     x_lim = [interval_stime - ((slides / 2) * slide_width),
@@ -1588,23 +1606,115 @@ def lomb_scargle_cassini_expanding():
 
     length_days = length / (60. * 60 * 24)
 
-    ax.plot(length_days, peak_period, linewidth=0.,
-            marker='o', markersize=fontsize, color='deeppink',
-            alpha=0.65, markeredgecolor='black')
+
+
+
+    # x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
+    # x_bin_edges = x_bin_centres - (slide_width.days / 2.)
+    # x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
+    # y_bin_edges = np.linspace(5, 50, 46) + 0.5
+    
+    # h, x, y, im = ax1.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='magma', norm='log')
+    # ax1.set_facecolor('gainsboro')
+
+
+    # Build X bins
+    x_centers = length_days  # shape (251,)
+    x_edges = centers_to_edges(x_centers)
+
+    verts = []
+    colors = []
+    
+    for i, x in enumerate(x_centers):
+    
+        y_centers = variable_periods[i]
+        z_vals    = ls_pgram[i]
+    
+        y_edges = centers_to_edges(y_centers)
+    
+        for j in range(len(y_centers)):
+            verts.append([
+                (x_edges[i],   y_edges[j]),
+                (x_edges[i+1], y_edges[j]),
+                (x_edges[i+1], y_edges[j+1]),
+                (x_edges[i],   y_edges[j+1])
+            ])
+            colors.append(z_vals[j])
+    
+    colors = np.asarray(colors)
+
+
+    pc = PolyCollection(
+        verts,
+        array=colors,
+        cmap="YlGnBu_r",
+        linewidths=0,
+        zorder=0
+    )
+    
+    vmin = np.min(ls_pgram[-1])
+    vmax = np.max(ls_pgram[-1])
+    pc.set_clim(vmin, vmax)
+    #pc.set_norm(LogNorm(vmin=vmin, vmax=vmax))
+    #pc.set_norm(LogNorm())
+    
+    ax.add_collection(pc)
+    ax.autoscale()
+    
+    cbar = fig.colorbar(pc, ax=ax)
+    cbar.set_label("Normalised LS Power", fontsize=fontsize)
+    cbar.ax.tick_params(labelsize=fontsize)
+
+    # ax.plot(length_days, peak_period, linewidth=0.,
+    #         marker='o', markersize=0.5*fontsize, fillstyle='none',
+    #         alpha=0.65, markeredgecolor='deeppink')
 
     ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
     ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
-    ax.set_ylim([20, 40])
-    ax.axhline(24., linestyle='dashed', linewidth=2.,
-               zorder=0.5, color='black')
-    ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
-            transform=ax.transData, fontsize=fontsize, color='black')
+
+    # ax.axhline(24., linestyle='dashed', linewidth=2.,
+    #            zorder=0.5, color='black')
+    # ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
+    #         transform=ax.transData, fontsize=fontsize, color='black')
+
+    # Set limits
+    ax.set_ylim([np.min(y_centers), np.max(y_centers)])  # based on the lims of last loop
+    ax.set_xlim([np.min(x_edges), np.max(x_edges)])
+
+
+    for l in [12, 24, 36, 48]:
+        # ax.axhline(24., linestyle='dashed', linewidth=2., color='purple')
+        # ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
+        #        transform=ax.transData, fontsize=fontsize, color='black')
+        ax.annotate(str(l), (ax.get_xlim()[1], l),
+                    xytext=(ax.get_xlim()[1]*1.025, l),
+                    xycoords='data',
+                    color=annotation_colour, fontsize=fontsize,
+                    va='center', ha='left',
+                    arrowprops=dict(facecolor=annotation_colour, shrink=0.05))
+        
+    
+
+
+    # fontsize on ax ticks
+    ax.tick_params(labelsize=fontsize)
 
     # Adjust margins etc
     fig.tight_layout()
 
     # Save to file
-    fig.savefig(fig_png)
+    # fig.savefig(fig_png)
+    
+
+def centers_to_edges(c):
+    c = np.asarray(c)
+    edges = np.zeros(len(c) + 1)
+    edges[1:-1] = 0.5 * (c[:-1] + c[1:])
+    edges[0] = c[0] - (c[1] - c[0]) / 2
+    edges[-1] = c[-1] + (c[-1] - c[-2]) / 2
+    return edges
+    
+
 
 
 def lomb_scargle_expanding(n_rand=100):
