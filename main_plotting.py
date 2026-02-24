@@ -177,7 +177,14 @@ def geomag_ac_plots():
         interval_df = supermag_df.loc[(supermag_df.Date_UTC >= interval.stime.values[0]) & (supermag_df.Date_UTC <= interval.etime.values[0])]
     
         for (j, (index, binz)) in enumerate(zip(['SMR', 'SME'], [smr_bins, sme_bins])):
-            ax[i, j].hist(interval_df[index], bins=binz, color=interval.color, density=True)
+            ax[i, j].hist(interval_df[index], bins=binz, color=interval.color,
+                          density=True, label=index)
+            
+            if index == "SME":
+                ax[i, j].hist(-1 * interval_df["SML"], bins=binz,
+                              histtype='step', color='black', density=True,
+                              label='-SML')
+                ax[i, j].legend(loc='lower right', fontsize=fontsize)
             
             # Label mean, std
             mean = np.nanmean(interval_df[index])
@@ -198,15 +205,20 @@ def geomag_ac_plots():
             ax[i, j].text(mean + plus, 0.9,
                           r"$\bar{x}$ = " + str(np.round(mean, 2)) +
                           "\n$\sigma$ = " + str(np.round(std, 2)) +
-                          "\n$\sigma^{2}$ = " + str(np.round(var, 2)),
-                          transform=ax[i, j].get_xaxis_transform(), ha=horiza, va='top', fontsize=fontsize)
+                          "\n$\sigma^{2}$ = " + str(np.round(var, 2)) +
+                          "\nN = " + str(len(interval_df)),
+                          transform=ax[i, j].get_xaxis_transform(),
+                          ha=horiza, va='top', fontsize=fontsize)
 
             # x y labels
             ax[i, j].set_xlabel(index + " (nT)", fontsize=fontsize)
             ax[i, j].set_ylabel("Normalised Occurrence", fontsize=fontsize)
             # Label interval
             if j == 1:
-                ax[i, j].text(1.05, 0.5, interval.label.values[0], va='center', ha='left', transform=ax[i, j].transAxes, rotation='vertical', fontsize=fontsize)
+                ax[i, j].text(1.05, 0.5, interval.label.values[0],
+                              va='center', ha='left',
+                              transform=ax[i, j].transAxes,
+                              rotation='vertical', fontsize=fontsize)
             # Fontsize
             ax[i, j].tick_params(labelsize=fontsize)
             
@@ -219,6 +231,9 @@ def geomag_ac_plots():
             label_counter = label_counter + 1
             
     fig.tight_layout()
+    
+    fig_png = os.path.join(fig_dir, "three_interval_SMR_SME_hist.png")
+    fig.savefig(fig_png)
 
 def read_subset_bootstraps(subset_n, freq_ch='ipwr_100_400kHz',
                            n_bootstrap=100):
