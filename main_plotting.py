@@ -160,15 +160,65 @@ def geomag_ac_plots():
 
     supermag_df = read_supermag.concat_indices_years(
         np.array(range(1995, 2005)))    
-
-
+    
+    
+    smr_bins = np.linspace(-175, 0, 50)
+    sme_bins = np.linspace(0, 2000, 50)
+    
+    fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(10, 12.5))
+    
+    label_counter = 0
     for (i, interval_tag) in enumerate(['full_archive', 'cassini_flyby',
                               'long_nightside_period']):
-        print(interval_tag)
-        
-        for (j, index) in enumerate('SML', 'SME'):
-            print(index)
+        #print(interval_tag)
+        interval = interval_options.loc[interval_options.tag == interval_tag]
+        #print(interval.stime.values[0])
+        #print(interval.etime.values[0])
+        interval_df = supermag_df.loc[(supermag_df.Date_UTC >= interval.stime.values[0]) & (supermag_df.Date_UTC <= interval.etime.values[0])]
+    
+        for (j, (index, binz)) in enumerate(zip(['SMR', 'SME'], [smr_bins, sme_bins])):
+            ax[i, j].hist(interval_df[index], bins=binz, color=interval.color, density=True)
+            
+            # Label mean, std
+            mean = np.nanmean(interval_df[index])
+            std = np.nanstd(interval_df[index])
+            var = np.nanvar(interval_df[index])
+            
+            ax[i, j].axvline(mean, color='black', linewidth=1.5, linestyle='dashed')
+            if index == "SME":
+                horiza = "left"
+                opp_ha = "right"
+                plus = 100.
+                lab_x = 0.95
+            elif index == "SMR":
+                horiza = "right"
+                opp_ha = "left"
+                plus = -10.
+                lab_x = 0.05
+            ax[i, j].text(mean + plus, 0.9,
+                          r"$\bar{x}$ = " + str(np.round(mean, 2)) +
+                          "\n$\sigma$ = " + str(np.round(std, 2)) +
+                          "\n$\sigma^{2}$ = " + str(np.round(var, 2)),
+                          transform=ax[i, j].get_xaxis_transform(), ha=horiza, va='top', fontsize=fontsize)
 
+            # x y labels
+            ax[i, j].set_xlabel(index + " (nT)", fontsize=fontsize)
+            ax[i, j].set_ylabel("Normalised Occurrence", fontsize=fontsize)
+            # Label interval
+            if j == 1:
+                ax[i, j].text(1.05, 0.5, interval.label.values[0], va='center', ha='left', transform=ax[i, j].transAxes, rotation='vertical', fontsize=fontsize)
+            # Fontsize
+            ax[i, j].tick_params(labelsize=fontsize)
+            
+            # a b c labels
+            t = ax[i, j].text(lab_x, 0.95, axes_labels[label_counter],
+                              transform=ax[i, j].transAxes,
+                              fontsize=fontsize, va='top', ha=opp_ha)
+            t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+            label_counter = label_counter + 1
+            
+    fig.tight_layout()
 
 def read_subset_bootstraps(subset_n, freq_ch='ipwr_100_400kHz',
                            n_bootstrap=100):
