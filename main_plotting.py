@@ -664,7 +664,16 @@ def wind_cassini_lomb_scargle():
     labels = interval_options.label[desired_i].values
     
     # Initialise plotting window
-    fig, ax = plt.subplots(nrows=2, figsize=(12.5, 8))
+    #fig, ax = plt.subplots(nrows=2, figsize=(12.5, 8))
+    
+    fig = plt.figure(figsize=(17.5, 8))
+    gs = GridSpec(2, 2, height_ratios=[1, 1], width_ratios=[2.5, 1])
+
+    ax1 = fig.add_subplot(gs[0])
+    ax2 = fig.add_subplot(gs[1])
+    ax3 = fig.add_subplot(gs[2])
+    ax4 = fig.add_subplot(gs[3])
+    ax = [ax1, ax2, ax3, ax4]
 
     if vertical_indicators != []:
         for h in vertical_indicators:
@@ -675,6 +684,7 @@ def wind_cassini_lomb_scargle():
                            fontsize=fontsize, va='top', ha='center',
                            color=vertical_ind_col)
 
+    ax_counter = 0
     for (i, tag) in enumerate(desired_intervals):
         print('Running Lomb-Scargle for ', tag)
 
@@ -750,11 +760,11 @@ def wind_cassini_lomb_scargle():
                 n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
                 tag + '_' + freq_column, FAP_pkl, n0=samples_per_peak)
 
-            ax[i].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+            ax[ax_counter].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
             if j == 0:
                 trans = transforms.blended_transform_factory(
-                    ax[i].transAxes, ax[i].transData)
-                ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
+                    ax[ax_counter].transAxes, ax[ax_counter].transData)
+                ax[ax_counter].annotate("FAL\n" + "{:.3e}".format(FAP),
                                    xy=(0.2, FAP), xytext=(0.1, FAP),
                                    xycoords=trans, arrowprops={'facecolor': c},
                                    fontsize=fontsize, va='center', ha='right',
@@ -762,31 +772,47 @@ def wind_cassini_lomb_scargle():
                                    fontweight="bold")
             elif j == 1:
                 trans = transforms.blended_transform_factory(
-                    ax[i].transAxes, ax[i].transData)
-                ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
+                    ax[ax_counter].transAxes, ax[ax_counter].transData)
+                ax[ax_counter].annotate("FAL\n" + "{:.3e}".format(FAP),
                                    xy=(0.8, FAP), xytext=(0.9, FAP),
                                    xycoords=trans, arrowprops={'facecolor': c},
                                    fontsize=fontsize, va='center', ha='left',
                                    color=c, bbox=annotate_bbox, fontweight="bold")
-        ax[i].set_xscale('log')
+                
+            ax[ax_counter + 1].hist(bootstrap_peak_magnitudes,
+                                    bins=np.linspace(0.0005, 0.0016, 25),
+                                    color=c, alpha=0.5, label=n
+                                    )
+            pgram_max = np.nanmax(ls_pgram)
+            # ax[ax_counter + 1].axvline(pgram_max,
+            #                            linewidth=1.5, linestyle='dashed', 
+            #                            color=c, label="True peak\n" + n)
+        
+        ax[ax_counter].set_xscale('log')
 
         # Formatting
-        ax[i].set_ylabel('Lomb-Scargle\nNormalised Amplitude',
+        ax[ax_counter].set_ylabel('Lomb-Scargle\nNormalised Amplitude',
                              fontsize=fontsize)
-        ax[i].set_xlabel('Period (hours)', fontsize=fontsize)
-        ax[i].tick_params(labelsize=fontsize)
-        ax[i].legend(fontsize=fontsize, loc='upper left')
+        ax[ax_counter].set_xlabel('Period (hours)', fontsize=fontsize)
+        ax[ax_counter].legend(fontsize=fontsize, loc='upper left')
 
         if vertical_indicators != []:
             for h in vertical_indicators:
                 trans = transforms.blended_transform_factory(
-                    ax[i].transData, ax[i].transAxes)
-                ax[i].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
+                    ax[ax_counter].transData, ax[ax_counter].transAxes)
+                ax[ax_counter].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
                                    xycoords=trans,
                                    arrowprops={'facecolor': 'black'},
                                    fontsize=fontsize, va='top', ha='center',
                                    color=vertical_ind_col)
-                
+        
+        # Histograms
+        ax[ax_counter + 1].legend(loc="upper right", fontsize=fontsize)
+        ax[ax_counter + 1].set_xlabel("Magnitude of LS Peak", fontsize=fontsize)
+        ax[ax_counter + 1].set_ylabel("Occurrence", fontsize=fontsize)
+        
+        ax_counter = ax_counter + 2
+        
     # Add in more ticks
     majticks = [10, 15, 20, 25, 30, 35, 40, 45, 50]
     majlabels = [str(t) for t in majticks]
@@ -797,15 +823,16 @@ def wind_cassini_lomb_scargle():
                    fontsize=fontsize, va='bottom', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
-        tit = a.text(1.0, 1.025, labels[i], transform=a.transAxes,
-                     fontsize=1.25 * fontsize, va='bottom', ha='right')
-        a.set_xticks(majticks, labels=majlabels)
+        # tit = a.text(1.0, 1.025, labels[i], transform=a.transAxes,
+        #              fontsize=1.25 * fontsize, va='bottom', ha='right')
+        # a.set_xticks(majticks, labels=majlabels)
+        a.tick_params(labelsize=fontsize)
 
     # Adjust margins etc
     fig.tight_layout()
     # Save to file
-    fig.savefig(LS_fig)
-
+    fig.savefig(LS_fig) 
+    
 
 def run_ACF():
     """
