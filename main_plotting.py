@@ -165,7 +165,10 @@ def geomag_ac_plots():
     smr_bins = np.linspace(-175, 0, 50)
     sme_bins = np.linspace(0, 2000, 50)
     
-    fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(10, 12.5))
+    akr_bins = np.logspace(0, 6, 50)
+    #lf_bins = np.logspace(0, 6, 50)
+    
+    fig, ax = plt.subplots(nrows=3, ncols=4, figsize=(20, 12.5))
     
     label_counter = 0
     for (i, interval_tag) in enumerate(['full_archive', 'cassini_flyby',
@@ -174,7 +177,7 @@ def geomag_ac_plots():
         interval = interval_options.loc[interval_options.tag == interval_tag]
         #print(interval.stime.values[0])
         #print(interval.etime.values[0])
-        interval_df = supermag_df.loc[(supermag_df.Date_UTC >= interval.stime.values[0]) & (supermag_df.Date_UTC <= interval.etime.values[0])]
+        interval_df = supermag_df.loc[(supermag_df.Date_UTC >= interval.stime.values[0]) & (supermag_df.Date_UTC <= interval.etime.values[0])] 
     
         for (j, (index, binz)) in enumerate(zip(['SMR', 'SME'], [smr_bins, sme_bins])):
             ax[i, j].hist(interval_df[index], bins=binz, color=interval.color,
@@ -213,12 +216,12 @@ def geomag_ac_plots():
             # x y labels
             ax[i, j].set_xlabel(index + " (nT)", fontsize=fontsize)
             ax[i, j].set_ylabel("Normalised Occurrence", fontsize=fontsize)
-            # Label interval
-            if j == 1:
-                ax[i, j].text(1.05, 0.5, interval.label.values[0],
-                              va='center', ha='left',
-                              transform=ax[i, j].transAxes,
-                              rotation='vertical', fontsize=fontsize)
+            # # Label interval
+            # if j == 1:
+            #     ax[i, j].text(1.05, 0.5, interval.label.values[0],
+            #                   va='center', ha='left',
+            #                   transform=ax[i, j].transAxes,
+            #                   rotation='vertical', fontsize=fontsize)
             # Fontsize
             ax[i, j].tick_params(labelsize=fontsize)
             
@@ -229,10 +232,91 @@ def geomag_ac_plots():
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
             label_counter = label_counter + 1
+        
+         
+        akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
+        # breakpoint()
+        for (k, (f_band, title)) in enumerate(zip(
+                ['ipwr_100_400kHz', 'ipwr_50_100kHz'],
+                ["100-400 kHz Power (W $sr^{-1}$)",
+                 "50-100 kHz Power (W $sr^{-1}$)"]
+                )):
+
+
+            # if f_band == "ipwr_50_100kHz":
+            #     ax[i, k + 2].hist(akr_df[f_band], bins=akr_bins,
+            #                       color=interval.color, density=True,
+            #                       label=f_band)
+            #     #ax[i, k + 2].legend(loc='lower right', fontsize=fontsize)
+
+            # elif f_band == "ipwr_100_400kHz":
+            ax[i, k + 2].hist(akr_df[f_band], bins=akr_bins, color=interval.color,
+                                  density=True, label=f_band)
+
+            ax[i, k + 2].set_xscale('log')
+
+            # Label mean, std
+            median = np.nanmedian(akr_df.loc[akr_df[f_band] > 0., f_band])
+            std = np.nanstd(akr_df.loc[akr_df[f_band] > 0., f_band])
+            var = np.nanvar(akr_df.loc[akr_df[f_band] > 0., f_band])
             
+            ax[i, k + 2].axvline(median, color='black', linewidth=1.5,
+                                 linestyle='dashed')
+            # if index == "SME":
+            #     horiza = "left"
+            #     opp_ha = "right"
+            #     plus = 100.
+            #lab_x = 0.95
+            # elif index == "SMR":
+            horiza = "right"
+            opp_ha = "left"
+            #plus = -10.
+            lab_x = 0.05
+            # breakpoint()
+            # ax[i, k + 2].text(median, 0.9,
+            #               r"$\eta$ = " + str(np.round(median, 2)) +
+            #               "\n$\sigma$ = " + str(np.round(std, 2)) +
+            #               "\n$\sigma^{2}$ = " + str(np.round(var, 2)) +
+            #               "\nN = " + str(len(akr_df)),
+            #               transform=ax[i, k + 2].get_xaxis_transform(),
+            #               ha=horiza, va='top', fontsize=fontsize)
+
+            ax[i, k + 2].text(median - (median * 0.15), 0.85,
+                          r"$\eta$ = " + f"{median:.2e}" +
+                          "\n$\sigma$ = " + f"{std:.2e}" +
+                          "\n$\sigma^{2}$ = " + f"{var:.2e}" +
+                          "\nN = " + str(len(akr_df)),
+                          transform=ax[i, k + 2].get_xaxis_transform(),
+                          ha=horiza, va='top', fontsize=fontsize)
+
+
+            # # x y labels
+            ax[i, k + 2].set_xlabel(title,
+                                    fontsize=fontsize)
+            ax[i, k + 2].set_ylabel("Normalised Occurrence",
+                                    fontsize=fontsize)
+            # Label interval
+            if k == 1:
+                ax[i, k + 2].text(1.05, 0.5, interval.label.values[0],
+                                  va='center', ha='left',
+                                  transform=ax[i, k + 2].transAxes,
+                                  rotation='vertical', fontsize=fontsize)
+            # Fontsize
+            ax[i, k + 2].tick_params(labelsize=fontsize)
+            
+            # a b c labels
+            t = ax[i, k + 2].text(lab_x, 0.95, axes_labels[label_counter],
+                              transform=ax[i, k + 2].transAxes,
+                              fontsize=fontsize, va='top', ha=opp_ha)
+            t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+            label_counter = label_counter + 1
+            
+            
+
     fig.tight_layout()
     
-    fig_png = os.path.join(fig_dir, "three_interval_SMR_SME_hist.png")
+    fig_png = os.path.join(fig_dir, "three_interval_SMR_SME_AKR_hist.png")
     fig.savefig(fig_png)
 
 def read_subset_bootstraps(subset_n, freq_ch='ipwr_100_400kHz',
@@ -1625,8 +1709,8 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         np.array(range(1995, 2005)))
 
     # Sliding parameters
-    slides = 250
-    slide_width = pd.Timedelta(days=1)
+    slides = 50
+    slide_width = pd.Timedelta(days=5)
     slide_width_multiplier = np.linspace(0, slides, slides+1)
     
     # Number of top peaks to collect
@@ -1748,6 +1832,7 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     colors = np.asarray(colors)
 
 
+
     pc = PolyCollection(
         verts,
         array=colors,
@@ -1773,17 +1858,26 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     # Set limits
     ax[0].set_ylim([np.min(y_centers), np.max(y_centers)])  # based on the lims of last loop
 
+    xlims = [np.min(x_edges), np.max(x_edges)]
+    for a in ax:
+        a.set_xlim(xlims)
+
+
 
     for l in [12, 24, 36, 48]:
-        # ax.axhline(24., linestyle='dashed', linewidth=2., color='purple')
-        # ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
-        #        transform=ax.transData, fontsize=fontsize, color='black')
-        ax[0].annotate(str(l), (ax[0].get_xlim()[1], l),
-                    xytext=(ax[0].get_xlim()[1]*1.025, l),
-                    xycoords='data',
-                    color=annotation_colour, fontsize=fontsize,
-                    va='center', ha='left',
-                    arrowprops=dict(facecolor=annotation_colour, shrink=0.05))
+
+        print('guava', l, ax[0].get_xlim()[1])
+        ax[0].annotate(
+            str(l),
+            (ax[0].get_xlim()[1], l),
+            xytext=(ax[0].get_xlim()[1]*1.025, l),
+            xycoords='data',
+            textcoords='data',#ax[0].get_xaxis_transform(),
+            color=annotation_colour,
+            fontsize=fontsize,
+            va='center', ha='left',
+            arrowprops=dict(facecolor=annotation_colour, shrink=0.05),
+            clip_on=False)
         
 
     # ------------------------
@@ -1810,7 +1904,8 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
                     xycoords='data',
                     color=annotation_colour, fontsize=fontsize,
                     va='center', ha='left',
-                    arrowprops=dict(facecolor=annotation_colour, shrink=0.05))
+                    arrowprops=dict(facecolor=annotation_colour, shrink=0.05),
+                    clip_on=False)
     
     ax[1].axhline(24., linewidth=1.5, linestyle='dashed', color='black', zorder=0.)
 
@@ -1856,17 +1951,17 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     twax.tick_params(labelsize=fontsize)
 
     # fontsize on ax ticks
-    xlims = [np.min(x_edges), np.max(x_edges)]
+
     
     cbar_pos = ax[0].get_position().bounds
     for (m, a) in enumerate(ax):
         a.tick_params(labelsize=fontsize)
         a.set_xlabel("Length of archive (days)", fontsize=fontsize)
-        a.set_xlim(xlims)
+
 
 
         if m > 0:
-            print('bananas', m)
+            # print('bananas', m)
             pos = a.get_position().bounds
             a.set_position([cbar_pos[0], pos[1], cbar_pos[2], pos[3]])
             
