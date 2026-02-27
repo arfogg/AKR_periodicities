@@ -641,6 +641,9 @@ def wind_cassini_lomb_scargle():
 
     annotate_bbox = {"facecolor": "white", "edgecolor": "grey", "pad": 5.}
 
+    FAL_color = 'darkmagenta'
+    tru_color = 'coral'
+
     # Different frequency channels
     freq_tags = np.array(['ipwr_100_400kHz'])#, 'ipwr_50_100kHz'])
     freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
@@ -766,9 +769,9 @@ def wind_cassini_lomb_scargle():
                     ax[ax_counter].transAxes, ax[ax_counter].transData)
                 ax[ax_counter].annotate("FAL\n" + "{:.3e}".format(FAP),
                                    xy=(0.2, FAP), xytext=(0.1, FAP),
-                                   xycoords=trans, arrowprops={'facecolor': c},
+                                   xycoords=trans, arrowprops={'facecolor': FAL_color},
                                    fontsize=fontsize, va='center', ha='right',
-                                   color=c, bbox=annotate_bbox,
+                                   color=FAL_color, bbox=annotate_bbox,
                                    fontweight="bold")
             elif j == 1:
                 trans = transforms.blended_transform_factory(
@@ -781,20 +784,44 @@ def wind_cassini_lomb_scargle():
                 
             ax[ax_counter + 1].hist(bootstrap_peak_magnitudes,
                                     bins=np.linspace(0.0005, 0.0016, 25),
-                                    color=c, alpha=0.5, label=n
+                                    color=c, alpha=0.5,
+                                    label=str(n_bootstrap) + "\nbootstraps"
                                     )
             pgram_max = np.nanmax(ls_pgram)
+            pgram_max_period = periods[np.nanargmax(ls_pgram)]
+            ax[ax_counter].plot(pgram_max_period, pgram_max,
+                                linewidth=0., color=tru_color, marker='*',
+                                markersize=1.25 * fontsize, label='H',
+                                fillstyle='none')
             ax[ax_counter + 1].axvline(pgram_max,
                                        linewidth=1.5, linestyle='dashed', 
-                                       color=c, label="True peak\n" + n)
+                                       color=tru_color, label="H")
+            ax[ax_counter + 1].axvline(FAP,
+                                       linewidth=1.5, linestyle='dashed', 
+                                       color=FAL_color, label="FAL")
+            mean_bs = np.nanmean(bootstrap_peak_magnitudes)
+            ax[ax_counter + 1].axvline(mean_bs,
+                                       linewidth=1.5, linestyle='dotted', 
+                                       color='black', label="mean")
+            stats = "H = " + str(np.round((pgram_max / FAP), 2)) + "*FAL\nH = " + str(np.round((pgram_max / mean_bs), 2)) + "*mean"
+            # #"Highest peak " + str(np.round((pgram_max / FAP), 2)) "times larger than FAL, and "
+            # breakpoint()
+            
+            ax[ax_counter + 1].text(1.0, 1.0, stats,
+                                    transform=ax[ax_counter + 1].transAxes,
+                                    fontsize=0.9 * fontsize, ha='right', va='bottom')
         
         ax[ax_counter].set_xscale('log')
 
         # Formatting
         ax[ax_counter].set_ylabel('Lomb-Scargle\nNormalised Amplitude',
-                             fontsize=fontsize)
+                                  fontsize=fontsize)
         ax[ax_counter].set_xlabel('Period (hours)', fontsize=fontsize)
         ax[ax_counter].legend(fontsize=fontsize, loc='upper left')
+        
+        ax[ax_counter].text(1.0, 1.0, labels[i],
+                            transform=ax[ax_counter].transAxes,
+                            fontsize=fontsize, ha='right', va='bottom')
 
         if vertical_indicators != []:
             for h in vertical_indicators:
@@ -807,7 +834,7 @@ def wind_cassini_lomb_scargle():
                                    color=vertical_ind_col)
         
         # Histograms
-        ax[ax_counter + 1].legend(loc="lower right", fontsize=fontsize)
+        ax[ax_counter + 1].legend(loc="upper right", fontsize=0.8 * fontsize)
         ax[ax_counter + 1].set_xlabel("Magnitude of LS Peak", fontsize=fontsize)
         ax[ax_counter + 1].set_ylabel("Occurrence", fontsize=fontsize)
         ax[ax_counter + 1].set_xscale('log')
@@ -832,7 +859,7 @@ def wind_cassini_lomb_scargle():
     # Adjust margins etc
     fig.tight_layout()
     # Save to file
-    # fig.savefig(LS_fig) 
+    fig.savefig(LS_fig) 
     
 
 def run_ACF():
