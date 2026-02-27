@@ -642,7 +642,7 @@ def wind_cassini_lomb_scargle():
     annotate_bbox = {"facecolor": "white", "edgecolor": "grey", "pad": 5.}
 
     # Different frequency channels
-    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'])
+    freq_tags = np.array(['ipwr_100_400kHz'])#, 'ipwr_50_100kHz'])
     freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
     freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
 
@@ -784,9 +784,9 @@ def wind_cassini_lomb_scargle():
                                     color=c, alpha=0.5, label=n
                                     )
             pgram_max = np.nanmax(ls_pgram)
-            # ax[ax_counter + 1].axvline(pgram_max,
-            #                            linewidth=1.5, linestyle='dashed', 
-            #                            color=c, label="True peak\n" + n)
+            ax[ax_counter + 1].axvline(pgram_max,
+                                       linewidth=1.5, linestyle='dashed', 
+                                       color=c, label="True peak\n" + n)
         
         ax[ax_counter].set_xscale('log')
 
@@ -807,9 +807,10 @@ def wind_cassini_lomb_scargle():
                                    color=vertical_ind_col)
         
         # Histograms
-        ax[ax_counter + 1].legend(loc="upper right", fontsize=fontsize)
+        ax[ax_counter + 1].legend(loc="lower right", fontsize=fontsize)
         ax[ax_counter + 1].set_xlabel("Magnitude of LS Peak", fontsize=fontsize)
         ax[ax_counter + 1].set_ylabel("Occurrence", fontsize=fontsize)
+        ax[ax_counter + 1].set_xscale('log')
         
         ax_counter = ax_counter + 2
         
@@ -831,7 +832,7 @@ def wind_cassini_lomb_scargle():
     # Adjust margins etc
     fig.tight_layout()
     # Save to file
-    fig.savefig(LS_fig) 
+    # fig.savefig(LS_fig) 
     
 
 def run_ACF():
@@ -1915,9 +1916,10 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
                alpha=0.65, markeredgecolor='black', label="1", zorder=1.)
 
     peak_colors = ["#6c93c5", "#8f9e49", "#a763bd", "#ca5b56"]
+    mrs = ["o", "^", "x", "+"]
     for i in range(1, n_peaks):
         ax[1].plot(length_days, top_peaks_period[:, i], linewidth=0.,
-                marker='.', markersize=0.5*fontsize, #fillstyle='none',
+                marker=mrs[i-1], markersize=0.5*fontsize, fillstyle='none',
                 alpha=0.65, label=str(i+1), color=peak_colors[i-1], zorder=i*0.1)#,
                 #markeredgecolor='deeppink')
 
