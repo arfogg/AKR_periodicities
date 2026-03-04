@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 
 from numpy.fft import fft, ifft
-# import scipy.signal as signal
 
 
 def generic_fft_function(time, y, temporal_resolution):
@@ -282,14 +281,11 @@ def DEP_autocorrelation(y, n_shifts, temporal_resolution=180,
     starting_lag_i = int(starting_lag / temporal_resolution)
 
     # Initialise arrays
-    # shifted_y = np.full((y.size, n_shifts), np.nan)
     acf = np.full(n_shifts, np.nan)
     lags = np.full(n_shifts, np.nan)
 
     for i in range(0, n_shifts):
         # Shift y
-        # shifted_y[:, i] = np.append(y[-(i+starting_lag_i):],
-        #                            y[:-(i+starting_lag_i)])
         shifted_y = np.append(y[-(i+starting_lag_i):],
                               y[:-(i+starting_lag_i)])
         # Calculate ACF
@@ -380,9 +376,7 @@ def period_to_freq(period):
         raise ValueError('Input data contains 0(s)')
 
     freq = [1 / (p * 60. * 60.) for p in period]
-    # freq = []
-    # for p in period:
-    #     freq.append(1. / (p * (60.*60.)))
+
     return np.array(freq)
 
 
