@@ -9,7 +9,6 @@ Functions to run Lomb-Scargle analysis.
 
 import pathlib
 import pickle
-# import psutil
 
 from astropy.timeseries import LombScargle
 
@@ -94,7 +93,6 @@ def generic_lomb_scargle(time, y, f_min, f_max, n0=5):
     ls_object = LombScargle(time, y, normalization='standard')
 
     # Extract frequencies and power
-    # breakpoint()
     freqs, ls_pgram = ls_object.autopower(
         minimum_frequency=f_min, maximum_frequency=f_max, samples_per_peak=n0)
 
