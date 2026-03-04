@@ -8,35 +8,35 @@ Created on Fri Oct 10 10:01:45 2025
 import os
 import sys
 import string
-import pathlib
+# import pathlib
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from numpy.fft import fft, ifft
+# from numpy.fft import fft, ifft
 import matplotlib.transforms as transforms
 from scipy.stats import linregress
 
 import periodicity_functions
 import read_and_tidy_data
-import binning_averaging
-import wind_location
-import diurnal_oscillator
+# import binning_averaging
+# import wind_location
+# import diurnal_oscillator
 import lomb_scargle
-import autocorrelation
-import bootstrap_functions
-import utility
-import main_plotting
+# import autocorrelation
+# import bootstrap_functions
+# import utility
+# import main_plotting
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
-import read_wind_position
+# import read_wind_position
 import read_waters_masked_data
 #import read_sunspot_n
 
-sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
-import read_omni
-import read_supermag
-import read_sunspot_n
+# sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
+# import read_omni
+# import read_supermag
+# import read_sunspot_n
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\qq_plot')
 import qq_plot
