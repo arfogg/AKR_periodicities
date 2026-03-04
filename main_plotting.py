@@ -17,11 +17,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.transforms as transforms
 
-from numpy.fft import fft, ifft
+# from numpy.fft import fft, ifft
 from matplotlib.gridspec import GridSpec
-from neurodsp.sim import sim_oscillation
+# from neurodsp.sim import sim_oscillation
 from matplotlib.collections import PolyCollection
-from matplotlib.colors import LogNorm
+# from matplotlib.colors import LogNorm
 
 
 import periodicity_functions
@@ -39,7 +39,7 @@ import read_wind_position
 #import read_sunspot_n
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
-import read_omni
+# import read_omni
 import read_supermag
 import read_sunspot_n
 
@@ -155,6 +155,14 @@ def trajectory_plots():
     fig.savefig(traj_fig)
 
 def geomag_ac_plots():
+    """
+    Function to create histograms of geomagnetic activity.
+
+    Returns
+    -------
+    None.
+
+    """
     
     interval_options = read_and_tidy_data.return_test_intervals()
 
@@ -166,17 +174,15 @@ def geomag_ac_plots():
     sme_bins = np.linspace(0, 2000, 50)
     
     akr_bins = np.logspace(0, 6, 50)
-    #lf_bins = np.logspace(0, 6, 50)
     
     fig, ax = plt.subplots(nrows=3, ncols=4, figsize=(20, 12.5))
     
     label_counter = 0
     for (i, interval_tag) in enumerate(['full_archive', 'cassini_flyby',
                               'long_nightside_period']):
-        #print(interval_tag)
+
         interval = interval_options.loc[interval_options.tag == interval_tag]
-        #print(interval.stime.values[0])
-        #print(interval.etime.values[0])
+
         interval_df = supermag_df.loc[(supermag_df.Date_UTC >= interval.stime.values[0]) & (supermag_df.Date_UTC <= interval.etime.values[0])] 
     
         for (j, (index, binz)) in enumerate(zip(['SMR', 'SME'], [smr_bins, sme_bins])):
@@ -216,12 +222,7 @@ def geomag_ac_plots():
             # x y labels
             ax[i, j].set_xlabel(index + " (nT)", fontsize=fontsize)
             ax[i, j].set_ylabel("Normalised Occurrence", fontsize=fontsize)
-            # # Label interval
-            # if j == 1:
-            #     ax[i, j].text(1.05, 0.5, interval.label.values[0],
-            #                   va='center', ha='left',
-            #                   transform=ax[i, j].transAxes,
-            #                   rotation='vertical', fontsize=fontsize)
+
             # Fontsize
             ax[i, j].tick_params(labelsize=fontsize)
             
@@ -235,7 +236,7 @@ def geomag_ac_plots():
         
          
         akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
-        # breakpoint()
+
         for (k, (f_band, title)) in enumerate(zip(
                 ['ipwr_100_400kHz', 'ipwr_50_100kHz'],
                 ["100-400 kHz Power (W $sr^{-1}$)",
@@ -243,13 +244,6 @@ def geomag_ac_plots():
                 )):
 
 
-            # if f_band == "ipwr_50_100kHz":
-            #     ax[i, k + 2].hist(akr_df[f_band], bins=akr_bins,
-            #                       color=interval.color, density=True,
-            #                       label=f_band)
-            #     #ax[i, k + 2].legend(loc='lower right', fontsize=fontsize)
-
-            # elif f_band == "ipwr_100_400kHz":
             ax[i, k + 2].hist(akr_df[f_band], bins=akr_bins, color=interval.color,
                                   density=True, label=f_band)
 
@@ -262,24 +256,11 @@ def geomag_ac_plots():
             
             ax[i, k + 2].axvline(median, color='black', linewidth=1.5,
                                  linestyle='dashed')
-            # if index == "SME":
-            #     horiza = "left"
-            #     opp_ha = "right"
-            #     plus = 100.
-            #lab_x = 0.95
-            # elif index == "SMR":
+
             horiza = "right"
             opp_ha = "left"
-            #plus = -10.
+
             lab_x = 0.05
-            # breakpoint()
-            # ax[i, k + 2].text(median, 0.9,
-            #               r"$\eta$ = " + str(np.round(median, 2)) +
-            #               "\n$\sigma$ = " + str(np.round(std, 2)) +
-            #               "\n$\sigma^{2}$ = " + str(np.round(var, 2)) +
-            #               "\nN = " + str(len(akr_df)),
-            #               transform=ax[i, k + 2].get_xaxis_transform(),
-            #               ha=horiza, va='top', fontsize=fontsize)
 
             ax[i, k + 2].text(median - (median * 0.15), 0.85,
                           r"$\eta$ = " + f"{median:.2e}" +
@@ -311,8 +292,7 @@ def geomag_ac_plots():
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
             label_counter = label_counter + 1
-            
-            
+ 
 
     fig.tight_layout()
     
@@ -630,7 +610,15 @@ def run_lomb_scargle():
 
 
 def wind_cassini_lomb_scargle():
+    """
+    Function to create a unique plot for the LS analysis for the
+    Wind-Cassini conjunction.
 
+    Returns
+    -------
+    None.
+
+    """
     # Initialising variables
     f_min = 1 / (48. * 60. * 60.)
     f_max = 1 / (8. * 60. * 60.)
@@ -661,14 +649,11 @@ def wind_cassini_lomb_scargle():
     # Read in interval data
     print('Reading AKR data over requested intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
-    # interval_options = interval_options.loc[interval_options['tag'] == 'cassini_flyby']
     desired_intervals = ['cassini_flyby', 'cassini_flyby_logged']
     desired_i, = np.where(interval_options.tag.isin(desired_intervals) == True)
     labels = interval_options.label[desired_i].values
     
-    # Initialise plotting window
-    #fig, ax = plt.subplots(nrows=2, figsize=(12.5, 8))
-    
+    # Initialise plotting window    
     fig = plt.figure(figsize=(17.5, 8))
     gs = GridSpec(2, 2, height_ratios=[1, 1], width_ratios=[2.5, 1])
 
@@ -804,9 +789,7 @@ def wind_cassini_lomb_scargle():
                                        linewidth=1.5, linestyle='dotted', 
                                        color='black', label="mean")
             stats = "H = " + str(np.round((pgram_max / FAP), 2)) + "*FAL\nH = " + str(np.round((pgram_max / mean_bs), 2)) + "*mean"
-            # #"Highest peak " + str(np.round((pgram_max / FAP), 2)) "times larger than FAL, and "
-            # breakpoint()
-            
+
             ax[ax_counter + 1].text(1.0, 1.0, stats,
                                     transform=ax[ax_counter + 1].transAxes,
                                     fontsize=0.9 * fontsize, ha='right', va='bottom')
@@ -844,16 +827,12 @@ def wind_cassini_lomb_scargle():
     # Add in more ticks
     majticks = [10, 15, 20, 25, 30, 35, 40, 45, 50]
     majlabels = [str(t) for t in majticks]
-    #ax[0].set_xticks(majticks, labels=majlabels)
 
     for (i, a) in enumerate(ax):
         t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
                    fontsize=fontsize, va='bottom', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
-        # tit = a.text(1.0, 1.025, labels[i], transform=a.transAxes,
-        #              fontsize=1.25 * fontsize, va='bottom', ha='right')
-        # a.set_xticks(majticks, labels=majlabels)
         a.tick_params(labelsize=fontsize)
 
     # Adjust margins etc
@@ -1627,10 +1606,7 @@ def lomb_scargle_cassini_sliding():
     # Define Lomb-Scargle freqs etc
     f_min = 1 / (48. * 60. * 60.)
     f_max = 1 / (8. * 60. * 60.)
-    # T = (pd.Timestamp(2005, 1, 1, 0) -
-    #      pd.Timestamp(1995, 1, 1, 0)).total_seconds()
     samples_per_peak = 5
-    # freqs = lomb_scargle.define_frequency_bins(T, f_min, f_max, n0=5)
     freq_column = "ipwr_100_400kHz"
 
     # Read in interval data
@@ -1739,7 +1715,6 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
 
     """
     fig_png_nonlog = os.path.join(fig_dir, "expanding_cassini_lomb_scargle_nonlog.png")
-    #fig_png_dots = os.path.join(fig_dir, "expanding_cassini_lomb_scargle_dots.png")
 
     # Define Lomb-Scargle freqs etc
     f_min = 1 / (48. * 60. * 60.)
@@ -1886,8 +1861,6 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     
     colors = np.asarray(colors)
 
-
-
     pc = PolyCollection(
         verts,
         array=colors,
@@ -1917,8 +1890,6 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     for a in ax:
         a.set_xlim(xlims)
 
-
-
     for l in [12, 24, 36, 48]:
 
         print('guava', l, ax[0].get_xlim()[1])
@@ -1937,7 +1908,7 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
 
     # ------------------------
     # PLOTTING THE TOP POINTS IN EACH PERIODOGRAM
-    # fig, ax = plt.subplots()
+
     ax[1].plot(length_days, top_peaks_period[:, 0], linewidth=0.,
                marker='*', markersize=fontsize, fillstyle='none',
                alpha=0.65, markeredgecolor='black', label="1", zorder=1.)
@@ -1970,19 +1941,9 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
  
     
     # Variability in AKR
-    # ax[2].plot(length_days, mean_akr_i,
-    #            color='black', zorder=1., label='Mean AKR intensity')
-    
-    # ax[2].fill_between(length_days,
-    #                    mean_akr_i + std_akr_i,
-    #                    mean_akr_i - std_akr_i,
-    #                    color='grey', alpha=0.75, zorder=0., label='$\sigma$')
     ax[2].plot(length_days, std_akr_i, color='black', linewidth=1.5)
     ax[2].set_ylabel("Standard Deviation in\nAKR Integrated Power (W $sr^{-1}$)",
                      fontsize=fontsize)
-    
-
-    # ax[2].legend(loc="upper right", fontsize=fontsize)
 
     # Variability in SMR, SME, SML
     lines = []
@@ -1997,7 +1958,7 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
             l, = ax[3].plot(length_days, index, color=c, label="$\sigma$" + n)
         lines.append(l)
 
-    #lines = [l1, l2]
+
     labels = [l.get_label() for l in lines]
     
     ax[3].legend(lines, labels, loc="upper right", fontsize=fontsize)
@@ -2006,18 +1967,12 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     twax.set_ylabel("Standard Deviation in SMR (nT)", fontsize=fontsize)
     twax.tick_params(labelsize=fontsize)
 
-    # fontsize on ax ticks
-
-    
     cbar_pos = ax[0].get_position().bounds
     for (m, a) in enumerate(ax):
         a.tick_params(labelsize=fontsize)
         a.set_xlabel("Length of archive (days)", fontsize=fontsize)
 
-
-
         if m > 0:
-            # print('bananas', m)
             pos = a.get_position().bounds
             a.set_position([cbar_pos[0], pos[1], cbar_pos[2], pos[3]])
             
@@ -2026,22 +1981,29 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
                           fontsize=fontsize, va='top', ha="left")
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
-
-    # Adjust margins etc
-    # fig.tight_layout()
-
     fig.savefig(fig_png_nonlog)
 
 def centers_to_edges(c):
+    """
+    Convert center of bins to edges of bins.
+
+    Parameters
+    ----------
+    c : np.array
+        Center value of bins.
+
+    Returns
+    -------
+    edges : np.array
+        Edges values of the bins.
+
+    """
     c = np.asarray(c)
     edges = np.zeros(len(c) + 1)
     edges[1:-1] = 0.5 * (c[:-1] + c[1:])
     edges[0] = c[0] - (c[1] - c[0]) / 2
     edges[-1] = c[-1] + (c[-1] - c[-2]) / 2
     return edges
-    
-
-
 
 def lomb_scargle_expanding(n_rand=100):
     """
@@ -2064,18 +2026,8 @@ def lomb_scargle_expanding(n_rand=100):
 
     annotation_colour = 'purple'
 
-    # # Read in interval data
-    # interval_options = read_and_tidy_data.return_test_intervals()
-    # interval_details = interval_options.loc[
-    #     interval_options.tag == "cassini_flyby"]
-    # interval_stime = interval_details.stime.iloc[0]
-    # interval_etime = interval_details.etime.iloc[0]
-    # interval_midtime = ((interval_etime - interval_stime) /
-    #                     2.) + interval_stime
-
     # Read in *all* AKR integrated power
     akr_df = read_and_tidy_data.select_akr_intervals("full_archive")
-
 
     # Choose random start points
     np.random.seed(0)
@@ -2108,11 +2060,8 @@ def lomb_scargle_expanding(n_rand=100):
     
         ut_s = np.array(ut_s)
         ut_e = np.array(ut_e)
-        # breakpoint()
-        # length = np.array(length)
-        # breakpoint()
+
         t_length[j, :] = length
-        # t_length = np.append(t_length, length)
     
         # LS analysis here
         variable_freqs = []
@@ -2151,99 +2100,12 @@ def lomb_scargle_expanding(n_rand=100):
     mean_peak = np.mean(period_of_peak, axis=0)
     median_peak = np.median(period_of_peak, axis=0)
     std = np.std(period_of_peak, axis=0)
-
-    
-    # return length_days, period_of_peak, mean_peak, median_peak, std
-    # print('apple')
-    # for j in range(n_rand):
-    #     ax.plot(length_days[j, :], period_of_peak[j, :], linewidth=0.,
-    #             marker='o', markersize=fontsize,# color='deeppink',
-    #             alpha=0.65, markeredgecolor='black', label=str(j))
-    # print('banana')
-    # ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
-    # ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
-    # # ax.set_ylim([20, 40])
-    # ax.axhline(24., linestyle='dashed', linewidth=2.,
-    #            zorder=0.5, color='black')
-    # ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
-    #         transform=ax.transData, fontsize=fontsize, color='black')
-    # # ax.legend()
-
-    # # Adjust margins etc
-    # fig.tight_layout()
-
-    # Save to file
-    # fig.savefig(fig_png)
-
-
-    
-    # x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
-    # x_bin_edges = x_bin_centres - (slide_width.days / 2.)
-    # x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
-    # y_bin_edges = np.linspace(5, 50, 91)
-    
-    # fig, ax = plt.subplots(figsize=(12, 6))
-    # ax.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='grey')
-
-    # x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
-    # x_bin_edges = x_bin_centres - (slide_width.days / 2.)
-    # x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
-    # y_bin_edges = np.linspace(5, 50, 46) + 0.5
-    
-    # fig, ax = plt.subplots(figsize=(12, 6))
-    # ax.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='copper', norm='log')
-    # ax.set_facecolor('gainsboro')
-
-    # x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
-    # x_bin_edges = x_bin_centres - (slide_width.days / 2.)
-    # x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
-    # y_bin_edges = np.linspace(5, 50, 46) + 0.5
-    
-    # fig, ax = plt.subplots(figsize=(12, 6))
-    # h, x, y, im = ax.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='copper', norm='log')
-    # ax.set_facecolor('gainsboro')
-    
-    # ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
-    # ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
-
-    # ax.axhline(24., linestyle='dashed', linewidth=2., color='black')
-    # ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
-    #         transform=ax.transData, fontsize=fontsize, color='black')
-
-    
-    # cbar = fig.colorbar(im, ax=ax)
-    # cbar.ax.tick_params(labelsize=fontsize)
-    # cbar.set_label('Occurrence (counts)', fontsize=fontsize)
-    
-    # x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
-    # x_bin_edges = x_bin_centres - (slide_width.days / 2.)
-    # x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
-    # y_bin_edges = np.linspace(5, 50, 46) + 0.5
-
-    # fig, ax = plt.subplots(figsize=(12, 6))
-    # h, x, y, im = ax.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='magma', norm='log')
-    # ax.set_facecolor('gainsboro')
-
-    # ax.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
-    # ax.set_xlabel("Length of archive (days)", fontsize=fontsize)
-
-    # for l in [12, 24, 36, 48]:
-    #     ax.annotate(str(l), (ax.get_xlim()[1], l), xytext=(ax.get_xlim()[1]*1.025, l), xycoords='data', color=annotation_colour, fontsize=fontsize, va='center', ha='left',
-    #         arrowprops=dict(facecolor=annotation_colour, shrink=0.05))
-        
-
-    # cbar = fig.colorbar(im, ax=ax)
-    # cbar.ax.tick_params(labelsize=fontsize)
-    # cbar.set_label('Occurrence (counts)', fontsize=fontsize)
-    
-    
         
     x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
     x_bin_edges = x_bin_centres - (slide_width.days / 2.)
     x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
     y_bin_edges = np.linspace(5, 50, 46) + 0.5
     
-    #fig, ax = plt.subplots(figsize=(12, 14))
     fig = plt.figure(figsize=(14, 14))
     gs = GridSpec(3, 1, height_ratios=[2, 1, 1])
     
@@ -2258,9 +2120,7 @@ def lomb_scargle_expanding(n_rand=100):
     ax1.set_xlabel("Length of archive (days)", fontsize=fontsize)
     
     for l in [12, 24, 36, 48]:
-        # ax.axhline(24., linestyle='dashed', linewidth=2., color='purple')
-        # ax.text(20, 24.25, "24 hours", ha='left', va='bottom',
-        #        transform=ax.transData, fontsize=fontsize, color='black')
+
         ax1.annotate(str(l), (ax1.get_xlim()[1], l),
                      xytext=(ax1.get_xlim()[1]*1.025, l),
                      xycoords='data',
@@ -2305,7 +2165,6 @@ def lomb_scargle_expanding(n_rand=100):
 
     # Save to file
     fig.savefig(fig_png)
-    print('NEED TO MAKE AXES LIMITS OF B AND C ALIGN WITH A')
 
 
 def plot_sliding_spectrogram():
@@ -2475,8 +2334,7 @@ def LS_solar_cyc(sunspot_n_fdict={'color': 'lightgrey',
 
     # Define time periods
     years = np.arange(1995, 2004 + 1)
-    # stime = pd.Timestamp(years[0], 1, 1, 0, 0, 0)
-    # etime = pd.Timestamp(years[-1]+1, 1, 1, 0, 0, 0)
+
     stime = 1994.5
     etime = 2004.5
 
