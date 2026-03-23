@@ -164,6 +164,12 @@ def geomag_ac_plots():
 
     """
     
+    labs = ['a', 'd', 'g', 'j', 'b', 'e', 'h', 'k', 'c', 'f', 'i', 'l']
+    a_labs = []
+    for a in labs:
+        a_labs.append('(' + a + ')')
+
+    
     interval_options = read_and_tidy_data.return_test_intervals()
 
     supermag_df = read_supermag.concat_indices_years(
@@ -227,7 +233,7 @@ def geomag_ac_plots():
             ax[i, j].tick_params(labelsize=fontsize)
             
             # a b c labels
-            t = ax[i, j].text(lab_x, 0.95, axes_labels[label_counter],
+            t = ax[i, j].text(lab_x, 0.95, a_labs[label_counter],
                               transform=ax[i, j].transAxes,
                               fontsize=fontsize, va='top', ha=opp_ha)
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
@@ -242,10 +248,14 @@ def geomag_ac_plots():
                 ["100-400 kHz Power (W $sr^{-1}$)",
                  "50-100 kHz Power (W $sr^{-1}$)"]
                 )):
+            # breakpoint()
 
+            # ax[i, k + 2].hist(akr_df[f_band], bins=akr_bins, color=interval.color,
+            #                       density=True, label=f_band)
+            ax[i, k + 2].hist(akr_df.loc[akr_df[f_band] > 0., f_band],
+                              bins=akr_bins, color=interval.color,
+                              density=True, label=f_band)
 
-            ax[i, k + 2].hist(akr_df[f_band], bins=akr_bins, color=interval.color,
-                                  density=True, label=f_band)
 
             ax[i, k + 2].set_xscale('log')
 
@@ -253,6 +263,7 @@ def geomag_ac_plots():
             median = np.nanmedian(akr_df.loc[akr_df[f_band] > 0., f_band])
             std = np.nanstd(akr_df.loc[akr_df[f_band] > 0., f_band])
             var = np.nanvar(akr_df.loc[akr_df[f_band] > 0., f_band])
+            imax = np.nanmax(akr_df.loc[akr_df[f_band] > 0., f_band])
             
             ax[i, k + 2].axvline(median, color='black', linewidth=1.5,
                                  linestyle='dashed')
@@ -264,6 +275,7 @@ def geomag_ac_plots():
 
             ax[i, k + 2].text(median - (median * 0.15), 0.85,
                           r"$\eta$ = " + f"{median:.2e}" +
+                          "\n$M$ = " + f"{imax:.2e}" +
                           "\n$\sigma$ = " + f"{std:.2e}" +
                           "\n$\sigma^{2}$ = " + f"{var:.2e}" +
                           "\nN = " + str(len(akr_df)),
@@ -281,12 +293,16 @@ def geomag_ac_plots():
                 ax[i, k + 2].text(1.05, 0.5, interval.label.values[0],
                                   va='center', ha='left',
                                   transform=ax[i, k + 2].transAxes,
-                                  rotation='vertical', fontsize=fontsize)
+                                  rotation='vertical', fontsize=fontsize*1.25)
             # Fontsize
             ax[i, k + 2].tick_params(labelsize=fontsize)
             
+            # y axis formatting
+            ax[i, k + 2].ticklabel_format(axis='y', style='sci',
+                                          scilimits=(0,0))
+            
             # a b c labels
-            t = ax[i, k + 2].text(lab_x, 0.95, axes_labels[label_counter],
+            t = ax[i, k + 2].text(lab_x, 0.95, a_labs[label_counter],
                               transform=ax[i, k + 2].transAxes,
                               fontsize=fontsize, va='top', ha=opp_ha)
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
