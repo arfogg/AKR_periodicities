@@ -1828,6 +1828,7 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         std_SML[i] = np.nanstd(subset_supermag['SML'])
 
 
+
     peak_period = periodicity_functions.freq_to_period(peak_freq)
     top_peaks_period = periodicity_functions.freq_to_period(top_peaks_freq)
 
@@ -1998,6 +1999,291 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
     fig.savefig(fig_png_nonlog)
+
+def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
+    """
+    Run the Lomb-Scargle analysis, gradually expanding the Cassini flyby
+    interval.
+
+    Returns
+    -------
+    None.
+
+    """
+    fig_png_log = os.path.join(fig_dir, "expanding_cassini_lomb_scargle_log.png")
+
+    # Define Lomb-Scargle freqs etc
+    f_min = 1 / (48. * 60. * 60.)
+    f_max = 1 / (8. * 60. * 60.)
+    samples_per_peak = 5
+
+    freq_column = "log_smoothed_ipwr_100_400kHz"
+
+    # Read in interval data
+    interval_options = read_and_tidy_data.return_test_intervals()
+    interval_details = interval_options.loc[
+        interval_options.tag == "cassini_flyby"]
+    interval_stime = interval_details.stime.iloc[0]
+    interval_etime = interval_details.etime.iloc[0]
+    interval_midtime = ((interval_etime - interval_stime) /
+                        2.) + interval_stime
+    # Read in *all* AKR integrated power
+    akr_df = read_and_tidy_data.select_akr_intervals("full_archive_logged")
+    
+    # Read in SMR, SML, SME
+    supermag_df = read_supermag.concat_indices_years(
+        np.array(range(1995, 2005)))
+
+    # Sliding parameters
+    slides = 50
+    slide_width = pd.Timedelta(days=5)
+    slide_width_multiplier = np.linspace(0, slides, slides+1)
+    
+    # Number of top peaks to collect
+    n_peaks = 5
+
+    x_lim = [interval_stime - ((slides / 2) * slide_width),
+             interval_etime + ((slides / 2) * slide_width)]
+
+    ut_s, ut_e, length = [], [], []
+    for i, factor in enumerate(slide_width_multiplier):
+
+        ut_s.append(interval_stime - (factor * slide_width))
+        ut_e.append(interval_etime + (factor * slide_width))
+        length.append((ut_e[i] - ut_s[i]).total_seconds())
+
+    ut_s = np.array(ut_s)
+    ut_e = np.array(ut_e)
+    length = np.array(length)
+
+    # LS analysis here
+    variable_freqs = []
+    variable_periods = []
+    ls_pgram =[]
+
+    peak_freq = np.full(slides + 1, np.nan)
+    peak_height = np.full(slides + 1, np.nan)
+    top_peaks_freq = np.full((slides + 1, n_peaks), np.nan)
+    top_peaks_height = np.full((slides + 1, n_peaks), np.nan)
+    
+    mean_akr_i = np.full(slides + 1, np.nan)
+    std_akr_i = np.full(slides + 1, np.nan)
+    
+    std_SMR = np.full(slides + 1, np.nan)
+    std_SME = np.full(slides + 1, np.nan)
+    std_SML = np.full(slides + 1, np.nan)
+
+    for i in range(slides + 1):
+        # Subselect AKR df
+        subset_df = akr_df.loc[(akr_df.datetime >= ut_s[i]) &
+                               (akr_df.datetime <= ut_e[i]),
+                               :].reset_index(drop=True)
+        subset_df = subset_df.dropna(subset=[freq_column])
+        
+        mean_akr_i[i] = np.nanmean(subset_df[freq_column])
+        std_akr_i[i] = np.nanstd(subset_df[freq_column])
+
+        output = lomb_scargle.generic_lomb_scargle(subset_df.unix,
+                                                   subset_df[freq_column],
+                                                   f_min, f_max,
+                                                   n0=samples_per_peak)
+
+        variable_freqs.append(output[1])
+        ls_pgram.append(output[2])
+        variable_periods.append(
+            periodicity_functions.freq_to_period(output[1]))
+
+        arg = output[2].argmax()
+        peak_height[i] = output[2][arg]
+        peak_freq[i] = output[1][arg]
+        
+        sorted_index = np.argsort(output[2])[::-1]
+        top_peaks_freq[i, :] = output[1][sorted_index[0:n_peaks]]
+        top_peaks_height[i, :] = output[2][sorted_index[0:n_peaks]]
+        #breakpoint()
+        
+        subset_supermag = supermag_df.loc[(supermag_df.Date_UTC >= ut_s[i]) &
+                               (supermag_df.Date_UTC <= ut_e[i]),
+                               :].reset_index(drop=True)
+        std_SMR[i] = np.nanstd(subset_supermag['SMR'])
+        std_SME[i] = np.nanstd(subset_supermag['SME'])
+        std_SML[i] = np.nanstd(subset_supermag['SML'])
+        #breakpoint()
+
+    peak_period = periodicity_functions.freq_to_period(peak_freq)
+    top_peaks_period = periodicity_functions.freq_to_period(top_peaks_freq)
+
+    # 2D IMAGE OF LS POWER AS A FUNCTION OF LENGTH OF ARCHIVE
+    fig, ax = plt.subplots(nrows=4, ncols=1, figsize=(15, 18))
+
+    length_days = length / (60. * 60 * 24)
+
+    # Build X bins
+    x_centers = length_days  # shape (251,)
+    x_edges = centers_to_edges(x_centers)
+
+    # Normalise LS pgram at each X
+    ls_pgram_norm = []
+    
+    for z in ls_pgram:
+        z = np.asarray(z)
+    
+        zmin = np.nanmin(z)
+        zmax = np.nanmax(z)
+    
+        if zmax > zmin:
+            z_norm = (z - zmin) / (zmax - zmin)
+        else:
+            z_norm = np.zeros_like(z)  # or np.nan
+    
+        ls_pgram_norm.append(z_norm)
+
+    verts = []
+    colors = []
+    
+    for i, x in enumerate(x_centers):
+    
+        y_centers = variable_periods[i]
+        z_vals    = ls_pgram_norm[i]
+    
+        y_edges = centers_to_edges(y_centers)
+    
+        for j in range(len(y_centers)):
+            verts.append([
+                (x_edges[i],   y_edges[j]),
+                (x_edges[i+1], y_edges[j]),
+                (x_edges[i+1], y_edges[j+1]),
+                (x_edges[i],   y_edges[j+1])
+            ])
+            colors.append(z_vals[j])
+    
+    colors = np.asarray(colors)
+
+    pc = PolyCollection(
+        verts,
+        array=colors,
+        cmap="plasma",
+        linewidths=0,
+        zorder=0
+    )
+    
+    # vmin = np.min(ls_pgram_norm[-1])
+    # vmax = 1.5 * np.max(ls_pgram_norm[-1])
+    # pc.set_clim(vmin, vmax)
+
+    ax[0].add_collection(pc)
+    ax[0].autoscale()
+    
+    cbar = fig.colorbar(pc, ax=ax[0])
+    cbar.set_label("Normalised LS Power [0-1]", fontsize=fontsize)
+    cbar.ax.tick_params(labelsize=fontsize)
+
+    ax[0].set_ylabel("Period (hours)\n", fontsize=fontsize)
+    #ax[0].set_xlabel("Length of archive (days)", fontsize=fontsize)
+
+    # Set limits
+    ax[0].set_ylim([np.min(y_centers), np.max(y_centers)])  # based on the lims of last loop
+
+    xlims = [np.min(x_edges), np.max(x_edges)]
+    for a in ax:
+        a.set_xlim(xlims)
+
+    for l in [12, 24, 36, 48]:
+
+        print('guava', l, ax[0].get_xlim()[1])
+        ax[0].annotate(
+            str(l),
+            (ax[0].get_xlim()[1], l),
+            xytext=(ax[0].get_xlim()[1]*1.025, l),
+            xycoords='data',
+            textcoords='data',#ax[0].get_xaxis_transform(),
+            color=annotation_colour,
+            fontsize=fontsize,
+            va='center', ha='left',
+            arrowprops=dict(facecolor=annotation_colour, shrink=0.05),
+            clip_on=False)
+        
+
+    # ------------------------
+    # PLOTTING THE TOP POINTS IN EACH PERIODOGRAM
+
+    ax[1].plot(length_days, top_peaks_period[:, 0], linewidth=0.,
+               marker='*', markersize=fontsize, fillstyle='none',
+               alpha=0.65, markeredgecolor='black', label="1", zorder=1.)
+
+    peak_colors = ["#6c93c5", "#8f9e49", "#a763bd", "#ca5b56"]
+    mrs = ["o", "^", "x", "+"]
+    for i in range(1, n_peaks):
+        ax[1].plot(length_days, top_peaks_period[:, i], linewidth=0.,
+                marker=mrs[i-1], markersize=0.5*fontsize, fillstyle='none',
+                alpha=0.65, label=str(i+1), color=peak_colors[i-1], zorder=i*0.1)#,
+                #markeredgecolor='deeppink')
+
+    ax[1].legend(loc="upper right", fontsize=fontsize)
+
+    ax[1].set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
+
+    for l in [12, 24, 36, 48]:
+        ax[1].annotate(str(l), (ax[1].get_xlim()[1], l),
+                    xytext=(ax[1].get_xlim()[1]*1.025, l),
+                    xycoords='data',
+                    color=annotation_colour, fontsize=fontsize,
+                    va='center', ha='left',
+                    arrowprops=dict(facecolor=annotation_colour, shrink=0.05),
+                    clip_on=False)
+    
+    ax[1].axhline(24., linewidth=1.5, linestyle='dashed', color='black', zorder=0.)
+
+    ax[1].set_ylim([17, 40])
+
+ 
+    
+    # Variability in AKR
+    ax[2].plot(length_days, std_akr_i, color='black', linewidth=1.5)
+    ax[2].set_ylabel("Standard Deviation in\nAKR Integrated Power (W $sr^{-1}$)",
+                     fontsize=fontsize)
+
+    # Variability in SMR, SME, SML
+    lines = []
+    for k, (index, n, c) in enumerate(zip([std_SMR, std_SME, std_SML],
+                                       ["SMR", "SME", "SML"],
+                                       ["black", "darkviolet", "orange"]
+                                       )):
+        if n == "SMR":
+            twax = ax[3].twinx()
+            l, = twax.plot(length_days, index, color=c, label="$\sigma$" + n)
+        else:
+            l, = ax[3].plot(length_days, index, color=c, label="$\sigma$" + n)
+        lines.append(l)
+
+
+    labels = [l.get_label() for l in lines]
+    
+    ax[3].legend(lines, labels, loc="upper right", fontsize=fontsize)
+
+    ax[3].set_ylabel("Standard Deviation in\nSME, SML (nT)", fontsize=fontsize)
+    twax.set_ylabel("Standard Deviation in SMR (nT)", fontsize=fontsize)
+    twax.tick_params(labelsize=fontsize)
+
+    cbar_pos = ax[0].get_position().bounds
+    for (m, a) in enumerate(ax):
+        a.tick_params(labelsize=fontsize)
+        a.set_xlabel("Length of archive (days)", fontsize=fontsize)
+
+        if m > 0:
+            pos = a.get_position().bounds
+            a.set_position([cbar_pos[0], pos[1], cbar_pos[2], pos[3]])
+            
+        t = a.text(0.01, 0.95, axes_labels[m],
+                          transform=a.transAxes,
+                          fontsize=fontsize, va='top', ha="left")
+        t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
+
+    fig.savefig(fig_png_log)
+
+
+
+
 
 def centers_to_edges(c):
     """
