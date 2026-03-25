@@ -17,12 +17,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.transforms as transforms
 
-# from numpy.fft import fft, ifft
 from matplotlib.gridspec import GridSpec
-# from neurodsp.sim import sim_oscillation
 from matplotlib.collections import PolyCollection
-# from matplotlib.colors import LogNorm
-
 
 import periodicity_functions
 import read_and_tidy_data
@@ -36,10 +32,8 @@ import utility
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
 import read_wind_position
-#import read_sunspot_n
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
-# import read_omni
 import read_supermag
 import read_sunspot_n
 
@@ -128,12 +122,10 @@ def trajectory_plots():
         draw_ticks = True if i == 2 else False
         if i == 2:
             half_magnitude = True
-            # leg_lab = interval_options.label.iloc[i] + "\n(* 50%)"
             
             leg_lab = interval_options.label.iloc[i].split()[0] + "\n" + interval_options.label.iloc[i].split()[1] + "\n(* 50%)"
         else:
             half_magnitude = False
-            # leg_lab = interval_options.label.iloc[i]
             leg_lab = interval_options.label.iloc[i].split()[0] + "\n" + interval_options.label.iloc[i].split()[1]
         axes.reshape(-1)[-1] = wind_location.lt_hist(
             interval_options.stime.iloc[i], interval_options.etime.iloc[i],
@@ -248,10 +240,7 @@ def geomag_ac_plots():
                 ["100-400 kHz Power (W $sr^{-1}$)",
                  "50-100 kHz Power (W $sr^{-1}$)"]
                 )):
-            # breakpoint()
 
-            # ax[i, k + 2].hist(akr_df[f_band], bins=akr_bins, color=interval.color,
-            #                       density=True, label=f_band)
             ax[i, k + 2].hist(akr_df.loc[akr_df[f_band] > 0., f_band],
                               bins=akr_bins, color=interval.color,
                               density=True, label=f_band)
@@ -605,7 +594,6 @@ def run_lomb_scargle():
     # Add in more ticks
     majticks = [10, 15, 20, 25, 30, 35, 40, 45, 50]
     majlabels = [str(t) for t in majticks]
-    #ax[0].set_xticks(majticks, labels=majlabels)
 
     # Label panels
     titles = np.append('Synthetic', labels)
@@ -660,8 +648,7 @@ def wind_cassini_lomb_scargle():
 
     # FAP filenames
     FAP_peaks_dir = os.path.join(data_dir, "lomb_scargle", 'LS_peaks_for_FAP')
-    # synthetic_FAP_pkl = os.path.join(data_dir, "lomb_scargle", "synthetic_FAP_"
-    #                                  + str(n_bootstrap) + "_BSs.pkl")
+
     # Read in interval data
     print('Reading AKR data over requested intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
@@ -1278,7 +1265,6 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
         region_flags = [0, 1, 2, 3, 4, 5, 6, 7]
         region_colors = ['grey', "#c18b40", "#a361c7", "#7ca343", "#6587cd",
                          "#cc5643", "#49ae8a", "#c65c8a"]
-
     lon_bin_width = 30.
 
     # Different frequency channels
@@ -1818,7 +1804,6 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         sorted_index = np.argsort(output[2])[::-1]
         top_peaks_freq[i, :] = output[1][sorted_index[0:n_peaks]]
         top_peaks_height[i, :] = output[2][sorted_index[0:n_peaks]]
-        #breakpoint()
         
         subset_supermag = supermag_df.loc[(supermag_df.Date_UTC >= ut_s[i]) &
                                (supermag_df.Date_UTC <= ut_e[i]),
@@ -1826,8 +1811,6 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         std_SMR[i] = np.nanstd(subset_supermag['SMR'])
         std_SME[i] = np.nanstd(subset_supermag['SME'])
         std_SML[i] = np.nanstd(subset_supermag['SML'])
-
-
 
     peak_period = periodicity_functions.freq_to_period(peak_freq)
     top_peaks_period = periodicity_functions.freq_to_period(top_peaks_freq)
@@ -1885,10 +1868,6 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         linewidths=0,
         zorder=0
     )
-    
-    # vmin = np.min(ls_pgram_norm[-1])
-    # vmax = 1.5 * np.max(ls_pgram_norm[-1])
-    # pc.set_clim(vmin, vmax)
 
     ax[0].add_collection(pc)
     ax[0].autoscale()
@@ -1898,7 +1877,6 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     cbar.ax.tick_params(labelsize=fontsize)
 
     ax[0].set_ylabel("Period (hours)\n", fontsize=fontsize)
-    #ax[0].set_xlabel("Length of archive (days)", fontsize=fontsize)
 
     # Set limits
     ax[0].set_ylim([np.min(y_centers), np.max(y_centers)])  # based on the lims of last loop
@@ -1908,8 +1886,6 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         a.set_xlim(xlims)
 
     for l in [12, 24, 36, 48]:
-
-        print('guava', l, ax[0].get_xlim()[1])
         ax[0].annotate(
             str(l),
             (ax[0].get_xlim()[1], l),
@@ -1921,7 +1897,6 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
             va='center', ha='left',
             arrowprops=dict(facecolor=annotation_colour, shrink=0.05),
             clip_on=False)
-        
 
     # ------------------------
     # PLOTTING THE TOP POINTS IN EACH PERIODOGRAM
@@ -1952,11 +1927,8 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
                     clip_on=False)
     
     ax[1].axhline(24., linewidth=1.5, linestyle='dashed', color='black', zorder=0.)
-
     ax[1].set_ylim([17, 40])
 
- 
-    
     # Variability in AKR
     ax[2].plot(length_days, std_akr_i, color='black', linewidth=1.5)
     ax[2].set_ylabel("Standard Deviation in\nAKR Integrated Power (W $sr^{-1}$)",
@@ -2100,7 +2072,6 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
         sorted_index = np.argsort(output[2])[::-1]
         top_peaks_freq[i, :] = output[1][sorted_index[0:n_peaks]]
         top_peaks_height[i, :] = output[2][sorted_index[0:n_peaks]]
-        #breakpoint()
         
         subset_supermag = supermag_df.loc[(supermag_df.Date_UTC >= ut_s[i]) &
                                (supermag_df.Date_UTC <= ut_e[i]),
@@ -2108,7 +2079,6 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
         std_SMR[i] = np.nanstd(subset_supermag['SMR'])
         std_SME[i] = np.nanstd(subset_supermag['SME'])
         std_SML[i] = np.nanstd(subset_supermag['SML'])
-        #breakpoint()
 
     peak_period = periodicity_functions.freq_to_period(peak_freq)
     top_peaks_period = periodicity_functions.freq_to_period(top_peaks_freq)
@@ -2166,10 +2136,6 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
         linewidths=0,
         zorder=0
     )
-    
-    # vmin = np.min(ls_pgram_norm[-1])
-    # vmax = 1.5 * np.max(ls_pgram_norm[-1])
-    # pc.set_clim(vmin, vmax)
 
     ax[0].add_collection(pc)
     ax[0].autoscale()
@@ -2179,7 +2145,6 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
     cbar.ax.tick_params(labelsize=fontsize)
 
     ax[0].set_ylabel("Period (hours)\n", fontsize=fontsize)
-    #ax[0].set_xlabel("Length of archive (days)", fontsize=fontsize)
 
     # Set limits
     ax[0].set_ylim([np.min(y_centers), np.max(y_centers)])  # based on the lims of last loop
@@ -2189,8 +2154,6 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
         a.set_xlim(xlims)
 
     for l in [12, 24, 36, 48]:
-
-        print('guava', l, ax[0].get_xlim()[1])
         ax[0].annotate(
             str(l),
             (ax[0].get_xlim()[1], l),
@@ -2202,7 +2165,6 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
             va='center', ha='left',
             arrowprops=dict(facecolor=annotation_colour, shrink=0.05),
             clip_on=False)
-        
 
     # ------------------------
     # PLOTTING THE TOP POINTS IN EACH PERIODOGRAM
@@ -2280,9 +2242,6 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
     fig.savefig(fig_png_log)
-
-
-
 
 
 def centers_to_edges(c):
