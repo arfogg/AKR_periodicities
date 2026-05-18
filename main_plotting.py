@@ -30,12 +30,13 @@ import autocorrelation
 import bootstrap_functions
 import utility
 
-sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
+sys.path.append(
+    r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
 import read_wind_position
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
-import read_supermag
 import read_sunspot_n
+import read_supermag
 
 fontsize = 18
 alphabet = list(string.ascii_lowercase)
@@ -122,11 +123,13 @@ def trajectory_plots():
         draw_ticks = True if i == 2 else False
         if i == 2:
             half_magnitude = True
-            
-            leg_lab = interval_options.label.iloc[i].split()[0] + "\n" + interval_options.label.iloc[i].split()[1] + "\n(* 50%)"
+
+            leg_lab = interval_options.label.iloc[i].split(
+            )[0] + "\n" + interval_options.label.iloc[i].split()[1] + "\n(* 50%)"
         else:
             half_magnitude = False
-            leg_lab = interval_options.label.iloc[i].split()[0] + "\n" + interval_options.label.iloc[i].split()[1]
+            leg_lab = interval_options.label.iloc[i].split(
+            )[0] + "\n" + interval_options.label.iloc[i].split()[1]
         axes.reshape(-1)[-1] = wind_location.lt_hist(
             interval_options.stime.iloc[i], interval_options.etime.iloc[i],
             wind_position_df, axes.reshape(-1)[-1],
@@ -146,6 +149,7 @@ def trajectory_plots():
     traj_fig = os.path.join(fig_dir, "three_interval_traj.png")
     fig.savefig(traj_fig)
 
+
 def geomag_ac_plots():
     """
     Function to create histograms of geomagnetic activity.
@@ -155,50 +159,50 @@ def geomag_ac_plots():
     None.
 
     """
-    
+
     labs = ['a', 'd', 'g', 'j', 'b', 'e', 'h', 'k', 'c', 'f', 'i', 'l']
     a_labs = []
     for a in labs:
         a_labs.append('(' + a + ')')
 
-    
     interval_options = read_and_tidy_data.return_test_intervals()
 
     supermag_df = read_supermag.concat_indices_years(
-        np.array(range(1995, 2005)))    
-    
-    
+        np.array(range(1995, 2005)))
+
     smr_bins = np.linspace(-175, 0, 50)
     sme_bins = np.linspace(0, 2000, 50)
-    
+
     akr_bins = np.logspace(0, 6, 50)
-    
+
     fig, ax = plt.subplots(nrows=3, ncols=4, figsize=(20, 12.5))
-    
+
     label_counter = 0
     for (i, interval_tag) in enumerate(['full_archive', 'cassini_flyby',
-                              'long_nightside_period']):
+                                        'long_nightside_period']):
 
         interval = interval_options.loc[interval_options.tag == interval_tag]
 
-        interval_df = supermag_df.loc[(supermag_df.Date_UTC >= interval.stime.values[0]) & (supermag_df.Date_UTC <= interval.etime.values[0])] 
-    
+        interval_df = supermag_df.loc[(supermag_df.Date_UTC >= interval.stime.values[0]) & (
+            supermag_df.Date_UTC <= interval.etime.values[0])]
+
         for (j, (index, binz)) in enumerate(zip(['SMR', 'SME'], [smr_bins, sme_bins])):
             ax[i, j].hist(interval_df[index], bins=binz, color=interval.color,
                           density=True, label=index)
-            
+
             if index == "SME":
                 ax[i, j].hist(-1 * interval_df["SML"], bins=binz,
                               histtype='step', color='black', density=True,
                               label='-SML')
                 ax[i, j].legend(loc='lower right', fontsize=fontsize)
-            
+
             # Label mean, std
             mean = np.nanmean(interval_df[index])
             std = np.nanstd(interval_df[index])
             var = np.nanvar(interval_df[index])
-            
-            ax[i, j].axvline(mean, color='black', linewidth=1.5, linestyle='dashed')
+
+            ax[i, j].axvline(mean, color='black',
+                             linewidth=1.5, linestyle='dashed')
             if index == "SME":
                 horiza = "left"
                 opp_ha = "right"
@@ -217,13 +221,16 @@ def geomag_ac_plots():
                           transform=ax[i, j].get_xaxis_transform(),
                           ha=horiza, va='top', fontsize=fontsize)
 
+            # # Set x lim based on bins
+            # ax[i, j].set_xlim((binz[0], binz[-1]))
+
             # x y labels
             ax[i, j].set_xlabel(index + " (nT)", fontsize=fontsize)
             ax[i, j].set_ylabel("Normalised Occurrence", fontsize=fontsize)
 
             # Fontsize
             ax[i, j].tick_params(labelsize=fontsize)
-            
+
             # a b c labels
             t = ax[i, j].text(lab_x, 0.95, a_labs[label_counter],
                               transform=ax[i, j].transAxes,
@@ -231,20 +238,18 @@ def geomag_ac_plots():
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
             label_counter = label_counter + 1
-        
-         
+
         akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
 
         for (k, (f_band, title)) in enumerate(zip(
                 ['ipwr_100_400kHz', 'ipwr_50_100kHz'],
                 ["100-400 kHz Power (W $sr^{-1}$)",
                  "50-100 kHz Power (W $sr^{-1}$)"]
-                )):
+        )):
 
             ax[i, k + 2].hist(akr_df.loc[akr_df[f_band] > 0., f_band],
                               bins=akr_bins, color=interval.color,
                               density=True, label=f_band)
-
 
             ax[i, k + 2].set_xscale('log')
 
@@ -253,7 +258,7 @@ def geomag_ac_plots():
             std = np.nanstd(akr_df.loc[akr_df[f_band] > 0., f_band])
             var = np.nanvar(akr_df.loc[akr_df[f_band] > 0., f_band])
             imax = np.nanmax(akr_df.loc[akr_df[f_band] > 0., f_band])
-            
+
             ax[i, k + 2].axvline(median, color='black', linewidth=1.5,
                                  linestyle='dashed')
 
@@ -263,14 +268,16 @@ def geomag_ac_plots():
             lab_x = 0.05
 
             ax[i, k + 2].text(median - (median * 0.15), 0.85,
-                          r"$\eta$ = " + f"{median:.2e}" +
-                          "\n$M$ = " + f"{imax:.2e}" +
-                          "\n$\sigma$ = " + f"{std:.2e}" +
-                          "\n$\sigma^{2}$ = " + f"{var:.2e}" +
-                          "\nN = " + str(len(akr_df)),
-                          transform=ax[i, k + 2].get_xaxis_transform(),
-                          ha=horiza, va='top', fontsize=fontsize)
+                              r"$\eta$ = " + f"{median:.2e}" +
+                              "\n$M$ = " + f"{imax:.2e}" +
+                              "\n$\sigma$ = " + f"{std:.2e}" +
+                              "\n$\sigma^{2}$ = " + f"{var:.2e}" +
+                              "\nN = " + str(len(akr_df)),
+                              transform=ax[i, k + 2].get_xaxis_transform(),
+                              ha=horiza, va='top', fontsize=fontsize)
 
+            # Set x axis limits
+            ax[i, k + 2].set_xlim((akr_bins[0], akr_bins[-1] * 10))
 
             # # x y labels
             ax[i, k + 2].set_xlabel(title,
@@ -282,27 +289,27 @@ def geomag_ac_plots():
                 ax[i, k + 2].text(1.05, 0.5, interval.label.values[0],
                                   va='center', ha='left',
                                   transform=ax[i, k + 2].transAxes,
-                                  rotation='vertical', fontsize=fontsize*1.25)
+                                  rotation='vertical', fontsize=fontsize * 1.25)
             # Fontsize
             ax[i, k + 2].tick_params(labelsize=fontsize)
-            
+
             # y axis formatting
             ax[i, k + 2].ticklabel_format(axis='y', style='sci',
-                                          scilimits=(0,0))
-            
+                                          scilimits=(0, 0))
+
             # a b c labels
             t = ax[i, k + 2].text(lab_x, 0.95, a_labs[label_counter],
-                              transform=ax[i, k + 2].transAxes,
-                              fontsize=fontsize, va='top', ha=opp_ha)
+                                  transform=ax[i, k + 2].transAxes,
+                                  fontsize=fontsize, va='top', ha=opp_ha)
             t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
             label_counter = label_counter + 1
- 
 
     fig.tight_layout()
-    
+
     fig_png = os.path.join(fig_dir, "three_interval_SMR_SME_AKR_hist.png")
     fig.savefig(fig_png)
+
 
 def read_subset_bootstraps(subset_n, freq_ch='ipwr_100_400kHz',
                            n_bootstrap=100):
@@ -447,7 +454,7 @@ def run_lomb_scargle():
         ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
             ftime, fsignal, f_min, f_max, n0=samples_per_peak)
         t2 = pd.Timestamp.now()
-        print('LS finished, time elapsed: ', t2-t1)
+        print('LS finished, time elapsed: ', t2 - t1)
         # Write to file
         periods = periodicity_functions.freq_to_period(freqs)
         ls_df = pd.DataFrame({'period_hr': periods,
@@ -518,7 +525,7 @@ def run_lomb_scargle():
                     freq_df.unix, freq_df[freq_column], f_min, f_max,
                     n0=samples_per_peak)
                 t2 = pd.Timestamp.now()
-                print('LS finished, time elapsed: ', t2-t1)
+                print('LS finished, time elapsed: ', t2 - t1)
                 # Write to file
                 periods = periodicity_functions.freq_to_period(freqs)
                 ls_df = pd.DataFrame({'period_hr': periods,
@@ -526,7 +533,7 @@ def run_lomb_scargle():
                                       'ls_pgram': ls_pgram})
                 ls_df.to_csv(ls_csv, index=False)
                 t2 = pd.Timestamp.now()
-                print('LS finished, time elapsed: ', t2-t1)
+                print('LS finished, time elapsed: ', t2 - t1)
                 # Write to file
                 ls_df.to_csv(ls_csv, index=False)
 
@@ -590,7 +597,7 @@ def run_lomb_scargle():
                                    arrowprops={'facecolor': 'black'},
                                    fontsize=fontsize, va='top', ha='center',
                                    color=vertical_ind_col)
-                
+
     # Add in more ticks
     majticks = [10, 15, 20, 25, 30, 35, 40, 45, 50]
     majlabels = [str(t) for t in majticks]
@@ -610,7 +617,6 @@ def run_lomb_scargle():
     fig.tight_layout()
     # Save to file
     fig.savefig(LS_fig)
-
 
 
 def wind_cassini_lomb_scargle():
@@ -637,7 +643,7 @@ def wind_cassini_lomb_scargle():
     tru_color = 'coral'
 
     # Different frequency channels
-    freq_tags = np.array(['ipwr_100_400kHz'])#, 'ipwr_50_100kHz'])
+    freq_tags = np.array(['ipwr_100_400kHz'])  # , 'ipwr_50_100kHz'])
     freq_labels = np.array(['100-400 kHz', '50-100 kHz'])
     freq_colors = np.array(['dimgrey', 'darkorange', 'rebeccapurple'])
 
@@ -655,8 +661,8 @@ def wind_cassini_lomb_scargle():
     desired_intervals = ['cassini_flyby', 'cassini_flyby_logged']
     desired_i, = np.where(interval_options.tag.isin(desired_intervals) == True)
     labels = interval_options.label[desired_i].values
-    
-    # Initialise plotting window    
+
+    # Initialise plotting window
     fig = plt.figure(figsize=(17.5, 8))
     gs = GridSpec(2, 2, height_ratios=[1, 1], width_ratios=[2.5, 1])
 
@@ -694,27 +700,26 @@ def wind_cassini_lomb_scargle():
             print('Frequency band: ', freq_column, ' tag: ', tag)
             ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_' +
                                   tag + '_' + freq_column + '.csv')
-            
-            if tag == 'cassini_flyby_logged':   
+
+            if tag == 'cassini_flyby_logged':
                 intensity_col = 'log_smoothed_' + freq_column
             else:
                 intensity_col = freq_column
-        
+
             if pathlib.Path(ls_csv).is_file() is False:
 
                 freq_df = akr_df.copy(deep=True)
 
-                    
                 freq_df = freq_df.dropna(subset=[intensity_col])
                 print(intensity_col)
-                
+
                 t1 = pd.Timestamp.now()
                 print('starting LS at ', t1)
                 ls_object, freqs, ls_pgram = lomb_scargle.generic_lomb_scargle(
                     freq_df.unix, freq_df[intensity_col], f_min, f_max,
                     n0=samples_per_peak)
                 t2 = pd.Timestamp.now()
-                print('LS finished, time elapsed: ', t2-t1)
+                print('LS finished, time elapsed: ', t2 - t1)
                 # Write to file
                 periods = periodicity_functions.freq_to_period(freqs)
                 ls_df = pd.DataFrame({'period_hr': periods,
@@ -722,7 +727,7 @@ def wind_cassini_lomb_scargle():
                                       'ls_pgram': ls_pgram})
                 ls_df.to_csv(ls_csv, index=False)
                 t2 = pd.Timestamp.now()
-                print('LS finished, time elapsed: ', t2-t1)
+                print('LS finished, time elapsed: ', t2 - t1)
                 # Write to file
                 ls_df.to_csv(ls_csv, index=False)
 
@@ -732,7 +737,6 @@ def wind_cassini_lomb_scargle():
 
                 ls_pgram = np.array(ls_df.ls_pgram)
                 periods = np.array(ls_df.period_hr)
-
 
             # Plot FAP here
             FAP_pkl = os.path.join(
@@ -751,25 +755,28 @@ def wind_cassini_lomb_scargle():
                 n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
                 tag + '_' + freq_column, FAP_pkl, n0=samples_per_peak)
 
-            ax[ax_counter].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+            ax[ax_counter].plot(periods, ls_pgram,
+                                linewidth=1.5, color=c, label=n)
             if j == 0:
                 trans = transforms.blended_transform_factory(
                     ax[ax_counter].transAxes, ax[ax_counter].transData)
                 ax[ax_counter].annotate("FAL\n" + "{:.3e}".format(FAP),
-                                   xy=(0.2, FAP), xytext=(0.1, FAP),
-                                   xycoords=trans, arrowprops={'facecolor': FAL_color},
-                                   fontsize=fontsize, va='center', ha='right',
-                                   color=FAL_color, bbox=annotate_bbox,
-                                   fontweight="bold")
+                                        xy=(0.2, FAP), xytext=(0.1, FAP),
+                                        xycoords=trans, arrowprops={
+                                            'facecolor': FAL_color},
+                                        fontsize=fontsize, va='center', ha='right',
+                                        color=FAL_color, bbox=annotate_bbox,
+                                        fontweight="bold")
             elif j == 1:
                 trans = transforms.blended_transform_factory(
                     ax[ax_counter].transAxes, ax[ax_counter].transData)
                 ax[ax_counter].annotate("FAL\n" + "{:.3e}".format(FAP),
-                                   xy=(0.8, FAP), xytext=(0.9, FAP),
-                                   xycoords=trans, arrowprops={'facecolor': c},
-                                   fontsize=fontsize, va='center', ha='left',
-                                   color=c, bbox=annotate_bbox, fontweight="bold")
-                
+                                        xy=(0.8, FAP), xytext=(0.9, FAP),
+                                        xycoords=trans, arrowprops={
+                                            'facecolor': c},
+                                        fontsize=fontsize, va='center', ha='left',
+                                        color=c, bbox=annotate_bbox, fontweight="bold")
+
             ax[ax_counter + 1].hist(bootstrap_peak_magnitudes,
                                     bins=np.linspace(0.0005, 0.0016, 25),
                                     color=c, alpha=0.5,
@@ -782,21 +789,22 @@ def wind_cassini_lomb_scargle():
                                 markersize=1.25 * fontsize, label='H',
                                 fillstyle='none')
             ax[ax_counter + 1].axvline(pgram_max,
-                                       linewidth=1.5, linestyle='dashed', 
+                                       linewidth=1.5, linestyle='dashed',
                                        color=tru_color, label="H")
             ax[ax_counter + 1].axvline(FAP,
-                                       linewidth=1.5, linestyle='dashed', 
+                                       linewidth=1.5, linestyle='dashed',
                                        color=FAL_color, label="FAL")
             mean_bs = np.nanmean(bootstrap_peak_magnitudes)
             ax[ax_counter + 1].axvline(mean_bs,
-                                       linewidth=1.5, linestyle='dotted', 
+                                       linewidth=1.5, linestyle='dotted',
                                        color='black', label="mean")
-            stats = "H = " + str(np.round((pgram_max / FAP), 2)) + "*FAL\nH = " + str(np.round((pgram_max / mean_bs), 2)) + "*mean"
+            stats = "H = " + str(np.round((pgram_max / FAP), 2)) + "*FAL\nH = " + \
+                str(np.round((pgram_max / mean_bs), 2)) + "*mean"
 
             ax[ax_counter + 1].text(1.0, 1.0, stats,
                                     transform=ax[ax_counter + 1].transAxes,
                                     fontsize=0.9 * fontsize, ha='right', va='bottom')
-        
+
         ax[ax_counter].set_xscale('log')
 
         # Formatting
@@ -804,7 +812,7 @@ def wind_cassini_lomb_scargle():
                                   fontsize=fontsize)
         ax[ax_counter].set_xlabel('Period (hours)', fontsize=fontsize)
         ax[ax_counter].legend(fontsize=fontsize, loc='upper left')
-        
+
         ax[ax_counter].text(1.0, 1.0, labels[i],
                             transform=ax[ax_counter].transAxes,
                             fontsize=fontsize, ha='right', va='bottom')
@@ -814,19 +822,20 @@ def wind_cassini_lomb_scargle():
                 trans = transforms.blended_transform_factory(
                     ax[ax_counter].transData, ax[ax_counter].transAxes)
                 ax[ax_counter].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
-                                   xycoords=trans,
-                                   arrowprops={'facecolor': 'black'},
-                                   fontsize=fontsize, va='top', ha='center',
-                                   color=vertical_ind_col)
-        
+                                        xycoords=trans,
+                                        arrowprops={'facecolor': 'black'},
+                                        fontsize=fontsize, va='top', ha='center',
+                                        color=vertical_ind_col)
+
         # Histograms
         ax[ax_counter + 1].legend(loc="upper right", fontsize=0.8 * fontsize)
-        ax[ax_counter + 1].set_xlabel("Magnitude of LS Peak", fontsize=fontsize)
+        ax[ax_counter +
+            1].set_xlabel("Magnitude of LS Peak", fontsize=fontsize)
         ax[ax_counter + 1].set_ylabel("Occurrence", fontsize=fontsize)
         ax[ax_counter + 1].set_xscale('log')
-        
+
         ax_counter = ax_counter + 2
-        
+
     # Add in more ticks
     majticks = [10, 15, 20, 25, 30, 35, 40, 45, 50]
     majlabels = [str(t) for t in majticks]
@@ -841,8 +850,8 @@ def wind_cassini_lomb_scargle():
     # Adjust margins etc
     fig.tight_layout()
     # Save to file
-    fig.savefig(LS_fig) 
-    
+    fig.savefig(LS_fig)
+
 
 def run_ACF():
     """
@@ -942,7 +951,8 @@ def run_ACF():
     table_detrend_mean.append(synthetic_acf_fit.text_normalisation_mean)
     table_detrend_std.append(synthetic_acf_fit.text_normalisation_std)
     table_shm_fit.append(synthetic_acf_fit.text_shm_trend)
-    table_smh_omega.append("{:.2f}".format(((2* np.pi) / synthetic_acf_fit.omega) / (60 * 60)))
+    table_smh_omega.append("{:.2f}".format(
+        ((2 * np.pi) / synthetic_acf_fit.omega) / (60 * 60)))
     table_shm_chisq.append(synthetic_acf_fit.text_shm_chi_sq)
 
     # Add latex formatting
@@ -995,7 +1005,8 @@ def run_ACF():
         print('Running autocorrelation for ', interval_tag)
 
         base_dir = pathlib.Path(data_dir) / 'acf'
-        file_paths = [base_dir / f"ACF_{interval_tag}_{f}.csv" for f in freq_tags]
+        file_paths = [base_dir /
+                      f"ACF_{interval_tag}_{f}.csv" for f in freq_tags]
         file_checks = [file_path.is_file() for file_path in file_paths]
 
         # If no ACF calculations done, read integrated power data
@@ -1003,7 +1014,8 @@ def run_ACF():
             akr_df = read_and_tidy_data.select_akr_intervals(interval_tag)
 
         # Latex table title
-        table_title.append("\multicolumn{2}{|c|}{" + interval_options['label'].iloc[i] + "}")
+        table_title.append(
+            "\multicolumn{2}{|c|}{" + interval_options['label'].iloc[i] + "}")
 
         # Looping over frequency bands
         for (j, (freq_column, c, n)) in enumerate(zip(freq_tags,
@@ -1021,7 +1033,7 @@ def run_ACF():
                     freq_df[freq_column], n_shifts,
                     temporal_resolution=temporal_resolution, starting_lag=7200)
                 t2 = pd.Timestamp.now()
-                print('ACF finished, time elapsed: ', t2-t1)
+                print('ACF finished, time elapsed: ', t2 - t1)
                 acf_df = pd.DataFrame({'acf': acf, 'lags': lags})
                 acf_df.to_csv(acf_csv, index=False)
 
@@ -1071,7 +1083,7 @@ def run_ACF():
                 table_detrend_std.append(LFE_acf_fit.text_normalisation_std)
                 table_shm_fit.append(LFE_acf_fit.text_shm_trend)
                 table_smh_omega.append(
-                    "{:.2f}".format(((2* np.pi) / LFE_acf_fit.omega) / (60*60)))
+                    "{:.2f}".format(((2 * np.pi) / LFE_acf_fit.omega) / (60 * 60)))
                 table_shm_chisq.append(LFE_acf_fit.text_shm_chi_sq)
 
             else:
@@ -1109,7 +1121,7 @@ def run_ACF():
                 table_detrend_std.append(mAKR_acf_fit.text_normalisation_std)
                 table_shm_fit.append(mAKR_acf_fit.text_shm_trend)
                 table_smh_omega.append(
-                    "{:.2f}".format(((2* np.pi) / mAKR_acf_fit.omega) / (60*60)))
+                    "{:.2f}".format(((2 * np.pi) / mAKR_acf_fit.omega) / (60 * 60)))
                 table_shm_chisq.append(mAKR_acf_fit.text_shm_chi_sq)
             table_subtitle.append(n)
 
@@ -1288,7 +1300,8 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
         print('Running autocorrelation for ', interval_tag)
 
         base_dir = pathlib.Path(data_dir) / 'MLT_binning'
-        file_paths = [base_dir / f"MLT_binned_{n_mlt_sectors}sector_{interval_tag}_{f}.csv" for f in freq_tags]
+        file_paths = [
+            base_dir / f"MLT_binned_{n_mlt_sectors}sector_{interval_tag}_{f}.csv" for f in freq_tags]
         file_checks = [file_path.is_file() for file_path in file_paths]
 
         if all(file_checks) is False:
@@ -1325,7 +1338,7 @@ def run_MLT_binning_overlayed(n_mlt_sectors='four'):
                     lon_sc_tag="lon_gsm")
                 breakpoint()
                 t2 = pd.Timestamp.now()
-                print('MLT binning finished, time elapsed: ', t2-t1)
+                print('MLT binning finished, time elapsed: ', t2 - t1)
 
             else:
 
@@ -1441,7 +1454,8 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
 
         base_dir = pathlib.Path(data_dir) / 'MLT_binning'
         file_paths = [base_dir /
-                      f"MLT_lon_binned_{n_mlt_sectors}sector_{interval_tag}_{f}.csv"
+                      f"MLT_lon_binned_{n_mlt_sectors}sector_{
+                          interval_tag}_{f}.csv"
                       for f in freq_tags]
         file_checks = [file_path.is_file() for file_path in file_paths]
 
@@ -1477,11 +1491,11 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
             # Bin data into lon bins
             if pathlib.Path(MLT_csv).is_file() is False:
                 lon_df = binning_averaging.return_lon_trend(
-                        akr_df, region_centres=region_centres,
-                        region_width=region_width, region_names=region_names,
-                        region_flags=region_flags, lon_bin_width=30.,
-                        ipower_tag=freq_column,
-                        lon_sol_tag=lon_sol_tag, lon_sc_tag=lon_sc_tag)
+                    akr_df, region_centres=region_centres,
+                    region_width=region_width, region_names=region_names,
+                    region_flags=region_flags, lon_bin_width=30.,
+                    ipower_tag=freq_column,
+                    lon_sol_tag=lon_sol_tag, lon_sc_tag=lon_sc_tag)
 
                 lon_df.to_csv(MLT_csv, index=False)
             # Else read in pre-sorted data
@@ -1572,7 +1586,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
                                           f_tg].iloc[imax]],
                                   marker='*', linewidth=0, fillstyle='none',
                                   markeredgecolor='black', zorder=5,
-                                  markersize=fontsize*3., markeredgewidth=2.5)
+                                  markersize=fontsize * 3., markeredgewidth=2.5)
 
                 # More formatting
                 ax[0].text(0.5, 1.01,
@@ -1625,7 +1639,7 @@ def lomb_scargle_cassini_sliding():
     # Sliding parameters
     slides = 20
     slide_width = pd.Timedelta(days=10)
-    slide_width_multiplier = np.linspace(0, slides, slides+1) - slides/2
+    slide_width_multiplier = np.linspace(0, slides, slides + 1) - slides / 2
 
     x_lim = [interval_stime - ((slides / 2) * slide_width),
              interval_etime + ((slides / 2) * slide_width)]
@@ -1658,24 +1672,26 @@ def lomb_scargle_cassini_sliding():
         else:
             ls_object, freqs, ls_pgram[:, i] = lomb_scargle.generic_lomb_scargle(
                 subset_df.unix, subset_df[freq_column], f_min, f_max,
-                n0=samples_per_peak)            
+                n0=samples_per_peak)
 
     # Find edges of pixels on period axis
     period_edges = np.full(periods.size + 1, np.nan)
     for k in range(period_edges.size):
-        if k == period_edges.size-2:
-            period_edges[k] = periods[k-1] + ((periods[k]-periods[k-1])/2)
-        elif k == period_edges.size-1:
-            period_edges[k] = periods[k-1] + ((periods[k-1]-periods[k-2])/2)
+        if k == period_edges.size - 2:
+            period_edges[k] = periods[k - 1] + \
+                ((periods[k] - periods[k - 1]) / 2)
+        elif k == period_edges.size - 1:
+            period_edges[k] = periods[k - 1] + \
+                ((periods[k - 1] - periods[k - 2]) / 2)
         else:
-            period_edges[k] = periods[k] - ((periods[k+1]-periods[k])/2)
+            period_edges[k] = periods[k] - ((periods[k + 1] - periods[k]) / 2)
 
     # Initialise plotting
     fig, ax = plt.subplots(nrows=2, figsize=(16, 8))
 
     # Plot Lomb-Scargles
-    X, Y = np.meshgrid(np.append(ut_mid - (slide_width/2.),
-                                 ut_mid[-1] + (slide_width/2.)),
+    X, Y = np.meshgrid(np.append(ut_mid - (slide_width / 2.),
+                                 ut_mid[-1] + (slide_width / 2.)),
                        period_edges)
 
     pcm = ax[0].pcolormesh(X, Y, ls_pgram, cmap='binary_r')
@@ -1696,9 +1712,9 @@ def lomb_scargle_cassini_sliding():
     ax_pos = ax[0].get_position().bounds
 
     # Highlight Cassini period
-    ax[0].axvline(interval_midtime - (slide_width/2.), color='royalblue',
+    ax[0].axvline(interval_midtime - (slide_width / 2.), color='royalblue',
                   linewidth=2., linestyle='dashed')
-    ax[0].axvline(interval_midtime + (slide_width/2.), color='royalblue',
+    ax[0].axvline(interval_midtime + (slide_width / 2.), color='royalblue',
                   linewidth=2., linestyle='dashed')
 
     # Make width same as (a)
@@ -1716,7 +1732,8 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     None.
 
     """
-    fig_png_nonlog = os.path.join(fig_dir, "expanding_cassini_lomb_scargle_nonlog.png")
+    fig_png_nonlog = os.path.join(
+        fig_dir, "expanding_cassini_lomb_scargle_nonlog.png")
 
     # Define Lomb-Scargle freqs etc
     f_min = 1 / (48. * 60. * 60.)
@@ -1735,7 +1752,7 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
                         2.) + interval_stime
     # Read in *all* AKR integrated power
     akr_df = read_and_tidy_data.select_akr_intervals("full_archive")
-    
+
     # Read in SMR, SML, SME
     supermag_df = read_supermag.concat_indices_years(
         np.array(range(1995, 2005)))
@@ -1743,8 +1760,8 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     # Sliding parameters
     slides = 50
     slide_width = pd.Timedelta(days=5)
-    slide_width_multiplier = np.linspace(0, slides, slides+1)
-    
+    slide_width_multiplier = np.linspace(0, slides, slides + 1)
+
     # Number of top peaks to collect
     n_peaks = 5
 
@@ -1765,16 +1782,16 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     # LS analysis here
     variable_freqs = []
     variable_periods = []
-    ls_pgram =[]
+    ls_pgram = []
 
     peak_freq = np.full(slides + 1, np.nan)
     peak_height = np.full(slides + 1, np.nan)
     top_peaks_freq = np.full((slides + 1, n_peaks), np.nan)
     top_peaks_height = np.full((slides + 1, n_peaks), np.nan)
-    
+
     mean_akr_i = np.full(slides + 1, np.nan)
     std_akr_i = np.full(slides + 1, np.nan)
-    
+
     std_SMR = np.full(slides + 1, np.nan)
     std_SME = np.full(slides + 1, np.nan)
     std_SML = np.full(slides + 1, np.nan)
@@ -1800,14 +1817,14 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         arg = output[2].argmax()
         peak_height[i] = output[2][arg]
         peak_freq[i] = output[1][arg]
-        
+
         sorted_index = np.argsort(output[2])[::-1]
         top_peaks_freq[i, :] = output[1][sorted_index[0:n_peaks]]
         top_peaks_height[i, :] = output[2][sorted_index[0:n_peaks]]
-        
+
         subset_supermag = supermag_df.loc[(supermag_df.Date_UTC >= ut_s[i]) &
-                               (supermag_df.Date_UTC <= ut_e[i]),
-                               :].reset_index(drop=True)
+                                          (supermag_df.Date_UTC <= ut_e[i]),
+                                          :].reset_index(drop=True)
         std_SMR[i] = np.nanstd(subset_supermag['SMR'])
         std_SME[i] = np.nanstd(subset_supermag['SME'])
         std_SML[i] = np.nanstd(subset_supermag['SML'])
@@ -1826,39 +1843,39 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
 
     # Normalise LS pgram at each X
     ls_pgram_norm = []
-    
+
     for z in ls_pgram:
         z = np.asarray(z)
-    
+
         zmin = np.nanmin(z)
         zmax = np.nanmax(z)
-    
+
         if zmax > zmin:
             z_norm = (z - zmin) / (zmax - zmin)
         else:
             z_norm = np.zeros_like(z)  # or np.nan
-    
+
         ls_pgram_norm.append(z_norm)
 
     verts = []
     colors = []
-    
+
     for i, x in enumerate(x_centers):
-    
+
         y_centers = variable_periods[i]
-        z_vals    = ls_pgram_norm[i]
-    
+        z_vals = ls_pgram_norm[i]
+
         y_edges = centers_to_edges(y_centers)
-    
+
         for j in range(len(y_centers)):
             verts.append([
-                (x_edges[i],   y_edges[j]),
-                (x_edges[i+1], y_edges[j]),
-                (x_edges[i+1], y_edges[j+1]),
-                (x_edges[i],   y_edges[j+1])
+                (x_edges[i], y_edges[j]),
+                (x_edges[i + 1], y_edges[j]),
+                (x_edges[i + 1], y_edges[j + 1]),
+                (x_edges[i], y_edges[j + 1])
             ])
             colors.append(z_vals[j])
-    
+
     colors = np.asarray(colors)
 
     pc = PolyCollection(
@@ -1871,7 +1888,7 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
 
     ax[0].add_collection(pc)
     ax[0].autoscale()
-    
+
     cbar = fig.colorbar(pc, ax=ax[0])
     cbar.set_label("Normalised LS Power [0-1]", fontsize=fontsize)
     cbar.ax.tick_params(labelsize=fontsize)
@@ -1879,7 +1896,8 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     ax[0].set_ylabel("Period (hours)\n", fontsize=fontsize)
 
     # Set limits
-    ax[0].set_ylim([np.min(y_centers), np.max(y_centers)])  # based on the lims of last loop
+    # based on the lims of last loop
+    ax[0].set_ylim([np.min(y_centers), np.max(y_centers)])
 
     xlims = [np.min(x_edges), np.max(x_edges)]
     for a in ax:
@@ -1889,9 +1907,9 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         ax[0].annotate(
             str(l),
             (ax[0].get_xlim()[1], l),
-            xytext=(ax[0].get_xlim()[1]*1.025, l),
+            xytext=(ax[0].get_xlim()[1] * 1.025, l),
             xycoords='data',
-            textcoords='data',#ax[0].get_xaxis_transform(),
+            textcoords='data',  # ax[0].get_xaxis_transform(),
             color=annotation_colour,
             fontsize=fontsize,
             va='center', ha='left',
@@ -1909,9 +1927,10 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     mrs = ["o", "^", "x", "+"]
     for i in range(1, n_peaks):
         ax[1].plot(length_days, top_peaks_period[:, i], linewidth=0.,
-                marker=mrs[i-1], markersize=0.5*fontsize, fillstyle='none',
-                alpha=0.65, label=str(i+1), color=peak_colors[i-1], zorder=i*0.1)#,
-                #markeredgecolor='deeppink')
+                   marker=mrs[i - 1], markersize=0.5 * fontsize, fillstyle='none',
+                   # ,
+                   alpha=0.65, label=str(i + 1), color=peak_colors[i - 1], zorder=i * 0.1)
+        # markeredgecolor='deeppink')
 
     ax[1].legend(loc="upper right", fontsize=fontsize)
 
@@ -1919,14 +1938,16 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
 
     for l in [12, 24, 36, 48]:
         ax[1].annotate(str(l), (ax[1].get_xlim()[1], l),
-                    xytext=(ax[1].get_xlim()[1]*1.025, l),
-                    xycoords='data',
-                    color=annotation_colour, fontsize=fontsize,
-                    va='center', ha='left',
-                    arrowprops=dict(facecolor=annotation_colour, shrink=0.05),
-                    clip_on=False)
-    
-    ax[1].axhline(24., linewidth=1.5, linestyle='dashed', color='black', zorder=0.)
+                       xytext=(ax[1].get_xlim()[1] * 1.025, l),
+                       xycoords='data',
+                       color=annotation_colour, fontsize=fontsize,
+                       va='center', ha='left',
+                       arrowprops=dict(
+                           facecolor=annotation_colour, shrink=0.05),
+                       clip_on=False)
+
+    ax[1].axhline(24., linewidth=1.5, linestyle='dashed',
+                  color='black', zorder=0.)
     ax[1].set_ylim([17, 40])
 
     # Variability in AKR
@@ -1937,9 +1958,9 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
     # Variability in SMR, SME, SML
     lines = []
     for k, (index, n, c) in enumerate(zip([std_SMR, std_SME, std_SML],
-                                       ["SMR", "SME", "SML"],
-                                       ["black", "darkviolet", "orange"]
-                                       )):
+                                          ["SMR", "SME", "SML"],
+                                          ["black", "darkviolet", "orange"]
+                                          )):
         if n == "SMR":
             twax = ax[3].twinx()
             l, = twax.plot(length_days, index, color=c, label="$\sigma$" + n)
@@ -1947,9 +1968,8 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
             l, = ax[3].plot(length_days, index, color=c, label="$\sigma$" + n)
         lines.append(l)
 
-
     labels = [l.get_label() for l in lines]
-    
+
     ax[3].legend(lines, labels, loc="upper right", fontsize=fontsize)
 
     ax[3].set_ylabel("Standard Deviation in\nSME, SML (nT)", fontsize=fontsize)
@@ -1964,13 +1984,14 @@ def lomb_scargle_cassini_expanding(annotation_colour='grey'):
         if m > 0:
             pos = a.get_position().bounds
             a.set_position([cbar_pos[0], pos[1], cbar_pos[2], pos[3]])
-            
+
         t = a.text(0.01, 0.95, axes_labels[m],
-                          transform=a.transAxes,
-                          fontsize=fontsize, va='top', ha="left")
+                   transform=a.transAxes,
+                   fontsize=fontsize, va='top', ha="left")
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
     fig.savefig(fig_png_nonlog)
+
 
 def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
     """
@@ -1982,7 +2003,8 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
     None.
 
     """
-    fig_png_log = os.path.join(fig_dir, "expanding_cassini_lomb_scargle_log.png")
+    fig_png_log = os.path.join(
+        fig_dir, "expanding_cassini_lomb_scargle_log.png")
 
     # Define Lomb-Scargle freqs etc
     f_min = 1 / (48. * 60. * 60.)
@@ -2001,7 +2023,7 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
                         2.) + interval_stime
     # Read in *all* AKR integrated power
     akr_df = read_and_tidy_data.select_akr_intervals("full_archive_logged")
-    
+
     # Read in SMR, SML, SME
     supermag_df = read_supermag.concat_indices_years(
         np.array(range(1995, 2005)))
@@ -2009,8 +2031,8 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
     # Sliding parameters
     slides = 50
     slide_width = pd.Timedelta(days=5)
-    slide_width_multiplier = np.linspace(0, slides, slides+1)
-    
+    slide_width_multiplier = np.linspace(0, slides, slides + 1)
+
     # Number of top peaks to collect
     n_peaks = 5
 
@@ -2031,16 +2053,16 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
     # LS analysis here
     variable_freqs = []
     variable_periods = []
-    ls_pgram =[]
+    ls_pgram = []
 
     peak_freq = np.full(slides + 1, np.nan)
     peak_height = np.full(slides + 1, np.nan)
     top_peaks_freq = np.full((slides + 1, n_peaks), np.nan)
     top_peaks_height = np.full((slides + 1, n_peaks), np.nan)
-    
+
     mean_akr_i = np.full(slides + 1, np.nan)
     std_akr_i = np.full(slides + 1, np.nan)
-    
+
     std_SMR = np.full(slides + 1, np.nan)
     std_SME = np.full(slides + 1, np.nan)
     std_SML = np.full(slides + 1, np.nan)
@@ -2051,7 +2073,7 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
                                (akr_df.datetime <= ut_e[i]),
                                :].reset_index(drop=True)
         subset_df = subset_df.dropna(subset=[freq_column])
-        
+
         mean_akr_i[i] = np.nanmean(subset_df[freq_column])
         std_akr_i[i] = np.nanstd(subset_df[freq_column])
 
@@ -2068,14 +2090,14 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
         arg = output[2].argmax()
         peak_height[i] = output[2][arg]
         peak_freq[i] = output[1][arg]
-        
+
         sorted_index = np.argsort(output[2])[::-1]
         top_peaks_freq[i, :] = output[1][sorted_index[0:n_peaks]]
         top_peaks_height[i, :] = output[2][sorted_index[0:n_peaks]]
-        
+
         subset_supermag = supermag_df.loc[(supermag_df.Date_UTC >= ut_s[i]) &
-                               (supermag_df.Date_UTC <= ut_e[i]),
-                               :].reset_index(drop=True)
+                                          (supermag_df.Date_UTC <= ut_e[i]),
+                                          :].reset_index(drop=True)
         std_SMR[i] = np.nanstd(subset_supermag['SMR'])
         std_SME[i] = np.nanstd(subset_supermag['SME'])
         std_SML[i] = np.nanstd(subset_supermag['SML'])
@@ -2094,39 +2116,39 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
 
     # Normalise LS pgram at each X
     ls_pgram_norm = []
-    
+
     for z in ls_pgram:
         z = np.asarray(z)
-    
+
         zmin = np.nanmin(z)
         zmax = np.nanmax(z)
-    
+
         if zmax > zmin:
             z_norm = (z - zmin) / (zmax - zmin)
         else:
             z_norm = np.zeros_like(z)  # or np.nan
-    
+
         ls_pgram_norm.append(z_norm)
 
     verts = []
     colors = []
-    
+
     for i, x in enumerate(x_centers):
-    
+
         y_centers = variable_periods[i]
-        z_vals    = ls_pgram_norm[i]
-    
+        z_vals = ls_pgram_norm[i]
+
         y_edges = centers_to_edges(y_centers)
-    
+
         for j in range(len(y_centers)):
             verts.append([
-                (x_edges[i],   y_edges[j]),
-                (x_edges[i+1], y_edges[j]),
-                (x_edges[i+1], y_edges[j+1]),
-                (x_edges[i],   y_edges[j+1])
+                (x_edges[i], y_edges[j]),
+                (x_edges[i + 1], y_edges[j]),
+                (x_edges[i + 1], y_edges[j + 1]),
+                (x_edges[i], y_edges[j + 1])
             ])
             colors.append(z_vals[j])
-    
+
     colors = np.asarray(colors)
 
     pc = PolyCollection(
@@ -2139,7 +2161,7 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
 
     ax[0].add_collection(pc)
     ax[0].autoscale()
-    
+
     cbar = fig.colorbar(pc, ax=ax[0])
     cbar.set_label("Normalised LS Power [0-1]", fontsize=fontsize)
     cbar.ax.tick_params(labelsize=fontsize)
@@ -2147,7 +2169,8 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
     ax[0].set_ylabel("Period (hours)\n", fontsize=fontsize)
 
     # Set limits
-    ax[0].set_ylim([np.min(y_centers), np.max(y_centers)])  # based on the lims of last loop
+    # based on the lims of last loop
+    ax[0].set_ylim([np.min(y_centers), np.max(y_centers)])
 
     xlims = [np.min(x_edges), np.max(x_edges)]
     for a in ax:
@@ -2157,9 +2180,9 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
         ax[0].annotate(
             str(l),
             (ax[0].get_xlim()[1], l),
-            xytext=(ax[0].get_xlim()[1]*1.025, l),
+            xytext=(ax[0].get_xlim()[1] * 1.025, l),
             xycoords='data',
-            textcoords='data',#ax[0].get_xaxis_transform(),
+            textcoords='data',  # ax[0].get_xaxis_transform(),
             color=annotation_colour,
             fontsize=fontsize,
             va='center', ha='left',
@@ -2177,9 +2200,10 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
     mrs = ["o", "^", "x", "+"]
     for i in range(1, n_peaks):
         ax[1].plot(length_days, top_peaks_period[:, i], linewidth=0.,
-                marker=mrs[i-1], markersize=0.5*fontsize, fillstyle='none',
-                alpha=0.65, label=str(i+1), color=peak_colors[i-1], zorder=i*0.1)#,
-                #markeredgecolor='deeppink')
+                   marker=mrs[i - 1], markersize=0.5 * fontsize, fillstyle='none',
+                   # ,
+                   alpha=0.65, label=str(i + 1), color=peak_colors[i - 1], zorder=i * 0.1)
+        # markeredgecolor='deeppink')
 
     ax[1].legend(loc="upper right", fontsize=fontsize)
 
@@ -2187,19 +2211,19 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
 
     for l in [12, 24, 36, 48]:
         ax[1].annotate(str(l), (ax[1].get_xlim()[1], l),
-                    xytext=(ax[1].get_xlim()[1]*1.025, l),
-                    xycoords='data',
-                    color=annotation_colour, fontsize=fontsize,
-                    va='center', ha='left',
-                    arrowprops=dict(facecolor=annotation_colour, shrink=0.05),
-                    clip_on=False)
-    
-    ax[1].axhline(24., linewidth=1.5, linestyle='dashed', color='black', zorder=0.)
+                       xytext=(ax[1].get_xlim()[1] * 1.025, l),
+                       xycoords='data',
+                       color=annotation_colour, fontsize=fontsize,
+                       va='center', ha='left',
+                       arrowprops=dict(
+                           facecolor=annotation_colour, shrink=0.05),
+                       clip_on=False)
+
+    ax[1].axhline(24., linewidth=1.5, linestyle='dashed',
+                  color='black', zorder=0.)
 
     ax[1].set_ylim([17, 40])
 
- 
-    
     # Variability in AKR
     ax[2].plot(length_days, std_akr_i, color='black', linewidth=1.5)
     ax[2].set_ylabel("Standard Deviation in\nAKR Integrated Power (W $sr^{-1}$)",
@@ -2208,9 +2232,9 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
     # Variability in SMR, SME, SML
     lines = []
     for k, (index, n, c) in enumerate(zip([std_SMR, std_SME, std_SML],
-                                       ["SMR", "SME", "SML"],
-                                       ["black", "darkviolet", "orange"]
-                                       )):
+                                          ["SMR", "SME", "SML"],
+                                          ["black", "darkviolet", "orange"]
+                                          )):
         if n == "SMR":
             twax = ax[3].twinx()
             l, = twax.plot(length_days, index, color=c, label="$\sigma$" + n)
@@ -2218,9 +2242,8 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
             l, = ax[3].plot(length_days, index, color=c, label="$\sigma$" + n)
         lines.append(l)
 
-
     labels = [l.get_label() for l in lines]
-    
+
     ax[3].legend(lines, labels, loc="upper right", fontsize=fontsize)
 
     ax[3].set_ylabel("Standard Deviation in\nSME, SML (nT)", fontsize=fontsize)
@@ -2235,10 +2258,10 @@ def lomb_scargle_cassini_expanding_logged(annotation_colour='grey'):
         if m > 0:
             pos = a.get_position().bounds
             a.set_position([cbar_pos[0], pos[1], cbar_pos[2], pos[3]])
-            
+
         t = a.text(0.01, 0.95, axes_labels[m],
-                          transform=a.transAxes,
-                          fontsize=fontsize, va='top', ha="left")
+                   transform=a.transAxes,
+                   fontsize=fontsize, va='top', ha="left")
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
     fig.savefig(fig_png_log)
@@ -2266,6 +2289,7 @@ def centers_to_edges(c):
     edges[-1] = c[-1] + (c[-1] - c[-2]) / 2
     return edges
 
+
 def lomb_scargle_expanding(n_rand=100):
     """
     Run the Lomb-Scargle analysis, gradually expanding n_rand random intervals.
@@ -2275,7 +2299,7 @@ def lomb_scargle_expanding(n_rand=100):
     None.
 
     """
-    
+
     fig_png = os.path.join(fig_dir, "expanding_lomb_scargle_random_.png")
 
     # Define Lomb-Scargle freqs etc
@@ -2300,34 +2324,35 @@ def lomb_scargle_expanding(n_rand=100):
     # Sliding parameters
     slides = 50
     slide_width = pd.Timedelta(days=5)
-    slide_width_multiplier = np.linspace(0, slides, slides+1)
-    first_window_width = pd.Timedelta(days=30) 
+    slide_width_multiplier = np.linspace(0, slides, slides + 1)
+    first_window_width = pd.Timedelta(days=30)
 
     t_length = np.full((n_rand, slides + 1), pd.NaT)
     period_of_peak = np.full((n_rand, slides + 1), np.nan)
 
     for j in range(n_rand):
         print('Analysing random window ', j)
- 
+
         x_lim = [starts[j],
                  starts[j] + first_window_width + (slides * slide_width)]
-    
+
         ut_s, ut_e, length = [], [], []
         for i, factor in enumerate(slide_width_multiplier):
-    
+
             ut_s.append(starts[j])
-            ut_e.append(starts[j] + first_window_width + (factor * slide_width))
+            ut_e.append(starts[j] + first_window_width +
+                        (factor * slide_width))
             length.append((ut_e[i] - ut_s[i]).total_seconds())
-    
+
         ut_s = np.array(ut_s)
         ut_e = np.array(ut_e)
 
         t_length[j, :] = length
-    
+
         # LS analysis here
         variable_freqs = []
         variable_periods = []
-        ls_pgram =[]
+        ls_pgram = []
 
         peak_freq = np.full(slides + 1, np.nan)
         peak_height = np.full(slides + 1, np.nan)
@@ -2336,92 +2361,96 @@ def lomb_scargle_expanding(n_rand=100):
             subset_df = akr_df.loc[(akr_df.datetime >= ut_s[i]) &
                                    (akr_df.datetime <= ut_e[i]),
                                    :].reset_index(drop=True)
-    
+
             output = lomb_scargle.generic_lomb_scargle(subset_df.unix,
                                                        subset_df[freq_column],
                                                        f_min, f_max,
                                                        n0=samples_per_peak)
-    
+
             variable_freqs.append(output[1])
             ls_pgram.append(output[2])
             variable_periods.append(
                 periodicity_functions.freq_to_period(output[1]))
-    
+
             arg = output[2].argmax()
             peak_height[i] = output[2][arg]
             peak_freq[i] = output[1][arg]
 
         period_of_peak[j, :] = periodicity_functions.freq_to_period(peak_freq)
 
-
     fig, ax = plt.subplots(figsize=(12, 6))
 
     length_days = t_length / (60. * 60 * 24)
-    
+
     mean_peak = np.mean(period_of_peak, axis=0)
     median_peak = np.median(period_of_peak, axis=0)
     std = np.std(period_of_peak, axis=0)
-        
-    x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (slide_width_multiplier[-1] * slide_width)).days, slides + 1)
+
+    x_bin_centres = np.linspace(first_window_width.days, (first_window_width + (
+        slide_width_multiplier[-1] * slide_width)).days, slides + 1)
     x_bin_edges = x_bin_centres - (slide_width.days / 2.)
-    x_bin_edges = np.append(x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
+    x_bin_edges = np.append(
+        x_bin_edges, x_bin_centres[-1] + (slide_width.days / 2.))
     y_bin_edges = np.linspace(5, 50, 46) + 0.5
-    
+
     fig = plt.figure(figsize=(14, 14))
     gs = GridSpec(3, 1, height_ratios=[2, 1, 1])
-    
+
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
     ax3 = fig.add_subplot(gs[2])
-    
-    h, x, y, im = ax1.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[x_bin_edges, y_bin_edges], cmin=1, cmap='magma', norm='log')
+
+    h, x, y, im = ax1.hist2d(length_days.flatten(), period_of_peak.flatten(), bins=[
+                             x_bin_edges, y_bin_edges], cmin=1, cmap='magma', norm='log')
     ax1.set_facecolor('gainsboro')
-    
+
     ax1.set_ylabel("Period of LS peak (hours)\n", fontsize=fontsize)
     ax1.set_xlabel("Length of archive (days)", fontsize=fontsize)
-    
+
     for l in [12, 24, 36, 48]:
 
         ax1.annotate(str(l), (ax1.get_xlim()[1], l),
-                     xytext=(ax1.get_xlim()[1]*1.025, l),
+                     xytext=(ax1.get_xlim()[1] * 1.025, l),
                      xycoords='data',
                      color=annotation_colour, fontsize=fontsize,
                      va='center', ha='left',
                      arrowprops=dict(facecolor=annotation_colour, shrink=0.05))
-        
-    
+
     cbar = fig.colorbar(im, ax=ax1)
     cbar.ax.tick_params(labelsize=fontsize)
     cbar.set_label('Occurrence (counts)', fontsize=fontsize)
-    
-    
+
     ax_cbar_pos = ax1.get_position().bounds
     # Average
-    ax2.plot(length_days[0, :], mean_peak, color='crimson', linewidth=2., label='APPROXMean')
-    ax2.plot(length_days[0, :], median_peak, color='grey', linewidth=2., label='APPROXMedian')
-    
-    ax2.set_ylabel('Average period of\nLS peak (hours)\nAPPROX ATM', fontsize=fontsize)
+    ax2.plot(length_days[0, :], mean_peak, color='crimson',
+             linewidth=2., label='APPROXMean')
+    ax2.plot(length_days[0, :], median_peak, color='grey',
+             linewidth=2., label='APPROXMedian')
+
+    ax2.set_ylabel(
+        'Average period of\nLS peak (hours)\nAPPROX ATM', fontsize=fontsize)
     ax2.set_xlabel('Length of archive (days)', fontsize=fontsize)
     ax2.legend(fontsize=fontsize)
-    
+
     # Standard dev
-    ax3.plot(length_days[0, :], std, color='crimson', linewidth=2., label='Standard\nDeviation')
-    
-    ax3.set_ylabel('Standard deviation of\nperiods of LS peak (hours)', fontsize=fontsize)
+    ax3.plot(length_days[0, :], std, color='crimson',
+             linewidth=2., label='Standard\nDeviation')
+
+    ax3.set_ylabel(
+        'Standard deviation of\nperiods of LS peak (hours)', fontsize=fontsize)
     ax3.set_xlabel('Length of archive (days)', fontsize=fontsize)
-    
+
     # Make width same as (a)
     pos = ax2.get_position().bounds
     ax2.set_position([ax_cbar_pos[0], pos[1], ax_cbar_pos[2], pos[3]])
     pos = ax3.get_position().bounds
     ax3.set_position([ax_cbar_pos[0], pos[1], ax_cbar_pos[2], pos[3]])
-        
-    
+
     for i, a in enumerate([ax1, ax2, ax3]):
         # increase tick fontsize
         a.tick_params(labelsize=fontsize)
         t = a.text(0.02, 0.95, axes_labels[i], transform=a.transAxes,
-                       fontsize=1.5 * fontsize, va='top', ha='left')
+                   fontsize=1.5 * fontsize, va='top', ha='left')
         t.set_bbox(dict(facecolor='white', alpha=0.75, edgecolor='grey'))
 
     # Save to file
@@ -2632,18 +2661,20 @@ def LS_solar_cyc(sunspot_n_fdict={'color': 'lightgrey',
     # Find edges of pixels on period axis
     period_edges = np.full(periods.size + 1, np.nan)
     for k in range(period_edges.size):
-        if k == period_edges.size-2:
-            period_edges[k] = periods[k-1] + ((periods[k]-periods[k-1])/2)
-        elif k == period_edges.size-1:
-            period_edges[k] = periods[k-1] + ((periods[k-1]-periods[k-2])/2)
+        if k == period_edges.size - 2:
+            period_edges[k] = periods[k - 1] + \
+                ((periods[k] - periods[k - 1]) / 2)
+        elif k == period_edges.size - 1:
+            period_edges[k] = periods[k - 1] + \
+                ((periods[k - 1] - periods[k - 2]) / 2)
         else:
-            period_edges[k] = periods[k] - ((periods[k+1]-periods[k])/2)
+            period_edges[k] = periods[k] - ((periods[k + 1] - periods[k]) / 2)
 
     # Initialise plotting
     fig, ax = plt.subplots(nrows=2, figsize=(16, 8))
 
     # Plot Lomb-Scargles
-    X, Y = np.meshgrid(np.append(years-0.5, years[-1] + 0.5), period_edges)
+    X, Y = np.meshgrid(np.append(years - 0.5, years[-1] + 0.5), period_edges)
     pcm = ax[0].pcolormesh(X, Y, ls_pgram, cmap='plasma')
     cbar = plt.colorbar(pcm, ax=ax[0],
                         label="Lomb-Scargle\nNormalised Amplitude")
