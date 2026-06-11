@@ -5,6 +5,7 @@ Created on Thu Apr  4 15:15:12 2024
 @author: A R Fogg
 """
 
+
 import sys
 import os
 import pathlib
@@ -32,11 +33,12 @@ import utility
 
 sys.path.append(
     r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
-import read_wind_position
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
-import read_sunspot_n
+
 import read_supermag
+import read_sunspot_n
+import read_wind_position
 
 fontsize = 18
 alphabet = list(string.ascii_lowercase)
@@ -48,6 +50,40 @@ fig_dir = os.path.join("C:" + os.sep,
                        r"Users\Alexandra\Documents\figures\akr_periodicities")
 data_dir = os.path.join(fig_dir, "data_quickloads")
 
+
+def print_key_periods():
+    # code to print out the periods with errors from each analysis
+
+    # Print Results from LS analysis ------------------------------------------
+    # Different frequency channels
+    freq_tags = np.array(['ipwr_100_400kHz', 'ipwr_50_100kHz'])
+
+    # Select only desired intervals
+    desired_intervals = ['full_archive', 'long_nightside_period',
+                         'cassini_flyby_logged']
+
+    
+    for (i, interval_tag) in enumerate(desired_intervals):
+        print('----- PRINTING LS RESULTS -----', interval_tag)
+
+        for (j, freq_column) in enumerate(freq_tags):
+            print('Frequency band: ', freq_column)
+            ls_csv = os.path.join(data_dir, 'lomb_scargle', 'LS_' +
+                                  interval_tag + '_' + freq_column + '.csv')
+
+            ls_df = pd.read_csv(ls_csv, delimiter=',',
+                                    float_precision='round_trip')
+
+            ls_pgram = np.array(ls_df.ls_pgram)
+            periods = np.array(ls_df.period_hr)
+            print('Period with highest amplitude for ' + interval_tag +
+                  ' ' + freq_column + ': ', periods[np.argmax(ls_pgram)])
+            #breakpoint()
+
+
+
+
+    
 
 def read_synthetic_oscillator():
     """
@@ -549,6 +585,10 @@ def run_lomb_scargle():
                 data_dir, "lomb_scargle",
                 interval_tag + '_' + freq_column + "_FAP_" + str(n_bootstrap)
                 + "_BSs.pkl")
+            FAP99_pkl = os.path.join(
+                data_dir, "lomb_scargle",
+                interval_tag + '_' + freq_column + "_FAP99_" + str(n_bootstrap)
+                + "_BSs.pkl")
             # Read in bootstrap
             ftime_cl, BS = read_subset_bootstraps(interval_tag,
                                                   freq_ch=freq_column,
@@ -560,6 +600,10 @@ def run_lomb_scargle():
             bootstrap_peak_magnitudes, FAP = lomb_scargle.false_alarm_probability(
                 n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
                 interval_tag + '_' + freq_column, FAP_pkl, n0=samples_per_peak)
+            # bootstrap_peak_magnitudes99, FAP99 = lomb_scargle.false_alarm_probability(
+            #     n_bootstrap, BS, ftime_unix, f_min, f_max, FAP_peaks_dir,
+            #     interval_tag + '_' + freq_column, FAP99_pkl, n0=samples_per_peak,
+            #     percentile=99.9)
 
             ax[i + 1].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
             if j == 0:
@@ -571,6 +615,12 @@ def run_lomb_scargle():
                                    fontsize=fontsize, va='center', ha='right',
                                    color=c, bbox=annotate_bbox,
                                    fontweight="bold")
+                # ax[i + 1].annotate("FAL$_{99.9}$\n" + "{:.3e}".format(FAP99),
+                #                    xy=(0.2, FAP99), xytext=(0.1, FAP99),
+                #                    xycoords=trans, arrowprops={'facecolor': c},
+                #                    fontsize=fontsize, va='center', ha='right',
+                #                    color=c, bbox=annotate_bbox,
+                #                    fontweight="bold")
             elif j == 1:
                 trans = transforms.blended_transform_factory(
                     ax[i + 1].transAxes, ax[i + 1].transData)
@@ -579,6 +629,11 @@ def run_lomb_scargle():
                                    xycoords=trans, arrowprops={'facecolor': c},
                                    fontsize=fontsize, va='center', ha='left',
                                    color=c, bbox=annotate_bbox, fontweight="bold")
+                # ax[i + 1].annotate("FAL$_{99.9}$\n" + "{:.3e}".format(FAP99),
+                #                    xy=(0.8, FAP99), xytext=(0.9, FAP99),
+                #                    xycoords=trans, arrowprops={'facecolor': c},
+                #                    fontsize=fontsize, va='center', ha='left',
+                #                    color=c, bbox=annotate_bbox, fontweight="bold")
         ax[i + 1].set_xscale('log')
 
         # Formatting

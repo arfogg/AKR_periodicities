@@ -218,7 +218,7 @@ def compute_lomb_scargle_peak(time, signal, f_min, f_max, i,
 
 def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
                             FAP_peak_directory, FAP_peak_keyword, FAP_fname,
-                            n0=5):
+                            n0=5, percentile=97.7):
     """
     Calculate the false alarm probability on a LS periodogram using
     bootstrapped signals.
@@ -244,6 +244,8 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
     n0 : int, optional
         Number of samples needed to define a peak in a periodogram. The
         default is 5.
+    percentile : float, optional
+        Percentile used to evaluate the FAP. The default is 97.7.
 
     Returns
     -------
@@ -271,7 +273,7 @@ def false_alarm_probability(n_bootstrap, BS_signal, time, f_min, f_max,
 
         # Compute FAP, 97.7th percentile / 2 sigma
         # FAP = np.nanmean(bootstrap_peak_magnitudes)
-        FAP = np.percentile(bootstrap_peak_magnitudes, 97.7)
+        FAP = np.percentile(bootstrap_peak_magnitudes, percentile)
         # Save FAP to file
         with open(FAP_fname, 'wb') as f:
             pickle.dump(bootstrap_peak_magnitudes, f,
