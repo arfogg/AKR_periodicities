@@ -6,6 +6,7 @@ Created on Thu Apr  4 15:15:12 2024
 """
 
 
+
 import sys
 import os
 import pathlib
@@ -33,12 +34,11 @@ import utility
 
 sys.path.append(
     r'C:\Users\Alexandra\Documents\wind_waves_akr_code\wind_utility')
+import read_wind_position
 
 sys.path.append(r'C:\Users\Alexandra\Documents\wind_waves_akr_code\readers')
-
-import read_supermag
 import read_sunspot_n
-import read_wind_position
+import read_supermag
 
 fontsize = 18
 alphabet = list(string.ascii_lowercase)
@@ -62,7 +62,6 @@ def print_key_periods():
     desired_intervals = ['full_archive', 'long_nightside_period',
                          'cassini_flyby_logged']
 
-    
     for (i, interval_tag) in enumerate(desired_intervals):
         print('----- PRINTING LS RESULTS -----', interval_tag)
 
@@ -72,18 +71,14 @@ def print_key_periods():
                                   interval_tag + '_' + freq_column + '.csv')
 
             ls_df = pd.read_csv(ls_csv, delimiter=',',
-                                    float_precision='round_trip')
+                                float_precision='round_trip')
 
             ls_pgram = np.array(ls_df.ls_pgram)
             periods = np.array(ls_df.period_hr)
             print('Period with highest amplitude for ' + interval_tag +
                   ' ' + freq_column + ': ', periods[np.argmax(ls_pgram)])
-            #breakpoint()
+            # breakpoint()
 
-
-
-
-    
 
 def read_synthetic_oscillator():
     """
@@ -674,6 +669,7 @@ def run_lomb_scargle():
     # Save to file
     fig.savefig(LS_fig)
 
+
 def run_lomb_scargle_LOGGED():
     """
     Run the Lomb Scargle analysis, creating and saving plots.
@@ -708,7 +704,7 @@ def run_lomb_scargle_LOGGED():
     # FAP filenames
     FAP_peaks_dir = os.path.join(data_dir, "lomb_scargle", 'LS_peaks_for_FAP')
     # synthetic_FAP_pkl = os.path.join(data_dir, "lomb_scargle", "synthetic_FAP_"
-                                     # + str(n_bootstrap) + "_BSs.pkl")
+    # + str(n_bootstrap) + "_BSs.pkl")
     # Read in interval data
     print('Reading AKR data over requested intervals')
     interval_options = read_and_tidy_data.return_test_intervals()
@@ -860,16 +856,16 @@ def run_lomb_scargle_LOGGED():
             #     interval_tag + '_' + freq_column, FAP99_pkl, n0=samples_per_peak,
             #     percentile=99.9)
 
-            ax[i ].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
+            ax[i].plot(periods, ls_pgram, linewidth=1.5, color=c, label=n)
             if j == 0:
                 trans = transforms.blended_transform_factory(
                     ax[i].transAxes, ax[i].transData)
                 ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
-                                   xy=(0.2, FAP), xytext=(0.15, FAP),
-                                   xycoords=trans, arrowprops={'facecolor': c},
-                                   fontsize=fontsize, va='center', ha='right',
-                                   color=c, bbox=annotate_bbox,
-                                   fontweight="bold")
+                               xy=(0.2, FAP), xytext=(0.15, FAP),
+                               xycoords=trans, arrowprops={'facecolor': c},
+                               fontsize=fontsize, va='center', ha='right',
+                               color=c, bbox=annotate_bbox,
+                               fontweight="bold")
                 # ax[i + 1].annotate("FAL$_{99.9}$\n" + "{:.3e}".format(FAP99),
                 #                    xy=(0.2, FAP99), xytext=(0.1, FAP99),
                 #                    xycoords=trans, arrowprops={'facecolor': c},
@@ -880,10 +876,10 @@ def run_lomb_scargle_LOGGED():
                 trans = transforms.blended_transform_factory(
                     ax[i].transAxes, ax[i].transData)
                 ax[i].annotate("FAL\n" + "{:.3e}".format(FAP),
-                                   xy=(0.8, FAP), xytext=(0.85, FAP),
-                                   xycoords=trans, arrowprops={'facecolor': c},
-                                   fontsize=fontsize, va='center', ha='left',
-                                   color=c, bbox=annotate_bbox, fontweight="bold")
+                               xy=(0.8, FAP), xytext=(0.85, FAP),
+                               xycoords=trans, arrowprops={'facecolor': c},
+                               fontsize=fontsize, va='center', ha='left',
+                               color=c, bbox=annotate_bbox, fontweight="bold")
                 # ax[i + 1].annotate("FAL$_{99.9}$\n" + "{:.3e}".format(FAP99),
                 #                    xy=(0.8, FAP99), xytext=(0.9, FAP99),
                 #                    xycoords=trans, arrowprops={'facecolor': c},
@@ -893,7 +889,7 @@ def run_lomb_scargle_LOGGED():
 
         # Formatting
         ax[i].set_ylabel('Lomb-Scargle\nNormalised Amplitude',
-                             fontsize=fontsize)
+                         fontsize=fontsize)
         ax[i].set_xlabel('Period (hours)', fontsize=fontsize)
         ax[i].tick_params(labelsize=fontsize)
         ax[i].legend(fontsize=fontsize, loc='upper left')
@@ -903,17 +899,17 @@ def run_lomb_scargle_LOGGED():
                 trans = transforms.blended_transform_factory(
                     ax[i].transData, ax[i].transAxes)
                 ax[i].annotate(str(h), xy=(h, 1.0), xytext=(h, 1.15),
-                                   xycoords=trans,
-                                   arrowprops={'facecolor': 'black'},
-                                   fontsize=fontsize, va='top', ha='center',
-                                   color=vertical_ind_col)
+                               xycoords=trans,
+                               arrowprops={'facecolor': 'black'},
+                               fontsize=fontsize, va='top', ha='center',
+                               color=vertical_ind_col)
 
     # Add in more ticks
     majticks = [10, 15, 20, 25, 30, 35, 40, 45, 50]
     majlabels = [str(t) for t in majticks]
 
     # Label panels
-    #titles = np.append('Synthetic', labels)
+    # titles = np.append('Synthetic', labels)
     for (i, a) in enumerate(ax):
         t = a.text(0.005, 1.05, axes_labels[i], transform=a.transAxes,
                    fontsize=fontsize, va='bottom', ha='left')
@@ -1865,7 +1861,7 @@ def run_MLT_binning_seperate(n_mlt_sectors='four'):
 
                     # Formatting
                     # Panel MLT sector
-                    t = ax[k].text(0.98, 0.95, MLT_n + ' MLT',
+                    t = ax[k].text(0.98, 0.95, MLT_n + ' LT',
                                    transform=ax[k].transAxes,
                                    fontsize=fontsize,
                                    va='top', ha='right')
